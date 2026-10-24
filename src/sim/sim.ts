@@ -4,7 +4,7 @@
 import {
   TAU, RAD, R, DUEL_H, KB_DAMP, WHITE_KB, RED_KB, TUMBLE_V, LEDGE_MAX, PARRY_WIN, PARRY_PERFECT, PARRY_MISS,
   DODGE_T, DODGE_IF0, DODGE_IF1, DODGE_DIST, CHARGE_START, CHARGE_FULL, CHARGE_MAX, SOUFFLE_REGEN, MOVE_SPEED, FIRST_TO,
-  TF, WA, HA, ATTACK_BY_ID, DEFAULT_DECK, cloneDeck, sanitizeLook, Deck, Look, AttackDef,
+  TF, WA, HA, ATTACK_BY_ID, DEFAULT_DECK, cloneDeck, sanitizeLook, Deck, Look, AttackDef, RULES,
 } from './data';
 import { Abil, FULL_ABIL } from './progression';
 
@@ -276,6 +276,9 @@ function applyHit(att: Fighter, tgt: Fighter, guardBreak: boolean) {
   tgt.lastHitBy = att.id; tgt.lastHitT = S.time; tgt.lastHitDragon = a.dragon;
   let mult = (d.kb || 1) * (a.finisher ? 1.35 : 1) * (red ? a.power : 1) * (a.dragon ? 1.5 : 1) * (guardBreak ? 1.2 : 1);
   if (att.elanT > 0) { mult *= 1.4; att.elanT = 0; fx.float(att.x, att.y - 52, 'ÉLAN', '#62c2a2', 15); }
+  // D1 : épuisé = presque certain d'être éjecté
+  if (tgt.souffle < 1 && tgt.state !== 'dodge') { mult *= RULES.exhaustKbMult; fx.float(tgt.x, tgt.y - 66, 'ÉPUISÉ !', '#e5483a', 20); emit({ t: 'exhausted', to: tgt.idx }); }
+  tgt.dodgeCount = 0;
   const K = red ? RED_KB : WHITE_KB; const v = (K[0] + K[1] * tgt.pct) * mult;
   const dist = Math.hypot(tgt.x - att.x, tgt.y - att.y);
   let ang = dist > 1 ? Math.atan2(tgt.y - att.y, tgt.x - att.x) : att.facing; ang += angDiff(ang, att.facing) * 0.3;
@@ -296,6 +299,7 @@ function parried(def: Fighter, att: Fighter, perfect: boolean) {
   const an = Math.atan2(att.y - def.y, att.x - def.x);
   if (perfect) { att.vx = Math.cos(an) * 260; att.vy = Math.sin(an) * 260; }
   toIdle(def); addQi(def, perfect ? 25 : 15);
+  def.souffle = Math.min(3, def.souffle + (perfect ? RULES.parryPerfectSouffle : RULES.parrySouffle));
   const mx = (att.x + def.x) / 2, my = (att.y + def.y) / 2, col = perfect ? '#f2c14e' : '#e0a243';
   fx.ring(mx, my, 6, perfect ? 60 : 44, 280, col, perfect ? 5 : 4);
   fx.sparks(mx, my, col, perfect ? 20 : 12);
@@ -309,6 +313,8 @@ function perfectDodge(tgt: Fighter, att: Fighter) {
   if (tgt.lastAvoid === att.atk.uid) return; tgt.lastAvoid = att.atk.uid;
   if (tgt.abil.elan) { tgt.souffle = Math.min(3, tgt.souffle + 1); tgt.elanT = 1500; S.slow = Math.max(S.slow, 200); }
   addQi(tgt, 15);
+  tgt.dodgeCount = (tgt.dodgeCount || 0) + 1; // D2 : compteur d'équilibre (bonus pas encore décidé)
+  if (RULES.balanceEnabled && tgt.dodgeCount >= RULES.balanceDodgesRequired) { tgt.dodgeCount = 0; emit({ t: 'balance', idx: tgt.idx }); }
   fx.float(tgt.x, tgt.y - 52, 'ESQUIVE !', '#62c2a2', 17); fx.sfx('avoid', tgt.x, tgt.y, 1);
   emit({ t: 'dodge', by: tgt.idx });
 }
@@ -346,6 +352,13 @@ function updAttack(e: Fighter, ms: number) {
   if (a.t >= a.su + a.ac + a.rc) finishAttack(e);
 }
 function finishAttack(e: Fighter) { const a = e.atk; if (a && !a.applied) e.stance = a.endStance; e.comboT = a && a.kind === 'white' ? 500 : 0; e.atk = null; toIdle(e); }
+// D6.1 : plein régime si on agit ou si on avance vers l'adversaire, ralenti si on attend ou recule.
+function regenMult(e: Fighter) {
+  if (e.state !== 'idle') return RULES.regenAdvance;
+  const o = S.f.find((x: Fighter) => x !== e && alive(x)); if (!o) return RULES.regenAdvance;
+  const dx = o.x - e.x, dy = o.y - e.y, d = Math.hypot(dx, dy) || 1;
+  return (e.move.x * dx + e.move.y * dy) / d > 0.3 ? RULES.regenAdvance : RULES.regenIdle;
+}
 function updEnt(e: Fighter, dt: number) {
   const ms = dt * 1000;
   if (e.state === 'dead') return;
@@ -355,7 +368,7 @@ function updEnt(e: Fighter, dt: number) {
   if (e.holding) e.holdT += ms;
   if (e.buffer) { e.bufferT += ms; if (e.bufferT > 450) e.buffer = null; }
   if (e.emote) { e.emote.t += ms; if (e.emote.t > 1800) e.emote = null; }
-  if (e.state !== 'dodge') e.souffle = Math.min(3, e.souffle + dt / SOUFFLE_REGEN);
+  if (e.state !== 'dodge') e.souffle = Math.min(3, e.souffle + dt / SOUFFLE_REGEN * regenMult(e));
   const tr = turnRate(e); e.facing += clamp(angDiff(e.facing, e.wantFacing), -tr * dt, tr * dt);
   switch (e.state) {
     case 'attack': updAttack(e, ms); break;

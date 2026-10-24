@@ -19,6 +19,24 @@ export const CHARGE_START = 120, CHARGE_FULL = 800, CHARGE_MAX = 1600;
 export const SOUFFLE_REGEN = 1.3, MOVE_SPEED = 210;
 export const FIRST_TO = 3;
 
+/* ---------- règles issues de DECISIONS.md (projet Kata) ----------
+   Tout est réglable ici sans toucher au moteur. Un futur personnage = un profil qui multiplie ces valeurs. */
+export const RULES = {
+  // D1 : un combattant épuisé (souffle < 1) subit un recul fortement multiplié : éjection quasi certaine.
+  exhaustKbMult: 2.6,
+  // D6.1 : le souffle se régénère à pleine vitesse seulement quand on avance vers l'adversaire ou qu'on agit.
+  regenAdvance: 1,
+  regenIdle: 0.55,
+  // D6.3 : une parade réussie rend du souffle (en segments, sur 3).
+  parrySouffle: 0.5,
+  parryPerfectSouffle: 1,
+  // D2 : équilibre = nombre d'esquives parfaites d'affilée. Le bonus n'est pas encore décidé : désactivé.
+  balanceEnabled: false,
+  balanceDodgesRequired: 3,
+  // D3 : l'état de l'adversaire (pourcentage) n'est pas montré. Visible avec ?debug.
+  showOpponentPct: false,
+};
+
 /* ---------- gardes ---------- */
 export const STANCES = [
   { code: '3/4 G', name: 'Face gauche' },

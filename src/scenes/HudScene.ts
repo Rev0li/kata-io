@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { session } from '../net/session';
 import { heatCss } from '../game/render';
 import { controls } from '../ui/controls';
-import { FIRST_TO, LEVELS, ATTACK_BY_ID } from '../sim/data';
+import { FIRST_TO, LEVELS, ATTACK_BY_ID, RULES } from '../sim/data';
 import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
 
@@ -94,7 +94,9 @@ export class HudScene extends Phaser.Scene {
     this.bump = Math.max(0, this.bump - delta / 300);
     this.myPct.setScale(1 + this.bump * 0.35);
     this.opName.setText(op.name);
-    this.opPct.setText(Math.round(op.pct) + '%').setColor(heatCss(op.pct));
+    // D3 : l'état de l'adversaire n'est pas montré (sauf ?debug)
+    const showOp = RULES.showOpponentPct || new URLSearchParams(location.search).has('debug');
+    this.opPct.setVisible(showOp).setText(Math.round(op.pct) + '%').setColor(heatCss(op.pct));
     const nw = me.deck ? nextWhite(me) : ATTACK_BY_ID[me.nextId];
     const hv = me.deck ? ATTACK_BY_ID[me.deck.heavy[me.stance]] : ATTACK_BY_ID[me.heavyId];
     this.myMoves.setText(`Prochain coup : ${nw ? nw.name : '—'}` + (ab.charge ? `   ·   Chargé : ${hv ? hv.name : '—'}` : ''));
