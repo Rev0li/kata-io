@@ -40,9 +40,9 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 Règle : chaque élément visible est décrit dans un fichier de données ; **si l'image existe, le jeu l'affiche, sinon il le dessine en code comme aujourd'hui**. Remplacer = déposer un fichier, supprimer = retirer une ligne. Aucun changement visuel tant qu'aucune image n'est déposée.
 
 - [ ] Registre d'assets : chargeur générique qui lit les fichiers de données et applique « image si présente, sinon dessin en code ».
-- [ ] Dojos en données : un dossier par dojo (`public/assets/dojos/<id>/dojo.json` + images) à la place de `THEMES` et `LIFE`.
-- [ ] Plateforme en dalles (images détachables qui tombent en mort subite), planches actuelles en secours.
-- [ ] Couche de décor : objets posés autour du dojo (torii, lanternes, arbres, ponts), rangés en profondeur avec les combattants.
+- [ ] Mondes en données (voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md) section 5) : un dossier par monde (`public/assets/mondes/<id>/monde.json` + images) à la place de `THEMES` et `LIFE`, avec les couches de la direction artistique : scène plein écran, matière autour de la plateforme (eau, glace, lave), plateforme, combattants et effets, premier plan en parallaxe. Les six dojos actuels deviennent des mondes « dessinés en code » en attendant leurs images.
+- [ ] Plateforme en pièces détachables (images qui tombent en mort subite), planches actuelles en secours.
+- [ ] Couche de décor posé et premier plan : objets autour de la plateforme (torii, lanternes, arbres, ponts) rangés en profondeur avec les combattants, et éléments de premier plan qui bougent plus vite que la caméra.
 - [ ] Combattants et armes en données : planche, taille d'image, point des pieds, échelle, poses par ligne.
 - [ ] Icônes de l'interface en fichiers `public/assets/ui/*.svg` au lieu d'être écrites dans `index.html`.
 - [ ] Ranger les visuels générés : sources et maquettes dans `art/source/`, images prêtes pour le jeu dans `public/assets/` (et pas dans `src/`).

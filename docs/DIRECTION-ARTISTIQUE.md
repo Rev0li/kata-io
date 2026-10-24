@@ -2,7 +2,7 @@
 
 Inventaire de tout ce qui se voit dans le jeu au 2026-10-24 : style, palettes, environnements, assets, et ce qui est à produire. Sert de brief pour faire générer les visuels par une autre IA.
 
-Légende de l'état : **Pack** = pack Ninja Adventure (pixel art 16 px, CC0), **SVG** = généré par `scripts/build-decor-svg.py`, **Code** = dessiné par Phaser dans `src/game/render.ts`, **Réf.** = visuel de référence dans `art/reference/`, **Mort** = présent mais plus utilisé.
+Légende de l'état : **Pack** = pack Ninja Adventure (pixel art 16 px, CC0), **SVG** = généré par `scripts/build-decor-svg.py`, **Code** = dessiné par Phaser dans `src/game/render/`, **Réf.** = visuel de référence dans `art/reference/`, **Mort** = présent mais plus utilisé.
 
 ---
 
@@ -12,7 +12,7 @@ Légende de l'état : **Pack** = pack Ninja Adventure (pixel art 16 px, CC0), **
 |---|---|---|
 | Combattants, armes, effets de coup, objets de boutique | **Pixel art 16 px** (pack Ninja Adventure), agrandi ×3 sans lissage | `public/assets/persos.png`, `armes.png`, `fx/`, `items/` |
 | Horizons, poissons, objets flottants | **Vectoriel plat cartoon** : aplats, dégradés doux, contour sombre fin | `public/assets/decor/*.svg` |
-| Plateforme du dojo, lanternes, eau, particules d'ambiance, lignes de vitesse | **Formes dessinées en code** (losange, rectangles, ellipses) | `src/game/render.ts` |
+| Plateforme du dojo, lanternes, eau, particules d'ambiance, lignes de vitesse | **Formes dessinées en code** (losange, rectangles, ellipses) | `src/game/render/` (`arena.ts`, `lake.ts`, `effects.ts`) |
 | Interface HTML | **Sombre, encre et ocre**, typographie condensée, icônes au trait | `src/style.css`, `index.html` |
 | Références | **Cartoon cel-shading** : contour noir épais, ombres en aplat, lumière chaude | `art/reference/*.png` |
 
@@ -254,7 +254,7 @@ Planche actuelle `persos.png` : 14 personnages × 4 directions × 7 lignes de 16
 | `ninja-vert` | Ninja de jade | 11 | capuche verte, yeux rouges | Ninja vert jade, élite. |
 | `shogun` | Shōgun d'or | 12 | casque doré à cornes | Boss final : armure d'or, casque à cornes, cape. |
 
-**Poses nécessaires** (ce que le jeu affiche aujourd'hui, `render.ts`) :
+**Poses nécessaires** (ce que le jeu affiche aujourd'hui, `src/game/render/fighters.ts`) :
 
 | État de jeu | Ligne actuelle | Pose à produire |
 |---|---|---|
