@@ -14,9 +14,6 @@ import sys
 
 from PIL import Image
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from diagonals import eight  # noqa: E402
-
 NA, SP = sys.argv[1], os.path.join(sys.argv[2], 'ninja-adventure')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets')
 
@@ -59,12 +56,12 @@ def main():
     os.makedirs(os.path.join(OUT, 'fx'), exist_ok=True)
     os.makedirs(os.path.join(OUT, 'items'), exist_ok=True)
 
-    sheet = Image.new('RGBA', (128 * len(PERSOS), 112))
+    sheet = Image.new('RGBA', (64 * len(PERSOS), 112))
     faces = Image.new('RGBA', (38 * len(PERSOS), 38))
     for i, (pid, path, face) in enumerate(PERSOS):
         im = Image.open(path).convert('RGBA')
         assert im.size == (64, 112), (pid, im.size)
-        sheet.paste(eight(im), (128 * i, 0))
+        sheet.paste(im, (64 * i, 0))
         if face:
             f = Image.open(os.path.join(SP, 'characters/faceset/%d.png' % face)).convert('RGBA')
         else:

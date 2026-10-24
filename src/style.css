@@ -392,7 +392,4 @@ body.touch .pc-only { display: none; }
   #stickZone { width: 46%; height: 78%; }
 }
 
-#fsBtn { position: fixed; z-index: 5; top: calc(env(safe-area-inset-top, 0px) + 12px); right: max(12px, env(safe-area-inset-right, 0px)); width: 40px; height: 40px; padding: 0; display: grid; place-items: center; }
-#fsBtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-body.ingame #fsBtn { right: auto; left: calc(max(14px, env(safe-area-inset-left, 0px)) + 86px); top: calc(env(safe-area-inset-top, 0px) + 12px); width: 36px; height: 30px; opacity: .7; }
-body.fs #fsBtn { display: none; }
+body.fs #fsBtn, body.standalone #fsBtn, body.nofs #fsBtn { display: none; }

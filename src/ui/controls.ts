@@ -43,13 +43,16 @@ export function toggleFullscreen() {
   const d: any = document, el: any = document.documentElement;
   if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen)?.call(d); return; }
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!req) { alert('Sur iPhone : touche Partager, puis « Sur l’écran d’accueil » pour jouer sans barre du navigateur.'); return; }
+  if (!req) return;
   Promise.resolve(req.call(el, { navigationUI: 'hide' })).then(() => (screen.orientation as any)?.lock?.('landscape')).catch(() => {});
 }
 export function clearKeys() { keys.clear(); stick.x = stick.y = 0; const i = session.input; i.atk = false; i.mx = 0; i.my = 0; session.flushInput(); }
 
 export function setupControls() {
   const fsb = document.getElementById('fsBtn'); fsb?.addEventListener('click', () => toggleFullscreen());
+  const de: any = document.documentElement; // pas de réglage si déjà installé (écran d'accueil) ou si le navigateur ne sait pas (iPhone)
+  if (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || (navigator as any).standalone) document.body.classList.add('standalone');
+  if (!(de.requestFullscreen || de.webkitRequestFullscreen)) document.body.classList.add('nofs');
   document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
   window.addEventListener('keydown', ev => { if (ev.code === 'KeyF' && !(ev.target as HTMLElement)?.matches?.('input,textarea') && !session.active) toggleFullscreen(); });
   window.addEventListener('keydown', ev => {
