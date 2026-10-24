@@ -28,7 +28,7 @@ Ce qui donne envie de rejouer :
 - **Essais** : le gardien nargue quand tu reviens après une défaite (« Encore toi ? »). La victoire affiche « Battu au 4e essai ».
 - **Série** : chaque étage gagné d'affilée multiplie l'XP et les pièces (×1,5, ×2… jusqu'à ×3). Une défaite remet la série à zéro.
 - **Défi du jour** : un adversaire tiré de la date, le même pour tout le monde. La première victoire du jour rapporte 50 pièces, puis on peut améliorer son temps.
-- **Mort subite** : après 40 s de manche, le dojo rétrécit et ses planches tombent à l'eau.
+- **Mort subite** : après 25 s de manche, le dojo rétrécit et ses planches tombent à l'eau.
 - **Balle de match** : annonce, battement de cœur et vignette rouge ; l'éjection décisive passe au ralenti.
 - **Bonus** : « Parfait » (manche gagnée sans être touché, +5 pièces) et « Sauvé ! » (rattrapé au bord puis remonté, +2 pièces).
 
@@ -126,6 +126,14 @@ Messages échangés :
 | Les deux | `rematch` | demande de revanche ; l'hôte répond `restart` quand les deux l'ont demandée |
 | Hôte | `away` | l'onglet de l'hôte est en arrière-plan, le combat est en pause |
 | Les deux | `ping` / `pong` | mesure de la latence affichée en jeu |
+
+## Dojos et décor
+
+Six ambiances, en pixel art de la même taille de pixel que les combattants (×3) : `coucher`, `bambou`, `brume`, `neige`, `neon`, `volcan`. La Tour change de dojo tous les deux étages dans cet ordre, puis recommence ; le défi du jour en tire un d'après la date. `?theme=<nom>` force une ambiance.
+
+Chaque dojo a ses poissons (koï, carpes, poissons-lanternes, poissons de braise), ses objets flottants (nénuphars, glace, roches de lave, lanternes) et ses particules (pétales, feuilles, neige, lucioles, braises). Les poissons nagent sous le dojo, s'enfuient après un plouf ou un gros coup, et les nénuphars sont repoussés par les remous. L'eau scintille.
+
+Tout est généré par `python3 scripts/build-decor.py` (Pillow, aucun asset externe) : horizons dans `public/assets/bg/`, `fauna.png` (7 espèces, 8 images de nage) et `floats.png`. Pour changer un décor, modifier le script puis relancer.
 
 ## Direction artistique
 

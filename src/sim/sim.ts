@@ -21,7 +21,7 @@ export interface Spec { name: string; look: Look; deck?: Deck; bot?: number | nu
 export interface SimOpts { firstTo?: number; H?: number; damp?: number; free?: boolean; pos?: [number, number][] }
 export type Ev = { t: string; [k: string]: any };
 // Mort subite : passé ce délai dans une manche, le dojo rétrécit jusqu'à SUDDEN_MIN.
-export const SUDDEN_T = 40000, SUDDEN_RATE = 9, SUDDEN_MIN = 110;
+export const SUDDEN_T = 25000, SUDDEN_RATE = 9, SUDDEN_MIN = 110;
 
 export type Fighter = any;
 export type Sim = any;

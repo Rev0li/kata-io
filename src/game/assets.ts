@@ -7,7 +7,7 @@ export const FX_KEYS = ['hit', 'star', 'guard', 'sparkle', 'cross', 'arc', 'spin
 export type FxKey = typeof FX_KEYS[number];
 // Particules des effets de boutique : [largeur, hauteur] d'une image
 export const PARTS: Record<string, [number, number]> = { leaf: [12, 7], wood: [16, 16], pig: [16, 16], coin: [10, 10], shuriken: [13, 13], chest: [16, 14], ghost: [16, 16], bird: [16, 16], flame: [16, 16] };
-export const THEME_BG = ['brume', 'coucher', 'neon'];
+export const THEME_BG = ['brume', 'coucher', 'neon', 'neige', 'bambou', 'volcan'];
 const BASE = import.meta.env.BASE_URL + 'assets/';
 
 export function preloadAssets(scene: Phaser.Scene) {
@@ -15,14 +15,16 @@ export function preloadAssets(scene: Phaser.Scene) {
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16 });
   scene.load.image('dojo', BASE + 'dojo.png');
   scene.load.image('dojo-mousse', BASE + 'dojo-mousse.png');
-  for (const t of THEME_BG) scene.load.image('bg-' + t, BASE + 'bg/' + t + '.png'); // horizons d'après art/reference
+  for (const t of THEME_BG) scene.load.image('bg-' + t, BASE + 'bg/' + t + '.png'); // horizons pixel art (scripts/build-decor.py)
+  scene.load.spritesheet('fauna', BASE + 'fauna.png', { frameWidth: 32, frameHeight: 16 }); // poissons, 8 images de nage par espèce
+  scene.load.spritesheet('floats', BASE + 'floats.png', { frameWidth: 24, frameHeight: 16 }); // nénuphars, glace, lave, lanternes
   for (const k of FX_KEYS) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS)) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: w, frameHeight: h });
 }
 
 export function setupAssets(scene: Phaser.Scene) {
   // Pixel art : pas de lissage quand on agrandit.
-  for (const k of ['persos', 'armes', 'dojo', 'dojo-mousse', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)]) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
+  for (const k of ['persos', 'armes', 'dojo', 'dojo-mousse', 'fauna', 'floats', ...THEME_BG.map(t => 'bg-' + t), ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)]) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
   for (const k of FX_KEYS) {
     if (scene.anims.exists('fx-' + k)) continue;
     scene.anims.create({ key: 'fx-' + k, frames: scene.anims.generateFrameNumbers('fx-' + k), frameRate: k === 'splash' || k === 'smoke' ? 16 : 22, repeat: 0 });

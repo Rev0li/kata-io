@@ -3,7 +3,7 @@
 // Ninja Adventure (Pixel-boy, CC0). Les effets arrivent sous forme d'événements de la simulation.
 import Phaser from 'phaser';
 import { TAU, RAD, CHARGE_FULL, CHARGE_START, PARRY_PERFECT, PERSOS, PERSO_COUNT, ARMES, TRAINEES, EMOTES, beltOf } from '../sim/data';
-import { clamp, lerp, easeOut, Ev } from '../sim/sim';
+import { clamp, lerp, easeOut, angDiff, Ev } from '../sim/sim';
 import { sfxAt } from './audio';
 import { PX, FxKey } from './assets';
 
@@ -29,8 +29,24 @@ export interface Theme { water: string; top: number; top2: number; seam: number;
 export const THEMES: Record<string, Theme> = {
   brume: { water: '#656455', sky: '#a3a69c', top: 0x76604d, top2: 0x82694f, seam: 0x4a3b2f, rim: 0x8d9189, side: 0x4d4238, out: 0x2a2924, lamp: 0xf5e2b0, glow: 0xffd88a },
   coucher: { water: '#355d62', sky: '#d9a982', top: 0xc98450, top2: 0xd89462, seam: 0x7a4624, rim: 0xb36a38, side: 0x7d4a27, out: 0x3a2314, line: 0x2f6f7d },
+  neige: { water: '#3b5a74', sky: '#b9cfe0', top: 0xb59f86, top2: 0xc4af95, seam: 0x6f5a45, rim: 0xe9f1f6, side: 0x7b6a5a, out: 0x1e2b38, line: 0x7fb8e8, lamp: 0xffe0a0, glow: 0xffd070 },
+  bambou: { water: '#2f5a4a', sky: '#b8d4a0', top: 0xa8924e, top2: 0xb59f58, seam: 0x6a5a2a, rim: 0xc4b060, side: 0x6b5a30, out: 0x1d3a2c, line: 0x3e8a5a },
+  volcan: { water: '#3a1208', sky: '#2a0f12', top: 0x4a3028, top2: 0x563830, seam: 0x2a1a16, rim: 0x6a4a3c, side: 0x2a1a16, out: 0x120606, line: 0xff7a2a, edge: 0xff9a3c, lamp: 0xff9a3c, glow: 0xff7a2a },
   neon: { water: '#0a1020', sky: '#0c1229', top: 0x3a2a3c, top2: 0x45324b, seam: 0x1b1220, rim: 0x2b2132, side: 0x18111f, out: 0x080610, line: 0x2de6ea, edge: 0xff9a3c, lamp: 0x2de6ea, glow: 0xff9a3c },
 };
+// Vie de chaque dojo : espèces de poissons (lignes de fauna.png), objets flottants (colonnes de floats.png), particules d'ambiance.
+const LIFE: Record<string, { fish: number[]; floats: number[]; amb: string; glint: number; nFish: number }> = {
+  coucher: { fish: [0, 1, 2], floats: [0, 1], amb: 'petal', glint: 0xfbe2b4, nFish: 8 },
+  brume: { fish: [1, 4, 5], floats: [0, 5], amb: 'leaf', glint: 0xdfe2d6, nFish: 6 },
+  neon: { fish: [3], floats: [4], amb: 'firefly', glint: 0x2de6ea, nFish: 8 },
+  neige: { fish: [4, 1], floats: [2], amb: 'snow', glint: 0xf6fafc, nFish: 6 },
+  bambou: { fish: [5, 2, 0], floats: [0, 1, 5], amb: 'firefly', glint: 0xe9f0c2, nFish: 8 },
+  volcan: { fish: [6], floats: [3], amb: 'ember', glint: 0xff9a3c, nFish: 7 },
+};
+const LAKE = 720; // rayon du lac où nagent les poissons (unités du monde)
+interface Fish { x: number; y: number; h: number; tx: number; ty: number; sp: number; boost: number; ph: number; row: number; spr: Phaser.GameObjects.Sprite }
+interface Floater { x: number; y: number; vx: number; vy: number; ph: number; rot: number; vr: number; spr: Phaser.GameObjects.Sprite; frame: number }
+interface Mote { x: number; y: number; vx: number; vy: number; ph: number; sz: number }
 const cache = new Map<string, number>();
 export function hex(s: string): number { let v = cache.get(s); if (v === undefined) { v = parseInt(s.slice(1), 16); cache.set(s, v); } return v; }
 function mix(a: number, b: number, t: number) { const r = Math.round(lerp(a >> 16, b >> 16, t)), g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t)), bl = Math.round(lerp(a & 255, b & 255, t)); return (r << 16) | (g << 8) | bl; }
@@ -58,7 +74,7 @@ export class Renderer {
   floats: { tx: Phaser.GameObjects.Text; x: number; y: number; t: number; life: number }[] = [];
   floatPool: Phaser.GameObjects.Text[] = [];
   labels: { name: Phaser.GameObjects.Text; pct: Phaser.GameObjects.Text; emo: Phaser.GameObjects.Text }[] = [];
-  koi: { a: number; off: number; sp: number; col: number; spot: boolean; size: number; wig: number }[] = [];
+  fish: Fish[] = []; floaters: Floater[] = []; motes: Mote[] = []; camView: Phaser.Geom.Rectangle | null = null; life = LIFE.brume;
   views: View[] = []; fxPool: Phaser.GameObjects.Sprite[] = [];
   ghosts: { s: Phaser.GameObjects.Sprite; t: number; life: number }[] = []; ghostPool: Phaser.GameObjects.Sprite[] = [];
   sparts: SP[] = []; spPool: Phaser.GameObjects.Sprite[] = [];
@@ -76,7 +92,6 @@ export class Renderer {
     this.dynG = scene.add.graphics().setDepth(2);
     this.topG = scene.add.graphics().setDepth(4);
     this.trailG = scene.add.graphics().setDepth(3.6); // traînées : au-dessus des combattants, en transparence
-    for (let i = 0; i < 7; i++) this.koi.push({ a: rand(0, TAU), off: rand(60, 380), sp: rand(0.05, 0.12) * (Math.random() < 0.5 ? -1 : 1), col: [0xe8742f, 0xf2efe6, 0xe05a2a, 0xf4b24a][(Math.random() * 4) | 0], spot: Math.random() < 0.6, size: rand(0.8, 1.25), wig: rand(0, TAU) });
     this.setTheme('brume');
   }
 
@@ -94,8 +109,9 @@ export class Renderer {
     if (name === this.theme && this.bg.texture.key === 'bg-' + name) return;
     this.theme = name; const T = THEMES[name];
     this.scene.cameras.main.setBackgroundColor(T.water);
-    this.bg.setTexture('bg-' + name); this.bg.setScale(2.1).setPosition(0, -ISO * 260 * 0.3);
-    this.sky.setTint(hex(T.sky)).setPosition(0, this.bg.y - this.bg.displayHeight + 70 * 2.1); // le haut de la bande est fondu : le ciel passe derrière
+    this.bg.setTexture('bg-' + name); this.bg.setScale(3).setPosition(0, -ISO * 260 * 0.3);
+    this.sky.setTint(hex(T.sky)).setPosition(0, this.bg.y - this.bg.displayHeight + 3); // la première ligne de l'horizon a la couleur du ciel : il se prolonge derrière
+    this.buildLife(name);
     this.drawArena(this.H, this.wet, this.sudden);
   }
 
@@ -146,10 +162,11 @@ export class Renderer {
       case 'sparks': { const S = this.iso(ev.x, ev.y, 14); for (let i = 0; i < ev.n; i++) this.parts.push({ x: S.x, y: S.y, vx: rand(-250, 250), vy: rand(-250, 250), life: rand(160, 340), t: 0, col: hex(ev.col), s: rand(1.5, 3), kind: 'dot' }); break; }
       case 'ring': this.rings.push({ x: ev.x, y: ev.y, r: ev.r, max: ev.max, life: ev.life, t: 0, col: hex(ev.col), w: ev.w }); break;
       case 'sfx': sfxAt(ev.n, ev.x, ev.y, ev.v); break;
-      case 'splash': { this.splash(ev.x, ev.y, ev.fx, 1); const S = this.iso(ev.x, ev.y); this.addFloat(S.x, S.y - 42, ev.word, '#cfeef4', ev.word.length > 8 ? 24 : 28); break; }
+      case 'splash': { this.scare(ev.x, ev.y, 460, 230); this.splash(ev.x, ev.y, ev.fx, 1); const S = this.iso(ev.x, ev.y); this.addFloat(S.x, S.y - 42, ev.word, '#cfeef4', ev.word.length > 8 ? 24 : 28); break; }
       case 'hit': {
         const A = this.lastSt?.f[ev.by], T = this.lastSt?.f[ev.to]; if (!A || !T) break;
         const v = this.views[ev.to]; if (v) { v.flash = 110; v.squash = 1; }
+        if (ev.v > 500) this.scare(T.x, T.y, 260, Math.min(140, ev.v / 6));
         const x = lerp(A.x, T.x, 0.7), y = lerp(A.y, T.y, 0.7), ang = worldAngleToScreen(Math.atan2(T.y - A.y, T.x - A.x));
         if (ev.dragon) { this.fxw('fire', T.x, T.y, 10, 0, 4); this.fxw('hit', x, y, 16, 0, 3, C.gold); }
         else if (ev.red) { this.fxw('cross', x, y, 16, ang, 3, 0xff5a46); this.fxw('hit', x, y, 16, 0, 2.6); }
@@ -267,9 +284,9 @@ export class Renderer {
     const sudden = !!(st && st.duel && st.duel.sudden);
     if (st && (st.H !== this.H || (st.damp < 3) !== this.wet || sudden !== this.sudden)) this.drawArena(st.H, st.damp < 3, sudden);
     if (!st && (this.H !== 260 || this.sudden || this.wet)) this.drawArena(260);
-    for (const k of this.koi) k.a += k.sp * dt;
+    this.camView = view; this.updLife(dt, time);
     this.rippleT -= ms;
-    if (this.rippleT <= 0) { this.rippleT = 260; const x = rand(view.x, view.right), y = rand(view.y, view.bottom); const w = unIso(x, y); if (Math.abs(w.x) > this.H + 40 || Math.abs(w.y) > this.H + 40) this.ripples.push({ x, y, t: 0, life: 2400 }); }
+    if (this.rippleT <= 0) { this.rippleT = 260; const x = rand(view.x, view.right), y = rand(view.y, view.bottom); const w = unIso(x, y); if (y > this.bg.y - 100 && (Math.abs(w.x) > this.H + 40 || Math.abs(w.y) > this.H + 40)) this.ripples.push({ x, y, t: 0, life: 2400 }); }
     for (let i = this.ripples.length - 1; i >= 0; i--) { const r = this.ripples[i]; r.t += ms; if (r.t > r.life) this.ripples.splice(i, 1); }
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.t += ms; if (p.t >= p.life) { this.parts.splice(i, 1); continue; } const d = p.kind === 'petal' ? 0.96 : p.kind === 'duck' ? 0.93 : 0.9; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= d; p.vy *= d; if (p.vr) p.rot! += p.vr * dt; }
     for (let i = this.rings.length - 1; i >= 0; i--) { const r = this.rings[i]; r.t += ms; if (r.t >= r.life) this.rings.splice(i, 1); }
@@ -286,6 +303,7 @@ export class Renderer {
     for (const r of this.rings) { const p = r.t / r.life, rad = Math.max(1, lerp(r.r, r.max, easeOut(p))); t.lineStyle(r.w * (1 - p) + 1, r.col, 1 - p); if (r.scr) t.strokeEllipse(r.x, r.y, 2 * rad, rad); else this.strokeC(t, r.x, r.y, rad); }
     this.drawLamp(t, 1, time);
     this.drawParts(t);
+    this.drawAmbient(t, view, time, dt);
     if (!st) { this.hideLabels(0); this.hideViews(0); return; }
     if (marker) { const p = 0.5 + 0.5 * Math.sin(time * 0.006); g.fillStyle(C.jade, 0.14 + 0.1 * p); this.fillC(g, marker.x, marker.y, marker.r); g.lineStyle(3, C.jade, 0.7 + 0.3 * p); this.strokeC(g, marker.x, marker.y, marker.r + p * 4); g.lineStyle(2, C.jade, 0.35 * (1 - p)); this.strokeC(g, marker.x, marker.y, marker.r + 10 + p * 14); }
     const fs = st.f.slice().sort((a: any, b: any) => (a.x + a.y) - (b.x + b.y));
@@ -319,17 +337,106 @@ export class Renderer {
     }
   }
 
+  /* ---------- vie du lac : poissons, objets flottants, particules d'ambiance ---------- */
+  // Point d'eau visible : devant l'horizon, dans le lac.
+  lakePoint(): { x: number; y: number } {
+    for (let i = 0; i < 12; i++) {
+      const a = rand(0, TAU), r = rand(120, LAKE), x = Math.cos(a) * r, y = Math.sin(a) * r;
+      if (x + y > -380) return { x, y };
+    }
+    return { x: 200, y: 200 };
+  }
+  buildLife(name: string) {
+    const L = LIFE[name] || LIFE.brume; this.life = L;
+    for (const f of this.fish) f.spr.destroy(); for (const f of this.floaters) f.spr.destroy();
+    this.fish = []; this.floaters = []; this.motes = [];
+    for (let i = 0; i < L.nFish; i++) {
+      const p = this.lakePoint(), q = this.lakePoint(), row = L.fish[i % L.fish.length];
+      const spr = this.scene.add.sprite(0, 0, 'fauna', row * 8).setScale(3).setDepth(0.5).setAlpha(0.9);
+      if (row === 3 || row === 6) spr.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.85); // poissons lumineux
+      this.fish.push({ x: p.x, y: p.y, h: rand(0, TAU), tx: q.x, ty: q.y, sp: rand(24, 42), boost: 0, ph: rand(0, TAU), row, spr });
+    }
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * TAU + rand(-0.3, 0.3), r = rand(this.H + 150, 620), x = Math.cos(a) * r, y = Math.sin(a) * r;
+      if (x + y < -300) continue;
+      const frame = L.floats[i % L.floats.length];
+      const spr = this.scene.add.sprite(0, 0, 'floats', frame).setScale(3).setDepth(0.6);
+      this.floaters.push({ x, y, vx: 0, vy: 0, ph: rand(0, TAU), rot: rand(-0.3, 0.3), vr: rand(-0.04, 0.04), spr, frame });
+    }
+    for (let i = 0; i < 44; i++) this.motes.push({ x: Math.random(), y: Math.random(), vx: rand(-0.02, 0.02), vy: rand(0.02, 0.07), ph: rand(0, TAU), sz: 1 + ((Math.random() * 2) | 0) });
+  }
+  // Un plouf ou un gros coup : poissons et feuilles s'écartent.
+  scare(x: number, y: number, rad: number, power: number) {
+    for (const f of this.fish) {
+      const d = Math.hypot(f.x - x, f.y - y); if (d > rad) continue;
+      const away = Math.atan2(f.y - y, f.x - x), k = 1 - d / rad;
+      f.boost = Math.max(f.boost, power * k); f.tx = f.x + Math.cos(away) * 380; f.ty = f.y + Math.sin(away) * 380;
+      if (f.tx + f.ty < -380) { const q = this.lakePoint(); f.tx = q.x; f.ty = q.y; }
+    }
+    for (const o of this.floaters) {
+      const d = Math.hypot(o.x - x, o.y - y); if (d > rad) continue;
+      const away = Math.atan2(o.y - y, o.x - x), k = 1 - d / rad;
+      o.vx += Math.cos(away) * power * 0.5 * k; o.vy += Math.sin(away) * power * 0.5 * k; o.vr += rand(-0.2, 0.2) * k;
+    }
+  }
+  updLife(dt: number, time: number) {
+    const horizon = this.bg.y - 96;
+    for (const f of this.fish) {
+      f.boost *= Math.exp(-1.3 * dt);
+      const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy);
+      if (d < 50 || (f.x + f.y < -420)) { const q = this.lakePoint(); f.tx = q.x; f.ty = q.y; }
+      const want = Math.atan2(dy, dx), turn = 1.3 + f.boost * 0.02;
+      f.h += clamp(angDiff(f.h, want), -turn * dt, turn * dt);
+      const sp = f.sp * (1 + 0.25 * Math.sin(time * 0.0017 + f.ph)) + f.boost;
+      const vx = Math.cos(f.h), vy = Math.sin(f.h); f.x += vx * sp * dt; f.y += vy * sp * dt;
+      const S = this.iso(f.x, f.y), sx = (vx - vy) * ISO, sy = (vx + vy) * ISO * 0.5;
+      f.spr.setPosition(S.x, S.y).setRotation(Math.atan2(sy, sx)).setFlipY(sx < 0).setVisible(S.y > horizon);
+      f.spr.setFrame(f.row * 8 + (Math.floor(time * (0.007 + sp * 0.00018) + f.ph * 2) & 7));
+    }
+    for (const o of this.floaters) {
+      o.vx *= Math.exp(-1.4 * dt); o.vy *= Math.exp(-1.4 * dt); o.vr *= Math.exp(-1.2 * dt);
+      o.x += (o.vx + Math.cos(o.ph + time * 0.0003) * 2) * dt; o.y += (o.vy + Math.sin(o.ph + time * 0.00027) * 2) * dt; o.rot += (o.vr + 0.01) * dt * 0.3;
+      if (Math.hypot(o.x, o.y) < this.H + 60) { const a = Math.atan2(o.y, o.x); o.vx += Math.cos(a) * 30 * dt * 10; o.vy += Math.sin(a) * 30 * dt * 10; }
+      const S = this.iso(o.x, o.y);
+      o.spr.setPosition(S.x, S.y + Math.sin(time * 0.002 + o.ph) * 1.5).setRotation(Math.sin(time * 0.0008 + o.ph) * 0.06 + o.rot * 0.2).setVisible(S.y > horizon);
+    }
+  }
+  // Reflets de lumière qui scintillent sur l'eau (cases fixes dans le monde, donc stables quand la caméra bouge).
+  drawGlints(g: Phaser.GameObjects.Graphics, time: number) {
+    const v = this.camView; if (!v) return; const cell = 150, col = this.life.glint, top = this.bg.y - 100;
+    for (let cx = Math.floor(v.x / cell); cx <= Math.floor(v.right / cell); cx++) for (let cy = Math.floor(v.y / cell); cy <= Math.floor(v.bottom / cell); cy++) {
+      const h = Math.abs(Math.sin(cx * 127.1 + cy * 311.7) * 43758.5453) % 1; if (h < 0.4) continue;
+      const x = (cx + ((h * 7) % 1)) * cell, y = (cy + ((h * 13) % 1)) * cell; if (y < top) continue;
+      const a = Math.sin(time * 0.0018 * (0.6 + h) + h * 30); if (a < 0.55) continue;
+      g.fillStyle(col, 0.55 * (a - 0.4)); const w = 3 * (3 + ((h * 5) | 0));
+      g.fillRect(Math.round(x / 3) * 3, Math.round(y / 3) * 3, w, 3); g.fillRect(Math.round(x / 3) * 3 + 3, Math.round(y / 3) * 3 + 3, w - 6, 3);
+    }
+    for (const o of this.floaters) if (o.frame === 4) { // lanternes flottantes : halo
+      const S = this.iso(o.x, o.y); g.fillStyle(0x2de6ea, 0.10); g.fillEllipse(S.x, S.y, 90, 40); g.fillStyle(0xff9a3c, 0.08); g.fillEllipse(S.x, S.y, 56, 26);
+    }
+  }
+  // Particules d'ambiance en pixels : pétales, feuilles, neige, lucioles, braises.
+  drawAmbient(g: Phaser.GameObjects.Graphics, view: Phaser.Geom.Rectangle, time: number, dt: number) {
+    const kind = this.life.amb;
+    for (const m of this.motes) {
+      if (kind === 'ember') { m.y -= (0.05 + m.sz * 0.02) * dt; m.x += Math.sin(time * 0.002 + m.ph) * 0.02 * dt; }
+      else if (kind === 'firefly') { m.x += Math.sin(time * 0.0007 + m.ph) * 0.03 * dt; m.y += Math.cos(time * 0.0009 + m.ph * 2) * 0.03 * dt; }
+      else if (kind === 'snow') { m.y += (0.05 + m.sz * 0.03) * dt; m.x += Math.sin(time * 0.001 + m.ph) * 0.02 * dt; }
+      else { m.x += (-0.02 + Math.sin(time * 0.0012 + m.ph) * 0.02) * dt; m.y += (0.03 + m.sz * 0.01) * dt; }
+      if (m.y > 1.05) m.y = -0.05; if (m.y < -0.05) m.y = 1.05; if (m.x > 1.05) m.x = -0.05; if (m.x < -0.05) m.x = 1.05;
+      const x = Math.round((view.x + m.x * view.width) / 3) * 3, y = Math.round((view.y + m.y * view.height) / 3) * 3, s = 3 * m.sz;
+      if (kind === 'snow') { g.fillStyle(0xffffff, 0.85); g.fillRect(x, y, s, s); }
+      else if (kind === 'petal') { g.fillStyle(m.sz > 1 ? 0xf6b6cf : 0xf4a15a, 0.9); g.fillRect(x, y, 6, 3); g.fillRect(x + 3, y + 3, 3, 3); }
+      else if (kind === 'leaf') { g.fillStyle(0x9ab88a, 0.8); g.fillRect(x, y, 6, 3); g.fillRect(x + 3, y + 3, 3, 3); }
+      else if (kind === 'ember') { const a = clamp(m.y * 1.6, 0.1, 1); g.fillStyle(m.sz > 1 ? 0xffd36a : 0xff7a2a, a); g.fillRect(x, y, s, s); }
+      else { const a = Math.max(0, Math.sin(time * 0.003 + m.ph * 5)); if (a > 0.1) { g.fillStyle(this.theme === 'neon' ? (m.sz > 1 ? 0xff9a3c : 0x2de6ea) : 0xe9f07a, a * 0.9); g.fillRect(x, y, 3, 3); g.fillStyle(0xffffff, a * 0.5); g.fillRect(x, y, 3, 3); } }
+    }
+  }
+
   drawWater(time: number) {
     const g = this.waterG; g.clear(); const H = this.H;
     for (const r of this.ripples) { const p = r.t / r.life; g.lineStyle(2, 0xaadcdc, 0.09 * (1 - p)); g.strokeEllipse(r.x, r.y, 16 + p * 140, 8 + p * 70); }
-    for (const k of this.koi) {
-      const rr = (H * 1.25 + k.off) * ISO * 1.6, x = Math.cos(k.a) * rr, y = Math.sin(k.a) * rr * 0.5 + ISO * H * 0.5;
-      const tx = -Math.sin(k.a) * 1, ty = Math.cos(k.a) * 0.5, dir = Math.atan2(ty, tx) + (k.sp > 0 ? 0 : Math.PI) + Math.sin(time * 0.006 + k.wig) * 0.18;
-      g.save(); g.translateCanvas(x, y); g.rotateCanvas(dir); g.scaleCanvas(k.size, k.size);
-      g.fillStyle(k.col, 0.55); g.fillEllipse(0, 0, 32, 12); g.fillTriangle(-14, 0, -24, -6, -24, 6);
-      if (k.spot) { g.fillStyle(0xf6f1e6, 0.55); g.fillEllipse(4, 0, 10, 7); }
-      g.restore();
-    }
+    this.drawGlints(g, time);
     this.drawLamp(g, 0, time);
   }
 

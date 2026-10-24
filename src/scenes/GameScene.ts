@@ -37,10 +37,14 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('hud');
   }
 
-  // Ambiance d'arène : l'accueil est de nuit, la Tour avance du crépuscule vers la brume puis le néon.
+  // Ambiance d'arène : l'accueil est de nuit. La Tour change de dojo tous les deux étages : coucher, bambous, brume, neige, néon, volcan.
   themeFor() {
     const m = session.mode, fl = session.floor;
-    if (m === 'tower' && fl) return fl.daily ? 'neon' : fl.n <= 4 ? 'coucher' : fl.n <= 8 ? 'brume' : 'neon';
+    if (m === 'tower' && fl) {
+      const ORDER = ['coucher', 'bambou', 'brume', 'neige', 'neon', 'volcan']; // deux étages par ambiance, puis on recommence
+      if (fl.daily) { let h = 0; for (const c of String(fl.daily)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return ORDER[h % ORDER.length]; }
+      return ORDER[Math.floor(((fl.n - 1) % 12) / 2)];
+    }
     if (m === 'showcase' || m === 'tuto') return 'coucher';
     if (m === 'idle') return 'neon';
     return 'brume';
