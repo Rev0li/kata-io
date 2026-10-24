@@ -23,4 +23,5 @@ const game = new Phaser.Game({
 });
 
 // Accès de débogage : en développement, ou avec ?debug dans l'adresse.
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) (window as any).__kata = { game, session, stats };
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug'))
+  (window as any).__kata = { game, session, stats };

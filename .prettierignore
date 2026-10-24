@@ -1,0 +1,8 @@
+dist
+node_modules
+archive
+public
+art
+tests/__snapshots__
+package-lock.json
+*.md
