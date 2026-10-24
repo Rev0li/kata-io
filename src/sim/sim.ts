@@ -67,7 +67,7 @@ function makeFighter(o: any): Fighter {
   }, o);
 }
 export function resetFighter(e: Fighter, x: number, y: number) {
-  Object.assign(e, { x, y, vx: 0, vy: 0, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, atk: null, buffer: null, comboT: 0, holding: false, holdT: 0, ledge: null, dodge: null, fallT: 0, elanT: 0, spawnInv: 0, lastHitBy: null, lastHitT: -1e9, emote: null, spam: 0, dropT: 500, stance: 0, chargeT: 0, chargeDef: null });
+  Object.assign(e, { x, y, vx: 0, vy: 0, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, atk: null, buffer: null, comboT: 0, holding: false, holdT: 0, ledge: null, dodge: null, fallT: 0, elanT: 0, spawnInv: 0, lastHitBy: null, lastHitT: -1e9, emote: null, spam: 0, exhHit: false, dropT: 500, stance: 0, chargeT: 0, chargeDef: null });
   e.facing = e.wantFacing = x < 0 ? 0 : Math.PI;
 }
 
@@ -154,7 +154,7 @@ function startAttack(e: Fighter, d: AttackDef, o: any) {
 function startWhite(e: Fighter) {
   // Anti-spam : en dessous du seuil, aucun coût. Au-dessus, le coup coûte du souffle et se bloque sans souffle.
   if (e.spam >= RULES.spamThreshold) {
-    if (e.souffle < RULES.spamAttackCost) { fx.float(e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14); return; }
+    if (e.souffle < RULES.spamAttackCost) { fx.float(e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14); emit({ t: 'spamblock', idx: e.idx }); return; }
     e.souffle -= RULES.spamAttackCost;
   }
   const before = e.spam; e.spam += RULES.spamPerAttack;
@@ -284,7 +284,8 @@ function applyHit(att: Fighter, tgt: Fighter, guardBreak: boolean) {
   let mult = (d.kb || 1) * (a.finisher ? 1.35 : 1) * (red ? a.power : 1) * (a.dragon ? 1.5 : 1) * (guardBreak ? 1.2 : 1);
   if (att.elanT > 0) { mult *= 1.4; att.elanT = 0; fx.float(att.x, att.y - 52, 'ÉLAN', '#62c2a2', 15); }
   // D1 : épuisé = presque certain d'être éjecté
-  if (tgt.souffle < 1 && tgt.state !== 'dodge') { mult *= RULES.exhaustKbMult; fx.float(tgt.x, tgt.y - 66, 'ÉPUISÉ !', '#e5483a', 20); emit({ t: 'exhausted', to: tgt.idx }); }
+  tgt.exhHit = false;
+  if (tgt.souffle < 1 && tgt.state !== 'dodge') { tgt.exhHit = true; mult *= RULES.exhaustKbMult; fx.float(tgt.x, tgt.y - 66, 'ÉPUISÉ !', '#e5483a', 20); emit({ t: 'exhausted', to: tgt.idx }); }
   tgt.dodgeCount = 0;
   const K = red ? RED_KB : WHITE_KB; const v = (K[0] + K[1] * tgt.pct) * mult;
   const dist = Math.hypot(tgt.x - att.x, tgt.y - att.y);
@@ -299,7 +300,7 @@ function applyHit(att: Fighter, tgt: Fighter, guardBreak: boolean) {
   fx.sfx(v > 650 ? 'bighit' : 'hit', tgt.x, tgt.y, clamp(0.6 + v / 1500, 0.6, 1.2));
   S.hitstop = Math.max(S.hitstop, Math.min(150, 40 + v / 22));
   fx.shake(Math.min(10, 2 + v / 170));
-  emit({ t: 'hit', by: att.idx, to: tgt.idx, v, red, idx: a.idx, dragon: a.dragon });
+  emit({ t: 'hit', by: att.idx, to: tgt.idx, v, red, idx: a.idx, dragon: a.dragon, exh: !!tgt.exhHit });
 }
 function parried(def: Fighter, att: Fighter, perfect: boolean) {
   att.state = 'stun'; att.stateT = 0; att.stunDur = perfect ? 900 : 650; att.atk = null; att.buffer = null; att.comboT = 0; att.holding = false;
@@ -334,7 +335,7 @@ function koFighter(v: Fighter, killer: Fighter) {
   // éjection décisive : ralenti plus long et caméra sur la victime
   if (final) { S.slow = Math.max(S.slow, 1100); emit({ t: 'cine', id: v.idx, ms: 1500 }); emit({ t: 'final', to: v.idx }); }
   else if (pct >= 120 || v.lastHitDragon) { S.slow = Math.max(S.slow, 700); emit({ t: 'cine', id: v.idx, ms: 900 }); }
-  emit({ t: 'ko', to: v.idx, by: killer ? killer.idx : -1, pct });
+  emit({ t: 'ko', to: v.idx, by: killer ? killer.idx : -1, pct, exh: !!v.exhHit && S.time - v.lastHitT < 4000 });
   duelPoint(v);
 }
 const MOVEMULT: Record<string, number> = { idle: 1, charge: 0.35, parry: 0.3, recover: 0.4, dodge: 0, stun: 0, tumble: 0, ledge: 0, climb: 0, frozen: 0 };

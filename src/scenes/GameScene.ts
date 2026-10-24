@@ -5,6 +5,7 @@ import { controls, updateControls } from '../ui/controls';
 import { updateActionBar, actionEvent } from '../ui/actionbar';
 import { initAudio, setListener, musicTick, sfx } from '../game/audio';
 import { clamp } from '../sim/sim';
+import { isDojo } from '../sim/data';
 import { preloadAssets, setupAssets } from '../game/assets';
 import { viewState } from '../ui/viewstate';
 
@@ -12,7 +13,7 @@ import { viewState } from '../ui/viewstate';
 export class GameScene extends Phaser.Scene {
   r!: Renderer;
   cine: { idx: number; t: number } | null = null;
-  heartT = 0; mpOn = false; themeOverride: string | null = null;
+  heartT = 0; mpOn = false; punch = 0; cineZ = 1.25; themeOverride: string | null = null;
   view = new Phaser.Geom.Rectangle();
 
   constructor() { super('game'); }
@@ -45,8 +46,9 @@ export class GameScene extends Phaser.Scene {
       if (fl.daily) { let h = 0; for (const c of String(fl.daily)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return ORDER[h % ORDER.length]; }
       return ORDER[Math.floor(((fl.n - 1) % 12) / 2)];
     }
+    if ((m === 'host' || m === 'guest') && isDojo(session.theme)) return session.theme;
     if (m === 'showcase' || m === 'tuto') return 'coucher';
-    if (m === 'idle') return 'neon';
+    if (m === 'idle') return viewState.dojo && isDojo(viewState.dojo) ? viewState.dojo : 'neon';
     return 'brume';
   }
 
@@ -71,9 +73,10 @@ export class GameScene extends Phaser.Scene {
     for (const ev of session.takeFx()) {
       this.r.handle(ev);
       if (ev.t === 'shake') cam.shake(140, Math.min(0.012, ev.n * 0.0011));
-      if (ev.t === 'cine') this.cine = { idx: ev.id, t: ev.ms };
+      if (ev.t === 'cine') { this.cine = { idx: ev.id, t: ev.ms }; this.cineZ = 1.25; }
+      if (ev.t === 'hit') this.punch = Math.max(this.punch, ev.dragon ? 0.2 : ev.red ? 0.11 : ev.v > 650 ? 0.06 : 0); // petit coup de zoom à l'impact
       if (ev.t === 'ko') cam.flash(160, 255, 255, 255, false);
-      if (ev.t === 'final') { sfx('heart', 1.4); cam.shake(320, 0.012); }
+      if (ev.t === 'final') { sfx('heart', 1.4); cam.shake(320, 0.012); this.cineZ = 1.75; this.punch = Math.max(this.punch, 0.32); }
       if (ev.t === 'sudden') cam.flash(220, 229, 72, 58, false);
       actionEvent(ev, session.myIdx);
       this.game.events.emit('fx', ev);
@@ -92,7 +95,8 @@ export class GameScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
-    if (this.cine) z *= 1.25;
+    if (this.cine) z *= this.cineZ;
+    this.punch *= Math.exp(-7 * dt); z *= 1 + this.punch;
     cam.setZoom(cam.zoom + (z - cam.zoom) * (1 - Math.exp(-3.5 * dt)));
     cam.centerOn(cx, cy);
     { const lw = unIso(cx, cy); setListener(lw.x, lw.y); }

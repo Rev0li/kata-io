@@ -111,6 +111,7 @@ src/
 scripts/simcheck.ts  test de la simulation hors navigateur
 scripts/towercheck.ts équilibrage de la Tour
 scripts/build-assets.py assemble les sprites du pack Ninja Adventure dans public/assets
+scripts/build-decor-svg.py génère le décor vectoriel (horizons, poissons, flottants) dans public/assets/decor
 ```
 
 **Modèle réseau** : le joueur qui crée la salle est l'**hôte**. Son navigateur fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. L'**invité** envoie ses entrées (déplacement, visée, boutons) et reçoit 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : c'est le module qui passera tel quel sur un serveur dédié.
@@ -129,11 +130,37 @@ Messages échangés :
 
 ## Dojos et décor
 
-Six ambiances, en pixel art de la même taille de pixel que les combattants (×3) : `coucher`, `bambou`, `brume`, `neige`, `neon`, `volcan`. La Tour change de dojo tous les deux étages dans cet ordre, puis recommence ; le défi du jour en tire un d'après la date. `?theme=<nom>` force une ambiance.
+Six ambiances en **SVG vectoriel** : `coucher`, `bambou`, `brume`, `neige`, `neon`, `volcan`. La Tour change de dojo tous les deux étages dans cet ordre, puis recommence ; le défi du jour en tire un d'après la date. En duel entre amis, l'hôte choisit le dojo dans le salon (ou « au hasard ») et il est transmis à l'invité. `?theme=<nom>` force une ambiance.
 
-Chaque dojo a ses poissons (koï, carpes, poissons-lanternes, poissons de braise), ses objets flottants (nénuphars, glace, roches de lave, lanternes) et ses particules (pétales, feuilles, neige, lucioles, braises). Les poissons nagent sous le dojo, s'enfuient après un plouf ou un gros coup, et les nénuphars sont repoussés par les remous. L'eau scintille.
+Les éléments importants de chaque horizon sont groupés au centre (entre x=500 et x=1900 sur 2400) : c'est la zone visible sur téléphone en paysage comme sur ordinateur.
 
-Tout est généré par `python3 scripts/build-decor.py` (Pillow, aucun asset externe) : horizons dans `public/assets/bg/`, `fauna.png` (7 espèces, 8 images de nage) et `floats.png`. Pour changer un décor, modifier le script puis relancer.
+Chaque dojo a ses poissons (koï, carpes, poissons-lanternes, poissons de braise), ses objets flottants (nénuphars, glace, roches de lave, lanternes) et ses particules (pétales, feuilles, neige, lucioles, braises). Les poissons sont articulés : le corps et la queue sont deux images SVG, la queue bat et le corps ondule par le code. Ils nagent sous le dojo, s'enfuient après un plouf ou un gros coup, et les nénuphars sont repoussés par les remous. L'eau scintille.
+
+Tout est généré par `python3 scripts/build-decor-svg.py` (aucun asset externe) dans `public/assets/decor/` : `bg-<dojo>.svg`, `fish-<espèce>-body.svg` et `-tail.svg`, `float-<nom>.svg`. Ce sont des SVG propres, retouchables dans Inkscape ou Penpot ; pour changer un décor, modifier le script ou le fichier.
+
+## Sensation de combat
+
+Arrêt sur image et tremblement d'écran à l'impact, lignes de vitesse (éclat radial et traînées dans le sens du recul, plus fortes pour le coup chargé et la paume du dragon), flashs de couleur plein écran (blanc, rouge, doré), petit coup de zoom à l'impact et zoom marqué avec trois éclats de lignes sur l'éjection décisive.
+
+## Explications en jeu
+
+Le jeu explique ce qui arrive, sans tutoriel supplémentaire : indice la première fois que le souffle tombe à zéro (« Souffle épuisé »), message de spam (« Tu martèles l'attaque… »), et, à chaque éjection, la cause (épuisé, pourcentage élevé, ou bord du dojo). Les indices ponctuels s'arrêtent après 3 à 4 affichages (mémorisés dans le navigateur).
+
+## Mesures de jeu
+
+`src/analytics.ts` envoie des événements anonymes (identifiant aléatoire local, pas de donnée personnelle) à `/api/e`, une fonction Vercel (`api/e.js`) qui les écrit en JSON dans les journaux Vercel (`k:"kata_e"`). Désactivé en local (sauf `?analytics`) et si le navigateur demande « ne pas suivre ». `VITE_ANALYTICS_URL` remplace l'adresse de réception.
+
+| Événement | Contenu |
+|---|---|
+| `page_view` | appareil, taille d'écran, invitation ouverte ou non |
+| `play_clicked` | tour, défi du jour, entraînement, création de duel |
+| `tutorial_started`, `tutorial_completed` | exercice ou tutoriel complet |
+| `match_started` | mode, étage, niveau, dojo, revanche ou non |
+| `match_ended` | résultat, score, durée, coups donnés et reçus, parades, esquives parfaites, déclenchements et blocages d'anti-spam, coups reçus en étant épuisé, éjections |
+| `match_abandoned` | où le joueur quitte : manche et score |
+| `rematch_clicked`, `invite_opened`, `disconnect`, `error` | |
+
+Avec `?debug`, `window.__kata.stats()` donne les compteurs de la session.
 
 ## Direction artistique
 

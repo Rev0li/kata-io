@@ -415,3 +415,9 @@ body.touch .act b { font-size: 12px; } body.touch .atk b { font-size: 15px; }
   #result .unlock { padding: 8px 10px; gap: 6px; } #result .unlock p { font-size: 13px; }
   #result .unlock b { font-size: 22px; }
 }
+
+/* choix du dojo dans le salon d'invitation */
+.dojopick { display: grid; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid #ffffff22; border-radius: 999px; background: #0f1719cc; color: var(--mist); padding: 6px 12px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.chips button[aria-checked="true"] { background: var(--ochre); color: #1c1408; border-color: var(--ochre); }

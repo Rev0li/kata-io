@@ -5,6 +5,7 @@ import { controls } from '../ui/controls';
 import { FIRST_TO, LEVELS, ATTACK_BY_ID, RULES } from '../sim/data';
 import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
+import { bumpHint } from '../game/hints';
 
 const DISP = '"Big Shoulders Display", Impact, sans-serif';
 const BODY = 'Barlow, system-ui, sans-serif';
@@ -16,7 +17,7 @@ export class HudScene extends Phaser.Scene {
   myName!: Phaser.GameObjects.Text; myPct!: Phaser.GameObjects.Text; myMoves!: Phaser.GameObjects.Text;
   opName!: Phaser.GameObjects.Text; opPct!: Phaser.GameObjects.Text;
   big!: Phaser.GameObjects.Text; hint!: Phaser.GameObjects.Text;
-  warnT = 0; bigT = 0; bigLife = 1; bump = 0; matchT = 0;
+  warnT = 0; tip = ''; tipT = 0; cause = ''; causeT = 0; prevS = 3; flash = { col: 0xffffff, a: 0, t: 0, life: 1 }; bigT = 0; bigLife = 1; bump = 0; matchT = 0;
 
   constructor() { super('hud'); }
 
@@ -42,9 +43,21 @@ export class HudScene extends Phaser.Scene {
     if (ev.t === 'big') { this.big.setText(ev.text).setColor(ev.col); this.bigT = 0; this.bigLife = ev.life; }
     if (ev.t === 'hit' && ev.to === session.myIdx) this.bump = 1;
     if (ev.t === 'spam' && ev.idx === session.myIdx) this.warnT = 3500;
+    if (ev.t === 'spamblock' && ev.idx === session.myIdx && bumpHint('spamblock') <= 3) { this.tip = 'Tu martèles l’attaque : chaque coup coûte du souffle. Alterne avec parade, esquive ou coup chargé.'; this.tipT = 4000; }
+    // pourquoi suis-je tombé ? (toujours affiché : c'est ce qui permet de progresser)
+    if (ev.t === 'ko' && ev.to === session.myIdx && session.mode !== 'tuto') {
+      this.cause = ev.exh ? 'ÉPUISÉ : sans souffle, un seul coup t’a envoyé à l’eau. Avance ou pare pour en regagner.'
+        : ev.pct >= 100 ? `Éjecté à ${ev.pct} % : plus ton pourcentage monte, plus tu voles loin.` : 'Poussé hors du dojo : garde un œil sur le bord.';
+      this.causeT = 3800;
+    }
+    // flashs de couleur façon animé : doré (paume du dragon), rouge (coup chargé), blanc (gros coup, éjection)
+    if (ev.t === 'hit') { if (ev.dragon) this.fl(0xf2c14e, 0.42, 240); else if (ev.red) this.fl(0xe5483a, 0.26, 170); else if (ev.v > 650) this.fl(0xffffff, 0.16, 110); }
+    if (ev.t === 'final') this.fl(0xffffff, 0.7, 380);
+    if (ev.t === 'ko') this.fl(0xffffff, 0.3, 140);
     if (ev.t === 'big' && ev.text === 'MANCHE 1') this.matchT = 0;
   }
 
+  fl(col: number, a: number, life: number) { if (a >= this.flash.a * (1 - this.flash.t / this.flash.life)) this.flash = { col, a, t: 0, life }; }
   layoutTouch: boolean | null = null;
   safe = { l: 0, r: 0, t: 0, b: 0 };
   // marges de sécurité de l'écran (encoche, coins arrondis, barre d'accueil) lues depuis le CSS
@@ -55,6 +68,7 @@ export class HudScene extends Phaser.Scene {
   layout() {
     this.measureSafe();
     const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch, S = this.safe; this.layoutTouch = touch;
+    this.hint.setAlign('center').setWordWrapWidth(Math.min(W * 0.86, 640));
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
     if (touch) {
       // tactile : peu de texte. Score au centre, étage dessous, un pourcentage dans chaque coin, indice en bas au centre
@@ -69,7 +83,7 @@ export class HudScene extends Phaser.Scene {
       this.ping.setOrigin(1, 0).setPosition(W - m, 14).setFontSize('12px');
       this.myName.setPosition(m + 4, H - 128); this.myPct.setPosition(m, H - 112).setFontSize('58px'); this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
       this.opName.setPosition(W - m - 4, 40); this.opPct.setPosition(W - m, 56).setFontSize('40px');
-      this.hint.setOrigin(0.5, 1).setPosition(W / 2, 92).setFontSize('14px');
+      this.hint.setOrigin(0.5, 0).setPosition(W / 2, 68).setFontSize('14px');
     }
   }
 
@@ -78,7 +92,8 @@ export class HudScene extends Phaser.Scene {
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
     for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && !(controls.isTouch && (o === this.myMoves || o === this.myName || o === this.opName)));
     this.g.clear();
-    this.bigT += delta; this.warnT = Math.max(0, this.warnT - delta);
+    this.bigT += delta; this.warnT = Math.max(0, this.warnT - delta); this.tipT = Math.max(0, this.tipT - delta); this.causeT = Math.max(0, this.causeT - delta);
+    this.flash.t += delta; if (this.flash.t < this.flash.life) this.g.fillStyle(this.flash.col, this.flash.a * (1 - this.flash.t / this.flash.life)).fillRect(0, 0, this.scale.width, this.scale.height);
     const bp = this.bigT / this.bigLife;
     this.big.setAlpha(bp >= 1 ? 0 : bp < 0.15 ? bp / 0.15 : bp > 0.7 ? 1 - (bp - 0.7) / 0.3 : 1).setScale(1 + 0.08 * Math.max(0, 1 - bp));
     if (!st) { this.sub.setVisible(false); return; }
@@ -105,7 +120,11 @@ export class HudScene extends Phaser.Scene {
       : (controls.isTouch ? 'Blanc : Parer · Rouge : Esquive · Envoie-le à l’eau' : 'Blanc : pare (clic droit) · Rouge : esquive (Espace) · Envoie-le à l’eau');
     const left = Math.ceil((SUDDEN_T - (D.fightT || 0)) / 1000);
     this.hint.setColor('#ecdfc6');
+    if (!tuto && D.phase === 'fight' && me.souffle < 1 && this.prevS >= 1 && bumpHint('exhaust') <= 4) { this.tip = 'Souffle épuisé : un seul coup peut t’éjecter. Avance vers lui ou pare pour en regagner.'; this.tipT = 3800; }
+    this.prevS = me.souffle;
     if (session.notice) this.hint.setText(session.notice);
+    else if (this.causeT > 0) this.hint.setText(this.cause).setColor('#ffb48a');
+    else if (this.tipT > 0) this.hint.setText(this.tip).setColor('#ffd9a0');
     else if (this.warnT > 0) this.hint.setText('Spam interdit : alterne parade, esquive et coup chargé').setColor('#ff8a6e');
     else if (D.phase === 'fight' && !D.sudden && left <= 10 && left > 0) this.hint.setText(`Mort subite dans ${left} s`).setColor('#ff8a6e');
     else if (D.phase === 'fight' && D.sudden && st.H > 112) this.hint.setText('Mort subite : le dojo rétrécit !').setColor('#ff8a6e');

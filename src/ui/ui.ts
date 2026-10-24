@@ -1,12 +1,13 @@
 // Écrans HTML posés au-dessus du jeu : accueil, Tour du temple, salon d'invitation, résultat, tutoriel.
 import { session, MeSpec } from '../net/session';
 import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
-import { PERSOS, ARMES, TRAINEES, EJECTIONS, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
+import { PERSOS, ARMES, TRAINEES, EJECTIONS, DEFAULT_LOOK, sanitizeLook, Look, DOJOS } from '../sim/data';
 import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil, towerCoins, COINS_PRACTICE, COINS_DUEL, COINS_TUTO, streakMult, Floor, dayKey, dailyFloor, DAILY_COINS, DAILY_XP } from '../sim/progression';
 import { viewState } from './viewstate';
 import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { controls, clearKeys } from './controls';
 import { setLocks } from './actionbar';
+import { track } from '../analytics';
 import { initAudio, startMusic, sfx, audioPrefs, setMusicLevel } from '../game/audio';
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector(s) as T;
@@ -38,6 +39,16 @@ function addXp(n: number) { const before = myRank(); profile.xp += n; save(); co
 const params = new URLSearchParams(location.search);
 const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
 let host: HostHandle | null = null;
+let lobbyDojo = 'alea'; // dojo choisi dans le salon : un nom de DOJOS, ou 'alea' (tiré au sort au début du duel)
+function renderDojoChips() {
+  const box = $('#dojoChips'); box.textContent = '';
+  for (const [id, name] of [['alea', 'Au hasard'], ...DOJOS]) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = name; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(id === lobbyDojo));
+    b.addEventListener('click', () => { lobbyDojo = id; viewState.dojo = id === 'alea' ? null : id; renderDojoChips(); sfx('ui'); });
+    box.append(b);
+  }
+}
+const pickDojo = () => lobbyDojo === 'alea' ? DOJOS[(Math.random() * DOJOS.length) | 0][0] : lobbyDojo;
 let current = 'home';
 const SCREENS = ['home', 'floors', 'shop', 'lobby', 'joining', 'result', 'lost', 'quit'];
 let lastMode: { kind: 'tower' | 'practice' | 'duel' | 'tuto' | 'daily'; floor?: number; drill?: string | null } = { kind: 'tower', floor: 1 };
@@ -179,6 +190,7 @@ function renderFloors() {
 /* ================= lancements ================= */
 function applyLocks(a: Abil) { setLocks(a); }
 function startTower(n: number) {
+  track('play_clicked', { kind: 'tower', floor: n });
   wake(); myName();
   if (!profile.tutoDone) { startTuto(null); return; }
   lastMode = { kind: 'tower', floor: n };
@@ -198,6 +210,7 @@ function towerExtra(f: Floor, tries: number) {
 }
 function rollDaily() { const k = dayKey(); if (profile.daily.day !== k) { profile.daily = { day: k, best: 0, won: false, tries: 0 }; save(); } }
 function startDaily() {
+  track('play_clicked', { kind: 'daily' });
   wake(); myName();
   if (!profile.tutoDone) { startTuto(null); return; }
   rollDaily(); lastMode = { kind: 'daily' };
@@ -208,18 +221,19 @@ function startDaily() {
 }
 const nth = (n: number) => n === 1 ? '1er' : n + 'e';
 function startTuto(drill: string | null) {
-  wake(); myName();
+  wake(); myName(); track('tutorial_started', { drill });
   lastMode = { kind: 'tuto', drill };
   const steps: TutoStep[] = drill ? DRILLS[drill] : MINI_TUTO;
   applyLocks(drill ? myAbil() : abilFor(0));
   session.startTuto(mySpec(drill ? myAbil() : abilFor(0)), steps);
 }
-function practice() { wake(); lastMode = { kind: 'practice' }; applyLocks(myAbil()); session.startPractice(mySpec(), profile.level); }
+function practice() { track('play_clicked', { kind: 'practice', level: profile.level }); wake(); lastMode = { kind: 'practice' }; applyLocks(myAbil()); session.startPractice(mySpec(), profile.level); }
 async function createRoom() {
-  wake(); myName(); show('lobby');
+  track('play_clicked', { kind: 'duel_create' });
+  wake(); myName(); show('lobby'); lobbyDojo = 'alea'; viewState.dojo = null; renderDojoChips();
   $('#lobbyCode').textContent = '······'; ($('#lobbyLink') as HTMLInputElement).value = ''; $('#lobbyStatus').textContent = 'Création de la salle…'; $('#lobbyWait').hidden = true;
   try {
-    host = await hostRoom(net, conn => { lastMode = { kind: 'duel' }; applyLocks(FULL_ABIL); session.startHost(conn, mySpec(FULL_ABIL)); }, err => toast(err));
+    host = await hostRoom(net, conn => { lastMode = { kind: 'duel' }; applyLocks(FULL_ABIL); session.startHost(conn, mySpec(FULL_ABIL), pickDojo()); viewState.dojo = null; }, err => toast(err));
     revealCode(host.code); ($('#lobbyLink') as HTMLInputElement).value = inviteLink(host.code);
     $('#lobbyStatus').textContent = 'En attente de ton adversaire. Envoie-lui le lien.'; $('#lobbyWait').hidden = false;
     $('#shareBtn').hidden = !navigator.share;
@@ -227,12 +241,13 @@ async function createRoom() {
 }
 async function join(codeRaw: string) {
   const code = cleanCode(codeRaw); if (code.length < 4) { toast('Code de salle invalide'); return; }
+  track('invite_opened', {});
   wake(); myName(); show('joining');
   $('#joinTitle').textContent = 'Salle ' + code; $('#joinStatus').textContent = 'Connexion à la salle…';
   try { const conn = await joinRoom(net, code); lastMode = { kind: 'duel' }; applyLocks(FULL_ABIL); session.startGuest(conn, mySpec(FULL_ABIL)); }
   catch (e: any) { $('#joinStatus').textContent = e.message || 'Connexion impossible.'; $('#joinSpin').hidden = true; }
 }
-function leave() { session.leave(true); if (host) { host.close(); host = null; } cleanUrl(); renderHome(); show('home'); }
+function leave() { viewState.dojo = null; session.leave(true); if (host) { host.close(); host = null; } cleanUrl(); renderHome(); show('home'); }
 
 /* ================= résultats ================= */
 let mainAction: () => void = () => {}, altAction: (() => void) | null = null;
@@ -354,6 +369,7 @@ function onTuto(step: TutoStep | null, i: number, n: number, count: number) {
   if (count === 0) restartAnim(bar);
 }
 function onTutoDone() {
+  track('tutorial_completed', { drill: lastMode.drill || null });
   if (lastMode.drill) { toast('Technique maîtrisée'); leave(); return; }
   const first = !profile.tutoDone; profile.tutoDone = true;
   if (first) { addXp(XP_TUTO); addCoins(COINS_TUTO); }

@@ -18,6 +18,9 @@ export const DODGE_T = 300, DODGE_IF0 = 20, DODGE_IF1 = 260, DODGE_DIST = 125;
 export const CHARGE_START = 120, CHARGE_FULL = 800, CHARGE_MAX = 1600;
 export const SOUFFLE_REGEN = 1.3, MOVE_SPEED = 210;
 export const FIRST_TO = 3;
+// Les six dojos (ambiances de décor), dans l'ordre de la Tour. Liste blanche pour ce qui vient du réseau.
+export const DOJOS: [string, string][] = [['coucher', 'Coucher de soleil'], ['bambou', 'Bambous'], ['brume', 'Brume'], ['neige', 'Neige'], ['neon', 'Néon'], ['volcan', 'Volcan']];
+export const isDojo = (n: any): n is string => typeof n === 'string' && DOJOS.some(d => d[0] === n);
 
 /* ---------- règles issues de DECISIONS.md (projet Kata) ----------
    Tout est réglable ici sans toucher au moteur. Un futur personnage = un profil qui multiplie ces valeurs. */

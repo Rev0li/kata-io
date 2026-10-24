@@ -6,9 +6,10 @@
 // - guest    : ce navigateur envoie ses entrées et affiche les instantanés reçus
 import { createSim, stepSim, drainEvents, snapshot, createMirror, applySnapshot, advanceMirror, emptyInput, Input, Spec, Ev, respawn, setDummy, alive } from '../sim/sim';
 import { Conn } from './transport';
-import { LEVELS, randLook, randDeck, BOT_NAMES, sanitizeLook, Look } from '../sim/data';
+import { LEVELS, randLook, randDeck, BOT_NAMES, sanitizeLook, Look, isDojo } from '../sim/data';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
+import { track } from '../analytics';
 
 export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
 const STEP = 1 / 60, SNAP_MS = 33;
@@ -37,8 +38,10 @@ class Session {
   fx: Ev[] = []; outEv: Ev[] = [];
   acc = 0; snapT = 0; sendT = 0; lastSent = ''; pingT = 0; ping = -1;
   ended = false; rematchMe = false; rematchThem = false; level = 1; notice = '';
-  floor: Floor | null = null; roundsLost = 0; seconds = 0;
+  floor: Floor | null = null; roundsLost = 0; seconds = 0; theme: string | null = null; // dojo d'un duel entre amis (choisi par l'hôte)
   attempt = 1; teaser = ''; bonus = { saves: 0, perfects: 0 };
+  matches = 0; // parties jouées depuis le dernier retour à l'accueil (mesures)
+  tally = { dealt: 0, taken: 0, parries: 0, dodges: 0, spam: 0, spamBlock: 0, exhTaken: 0, exhDealt: 0, ejected: 0, ejectedExh: 0 };
   tuto: { steps: TutoStep[]; i: number; count: number; done: boolean; endT: number; avoid: { active: boolean; dodged: boolean; hit: boolean }; hintT: number } | null = null;
   hooks: Hooks = {};
 
@@ -109,8 +112,8 @@ class Session {
     this.begin();
     this.setupStep();
   }
-  startHost(conn: Conn, me: MeSpec) {
-    this.mode = 'host'; this.myIdx = 0; this.conn = conn; this.specs = [{ ...me, abil: FULL_ABIL }]; this.opts = {}; this.floor = null;
+  startHost(conn: Conn, me: MeSpec, theme: string | null = null) {
+    this.mode = 'host'; this.myIdx = 0; this.conn = conn; this.theme = isDojo(theme) ? theme : null; this.specs = [{ ...me, abil: FULL_ABIL }]; this.opts = {}; this.floor = null;
     conn.onMessage(m => this.onHostMsg(m));
     conn.onClose(() => this.lost());
     this.hooks.onStatus?.('Ton adversaire arrive…');
@@ -125,6 +128,8 @@ class Session {
   private begin(silent = false) {
     this.ended = false; this.rematchMe = this.rematchThem = false; this.acc = 0; this.fx = []; this.outEv = []; this.roundsLost = 0; this.seconds = 0; this.bonus = { saves: 0, perfects: 0 };
     this.resetInput(); this.remote = emptyInput();
+    this.tally = { dealt: 0, taken: 0, parries: 0, dodges: 0, spam: 0, spamBlock: 0, exhTaken: 0, exhDealt: 0, ejected: 0, ejectedExh: 0 };
+    if (!silent && this.mode !== 'tuto') { this.matches++; track('match_started', { mode: this.mode, floor: this.floor ? (this.floor.daily ? 'daily' : this.floor.n) : null, level: this.mode === 'practice' ? this.level : null, theme: this.theme, rematch: this.matches > 1 }); }
     if (this.mode === 'guest') this.mirror = createMirror(this.specs);
     else this.sim = createSim(this.specs, this.opts);
     if (!silent) this.hooks.onStart?.();
@@ -193,7 +198,7 @@ class Session {
         if (this.sim) return;
         const sp = m.spec || {};
         this.specs = [this.specs[0], { name: String(sp.name || 'Invité').slice(0, 16), look: sanitizeLook(sp.look), abil: FULL_ABIL, belt: typeof sp.belt === 'string' ? sp.belt : undefined }];
-        this.conn!.send({ t: 'welcome', specs: this.specs.map(s => ({ name: s.name, look: s.look, belt: s.belt })) });
+        this.conn!.send({ t: 'welcome', theme: this.theme, specs: this.specs.map(s => ({ name: s.name, look: s.look, belt: s.belt })) });
         this.begin();
         break;
       }
@@ -206,7 +211,7 @@ class Session {
   private onGuestMsg(m: any) {
     if (!m || typeof m !== 'object') return;
     switch (m.t) {
-      case 'welcome': this.specs = (m.specs || []).map((s: any) => ({ name: String(s.name || '').slice(0, 16), look: sanitizeLook(s.look), belt: typeof s.belt === 'string' ? s.belt : undefined, abil: FULL_ABIL })); this.begin(); break;
+      case 'welcome': this.theme = isDojo(m.theme) ? m.theme : null; this.specs = (m.specs || []).map((s: any) => ({ name: String(s.name || '').slice(0, 16), look: sanitizeLook(s.look), belt: typeof s.belt === 'string' ? s.belt : undefined, abil: FULL_ABIL })); this.begin(); break;
       case 's': if (this.mirror) { applySnapshot(this.mirror, m.s); if (Array.isArray(m.e)) for (const e of m.e) this.handleEv(e, false); } break;
       case 'restart': this.begin(); break;
       case 'rematch': this.rematchThem = true; this.hooks.onRematch?.(this.rematchMe, true); break;
@@ -223,10 +228,20 @@ class Session {
     if (e.t === 'point' && e.to !== this.myIdx) this.roundsLost++;
     if (e.t === 'saved' && e.idx === this.myIdx) this.bonus.saves++;
     if (e.t === 'perfect' && e.idx === this.myIdx) this.bonus.perfects++;
+    { // compteurs de la partie pour les mesures
+      const T = this.tally, me = this.myIdx;
+      if (e.t === 'hit') { if (e.by === me) { T.dealt++; if (e.exh) T.exhDealt++; } if (e.to === me) { T.taken++; if (e.exh) T.exhTaken++; } }
+      else if (e.t === 'parry' && e.by === me) T.parries++;
+      else if (e.t === 'dodge' && e.by === me) T.dodges++;
+      else if (e.t === 'spam' && e.idx === me) T.spam++;
+      else if (e.t === 'spamblock' && e.idx === me) T.spamBlock++;
+      else if (e.t === 'ko' && e.to === me) { T.ejected++; if (e.exh) T.ejectedExh++; }
+    }
     if (this.tuto) this.tutoEvent(e);
     if (e.t === 'end') {
       this.ended = true;
       const st = this.state; this.seconds = st && st.duel && st.duel.start != null ? Math.round((st.time - st.duel.start) / 1000) : 0;
+      if (this.mode !== 'tuto' && this.mode !== 'showcase') track('match_ended', { mode: this.mode, won: e.winner === this.myIdx, me: e.score[this.myIdx], foe: e.score[1 - this.myIdx], seconds: this.seconds, floor: this.floor ? (this.floor.daily ? 'daily' : this.floor.n) : null, attempt: this.attempt, ...this.tally });
       this.hooks.onEnd?.(e.winner, e.score);
     }
   }
@@ -269,6 +284,7 @@ class Session {
   requestRematch() {
     if (!this.ended) return;
     if (this.local) { if (this.mode === 'practice') this.specs[1] = { ...this.specs[1], look: randLook() }; this.begin(); return; }
+    track('rematch_clicked', { mode: this.mode });
     this.rematchMe = true; this.conn?.send({ t: 'rematch' });
     this.hooks.onRematch?.(true, this.rematchThem);
     this.tryRematch();
@@ -281,12 +297,14 @@ class Session {
   private lost() {
     if (this.mode === 'idle') return;
     const was = this.mode; this.conn = null;
-    if (was === 'host' || was === 'guest') this.hooks.onDisconnect?.();
+    if (was === 'host' || was === 'guest') { track('disconnect', { mode: was, ended: this.ended }); this.hooks.onDisconnect?.(); }
   }
   leave(silent = false) {
+    if (this.active && !this.ended && this.mode !== 'showcase' && this.matches > 0) { const D = this.state?.duel; track('match_abandoned', { mode: this.mode, floor: this.floor ? (this.floor.daily ? 'daily' : this.floor.n) : null, round: D ? D.round : null, score_me: D ? D.score[this.myIdx] : null, score_foe: D ? D.score[1 - this.myIdx] : null }); }
+    if (silent === false || this.mode === 'idle') this.matches = 0;
     const c = this.conn; this.conn = null;
     if (c) c.close();
-    this.mode = 'idle'; this.sim = null; this.mirror = null; this.show = null; this.ended = false; this.fx = []; this.outEv = []; this.ping = -1; this.notice = ''; this.tuto = null;
+    this.mode = 'idle'; this.sim = null; this.mirror = null; this.show = null; this.ended = false; this.fx = []; this.outEv = []; this.ping = -1; this.notice = ''; this.tuto = null; this.theme = null;
     if (!silent) this.hooks.onStatus?.('');
   }
 }
