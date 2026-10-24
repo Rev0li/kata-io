@@ -9,6 +9,28 @@ import { PX, FxKey } from './assets';
 
 const C = { ink: 0x0f1719, bone: 0xecdfc6, mist: 0x93a59f, ochre: 0xe0a243, jade: 0x62c2a2, red: 0xe5483a, gold: 0xf2c14e, mat: 0xbcab78, mat2: 0xb1a06c, heri: 0x2b2417, rim: 0x3a281a, rim2: 0x523822, water: 0x0d2a30 };
 export const WATER_HEX = '#0d2a30';
+
+// Vue isométrique 2:1 : le monde de la simulation (x, y) est projeté sur l'écran, les sprites restent debout.
+export const ISO = 0.6;
+const RX = Math.SQRT2 * ISO; // demi-axe horizontal d'un cercle de rayon 1 une fois projeté (la hauteur vaut la moitié)
+export const isoX = (x: number, y: number) => (x - y) * ISO;
+export const isoY = (x: number, y: number) => (x + y) * ISO * 0.5;
+export const iso2 = (x: number, y: number) => ({ x: isoX(x, y), y: isoY(x, y) });
+export function unIso(sx: number, sy: number) { const u = sx / ISO, w = 2 * sy / ISO; return { x: (u + w) / 2, y: (w - u) / 2 }; }
+// direction écran -> direction monde, à longueur égale (pour les touches et le joystick)
+export function screenDirToWorld(dx: number, dy: number) {
+  const x = (dx + 2 * dy) / 2, y = (2 * dy - dx) / 2, l = Math.hypot(x, y), m = Math.hypot(dx, dy);
+  return l ? { x: x / l * m, y: y / l * m } : { x: 0, y: 0 };
+}
+export const worldAngleToScreen = (a: number) => Math.atan2((Math.cos(a) + Math.sin(a)) * 0.5, Math.cos(a) - Math.sin(a));
+
+// Ambiances d'arène, d'après les visuels de référence (art/reference).
+export interface Theme { water: string; top: number; top2: number; seam: number; rim: number; side: number; out: number; line?: number; edge?: number; lamp?: number; glow?: number; sky: string }
+export const THEMES: Record<string, Theme> = {
+  brume: { water: '#656455', sky: '#a3a69c', top: 0x76604d, top2: 0x82694f, seam: 0x4a3b2f, rim: 0x8d9189, side: 0x4d4238, out: 0x2a2924, lamp: 0xf5e2b0, glow: 0xffd88a },
+  coucher: { water: '#355d62', sky: '#d9a982', top: 0xc98450, top2: 0xd89462, seam: 0x7a4624, rim: 0xb36a38, side: 0x7d4a27, out: 0x3a2314, line: 0x2f6f7d },
+  neon: { water: '#0a1020', sky: '#0c1229', top: 0x3a2a3c, top2: 0x45324b, seam: 0x1b1220, rim: 0x2b2132, side: 0x18111f, out: 0x080610, line: 0x2de6ea, edge: 0xff9a3c, lamp: 0x2de6ea, glow: 0xff9a3c },
+};
 const cache = new Map<string, number>();
 export function hex(s: string): number { let v = cache.get(s); if (v === undefined) { v = parseInt(s.slice(1), 16); cache.set(s, v); } return v; }
 function mix(a: number, b: number, t: number) { const r = Math.round(lerp(a >> 16, b >> 16, t)), g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t)), bl = Math.round(lerp(a & 255, b & 255, t)); return (r << 16) | (g << 8) | bl; }
@@ -22,7 +44,7 @@ const FONT_DISP = '"Big Shoulders Display", Impact, sans-serif';
 const FONT_BODY = 'Barlow, system-ui, sans-serif';
 
 interface Part { x: number; y: number; vx: number; vy: number; t: number; life: number; col: number; s: number; kind: string; rot?: number; vr?: number }
-interface Ring { x: number; y: number; r: number; max: number; t: number; life: number; col: number; w: number }
+interface Ring { x: number; y: number; r: number; max: number; t: number; life: number; col: number; w: number; scr?: boolean }
 // Particule-sprite (effets de boutique, débris) : mouvement balistique, échelle et opacité sur la durée de vie.
 interface SP { s: Phaser.GameObjects.Sprite; x: number; y: number; vx: number; vy: number; ay: number; drag: number; t: number; life: number; rot: number; vr: number; s0: number; s1: number; a: number; fadeIn: number; fade: boolean; fps: number; loop: boolean; f0: number; wob: number; n: number; emit?: { key: string; every: number; acc: number; opts: SPOpts }; end?: (p: SP) => void }
 type SPOpts = Partial<Omit<SP, 's' | 't' | 'n'>> & { tint?: number; depth?: number };
@@ -30,7 +52,7 @@ interface View { spr: Phaser.GameObjects.Sprite; wpn: Phaser.GameObjects.Image; 
 
 export class Renderer {
   scene: Phaser.Scene;
-  floor: Phaser.GameObjects.TileSprite; edgeG: Phaser.GameObjects.Graphics; wet = false;
+  bg: Phaser.GameObjects.Image; sky: Phaser.GameObjects.Image; theme = ''; wet = false;
   waterG: Phaser.GameObjects.Graphics; arenaG: Phaser.GameObjects.Graphics; dynG: Phaser.GameObjects.Graphics; topG: Phaser.GameObjects.Graphics;
   parts: Part[] = []; rings: Ring[] = []; ripples: { x: number; y: number; t: number; life: number }[] = [];
   floats: { tx: Phaser.GameObjects.Text; x: number; y: number; t: number; life: number }[] = [];
@@ -49,54 +71,98 @@ export class Renderer {
     this.scene = scene;
     this.waterG = scene.add.graphics().setDepth(0);
     this.arenaG = scene.add.graphics().setDepth(1);
-    this.floor = scene.add.tileSprite(0, 0, 520, 520, 'dojo').setDepth(1.01).setTileScale(PX).setAlpha(0.42);
-    this.edgeG = scene.add.graphics().setDepth(1.02);
+    this.bg = scene.add.image(0, 0, 'bg-brume').setOrigin(0.5, 1).setDepth(-1).setScrollFactor(0.95);
+    this.sky = scene.add.image(0, 0, '__WHITE').setDisplaySize(2400, 3000).setOrigin(0.5, 1).setDepth(-2).setScrollFactor(0.95); // le ciel prolonge le haut de l'horizon
     this.dynG = scene.add.graphics().setDepth(2);
     this.topG = scene.add.graphics().setDepth(4);
     this.trailG = scene.add.graphics().setDepth(3.6); // traînées : au-dessus des combattants, en transparence
     for (let i = 0; i < 7; i++) this.koi.push({ a: rand(0, TAU), off: rand(60, 380), sp: rand(0.05, 0.12) * (Math.random() < 0.5 ? -1 : 1), col: [0xe8742f, 0xf2efe6, 0xe05a2a, 0xf4b24a][(Math.random() * 4) | 0], spot: Math.random() < 0.6, size: rand(0.8, 1.25), wig: rand(0, TAU) });
-    this.drawArena(this.H);
+    this.setTheme('brume');
+  }
+
+  iso(x: number, y: number, h = 0) { return { x: (x - y) * ISO, y: (x + y) * ISO * 0.5 - h }; }
+  fillC(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) { const p = this.iso(x, y); g.fillEllipse(p.x, p.y, 2 * RX * r, RX * r); }
+  strokeC(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) { const p = this.iso(x, y); g.strokeEllipse(p.x, p.y, 2 * RX * r, RX * r); }
+  // Secteur (cône de coup) posé au sol : fillPath/strokePath sur les points projetés.
+  cone(g: Phaser.GameObjects.Graphics, x: number, y: number, facing: number, r: number, arc: number) {
+    const pts: any[] = [this.iso(x, y)], n = Math.max(6, Math.ceil(arc / 0.18));
+    for (let i = 0; i <= n; i++) { const a = facing - arc / 2 + arc * i / n; pts.push(this.iso(x + Math.cos(a) * r, y + Math.sin(a) * r)); }
+    g.fillPoints(pts, true); g.strokePoints(pts, true);
+  }
+  setTheme(name: string) {
+    if (!THEMES[name]) name = 'brume';
+    if (name === this.theme && this.bg.texture.key === 'bg-' + name) return;
+    this.theme = name; const T = THEMES[name];
+    this.scene.cameras.main.setBackgroundColor(T.water);
+    this.bg.setTexture('bg-' + name); this.bg.setScale(2.1).setPosition(0, -ISO * 260 * 0.3);
+    this.sky.setTint(hex(T.sky)).setPosition(0, this.bg.y - this.bg.displayHeight + 70 * 2.1); // le haut de la bande est fondu : le ciel passe derrière
+    this.drawArena(this.H, this.wet, this.sudden);
   }
 
   /* ---------- dojo : cadre en bois dessiné, sol en tuiles du temple (pixel art) ---------- */
   drawArena(H: number, wet = false, sudden = false) {
     this.H = H; this.wet = wet; this.sudden = sudden; const g = this.arenaG; g.clear();
-    g.fillStyle(0x000000, 0.35); g.fillRect(-H - 12 + 18, -H - 12 + 26, 2 * H + 24, 2 * H + 24);
-    g.fillStyle(C.rim, 1); g.fillRect(-H - 12, -H - 12, 2 * H + 24, 2 * H + 24);
-    g.fillStyle(C.rim2, 1); g.fillRect(-H - 6, -H - 6, 2 * H + 12, 2 * H + 12);
-    g.fillStyle(wet ? 0x74866c : 0xb59f72, 1); g.fillRect(-H, -H, 2 * H, 2 * H);
-    // le motif reste accroché au centre du dojo, quelle que soit sa taille
-    const tile = 48, off = ((-H / PX) % tile + tile) % tile;
-    this.floor.setTexture(wet ? 'dojo-mousse' : 'dojo').setSize(2 * H, 2 * H).setTilePosition(off, off).setVisible(true);
-    const e = this.edgeG; e.clear();
-    e.lineStyle(4, sudden ? C.red : C.heri, 0.9); e.strokeRect(-H + 2, -H + 2, 2 * H - 4, 2 * H - 4);
-    e.lineStyle(2, 0xfff1c4, 0.18); e.strokeRect(-H + 6, -H + 6, 2 * H - 12, 2 * H - 12);
+    const T = THEMES[this.theme], m = 24, TH = 30;
+    const P = (x: number, y: number, dy = 0): any => ({ x: isoX(x, y), y: isoY(x, y) + dy });
+    const quad = (h: number, dy = 0): any[] => [P(-h, -h, dy), P(h, -h, dy), P(h, h, dy), P(-h, h, dy)]; // haut, droite, bas, gauche
+    const O = H + m, o = quad(O);
+    // reflet sombre sur l'eau
+    g.fillStyle(0x000000, 0.3); g.fillPoints(o.map((p: any): any => ({ x: p.x + 14, y: p.y + TH + 18 })), true);
+    // flancs : gauche (clair) et droit (sombre), puis des pieux sous le bord
+    const dn = (p: any, d = TH): any => ({ x: p.x, y: p.y + d });
+    g.fillStyle(T.side, 1); g.fillPoints([o[3], o[2], dn(o[2]), dn(o[3])], true);
+    g.fillStyle(mix(T.side, 0x000000, 0.3), 1); g.fillPoints([o[2], o[1], dn(o[1]), dn(o[2])], true);
+    g.lineStyle(2, mix(T.side, 0x000000, 0.5), 0.9);
+    for (let i = 1; i < 8; i++) { const k = i / 8, a = { x: lerp(o[3].x, o[2].x, k), y: lerp(o[3].y, o[2].y, k) }, c = { x: lerp(o[2].x, o[1].x, k), y: lerp(o[2].y, o[1].y, k) }; g.lineBetween(a.x, a.y, a.x, a.y + TH); g.lineBetween(c.x, c.y, c.x, c.y + TH); }
+    // bord, puis lattes
+    g.fillStyle(T.rim, 1); g.fillPoints(o, true);
+    g.lineStyle(2, mix(T.rim, 0xffffff, 0.25), 0.7); g.strokePoints(quad(O - 3), true);
+    const n = Math.max(6, Math.round(H / 24)), step = 2 * H / n;
+    for (let i = 0; i < n; i++) {
+      const x0 = -H + i * step, x1 = x0 + step;
+      g.fillStyle(i % 2 ? T.top : T.top2, 1); g.fillPoints([P(x0, -H), P(x1, -H), P(x1, H), P(x0, H)], true);
+    }
+    g.lineStyle(1.5, T.seam, 0.85);
+    for (let i = 0; i <= n; i++) { const x = -H + i * step, a = P(x, -H), c = P(x, H); g.lineBetween(a.x, a.y, c.x, c.y); }
+    g.lineStyle(1, T.seam, 0.5); // joints d'about, décalés d'une latte à l'autre
+    for (let i = 0; i < n; i++) { const x0 = -H + i * step, y = -H + ((i * 0.37) % 1) * 2 * H, a = P(x0, y), c = P(x0 + step, y); g.lineBetween(a.x, a.y, c.x, c.y); }
+    if (wet) { g.fillStyle(0x4d7a4a, 0.3); g.fillPoints(quad(H), true); }
+    // liseré intérieur : turquoise en cartoon, néon en nuit
+    if (T.line) {
+      if (T.edge) { g.lineStyle(9, T.line, 0.16); g.strokePoints(quad(H - 14), true); g.lineStyle(9, T.edge, 0.16); g.strokePoints(quad(O - 1), true); }
+      g.lineStyle(3, T.line, 1); g.strokePoints(quad(H - 14), true);
+    }
+    if (T.edge) { g.lineStyle(3, T.edge, 1); g.strokePoints(quad(O - 2), true); }
+    if (sudden) { g.lineStyle(6, C.red, 0.16); g.strokePoints(quad(H - 4), true); g.lineStyle(3, C.red, 0.95); g.strokePoints(quad(H - 4), true); }
+    g.lineStyle(3, T.out, 1); g.strokePoints(o, true);
+    g.lineStyle(2, T.out, 0.9); g.lineBetween(o[3].x, o[3].y, o[3].x, o[3].y + TH); g.lineBetween(o[2].x, o[2].y, o[2].x, o[2].y + TH); g.lineBetween(o[1].x, o[1].y, o[1].x, o[1].y + TH);
+    g.lineBetween(o[3].x, o[3].y + TH, o[2].x, o[2].y + TH); g.lineBetween(o[2].x, o[2].y + TH, o[1].x, o[1].y + TH);
   }
 
   /* ---------- événements ---------- */
   handle(ev: Ev) {
     switch (ev.t) {
-      case 'float': this.addFloat(ev.x, ev.y, ev.text, ev.col, ev.size); break;
-      case 'sparks': for (let i = 0; i < ev.n; i++) this.parts.push({ x: ev.x, y: ev.y, vx: rand(-250, 250), vy: rand(-250, 250), life: rand(160, 340), t: 0, col: hex(ev.col), s: rand(1.5, 3), kind: 'dot' }); break;
+      case 'float': { const S = this.iso(ev.x, ev.y + 52); this.addFloat(S.x, S.y - 46, ev.text, ev.col, ev.size); break; }
+      case 'sparks': { const S = this.iso(ev.x, ev.y, 14); for (let i = 0; i < ev.n; i++) this.parts.push({ x: S.x, y: S.y, vx: rand(-250, 250), vy: rand(-250, 250), life: rand(160, 340), t: 0, col: hex(ev.col), s: rand(1.5, 3), kind: 'dot' }); break; }
       case 'ring': this.rings.push({ x: ev.x, y: ev.y, r: ev.r, max: ev.max, life: ev.life, t: 0, col: hex(ev.col), w: ev.w }); break;
       case 'sfx': sfxAt(ev.n, ev.x, ev.y, ev.v); break;
-      case 'splash': this.splash(ev.x, ev.y, ev.fx, 1); this.addFloat(ev.x, ev.y - 20, ev.word, '#cfeef4', ev.word.length > 8 ? 24 : 28); break;
+      case 'splash': { this.splash(ev.x, ev.y, ev.fx, 1); const S = this.iso(ev.x, ev.y); this.addFloat(S.x, S.y - 42, ev.word, '#cfeef4', ev.word.length > 8 ? 24 : 28); break; }
       case 'hit': {
         const A = this.lastSt?.f[ev.by], T = this.lastSt?.f[ev.to]; if (!A || !T) break;
         const v = this.views[ev.to]; if (v) { v.flash = 110; v.squash = 1; }
-        const x = lerp(A.x, T.x, 0.7), y = lerp(A.y, T.y, 0.7) - 4, ang = Math.atan2(T.y - A.y, T.x - A.x);
-        if (ev.dragon) { this.fx('fire', T.x, T.y - 8, 0, 4); this.fx('hit', x, y, 0, 3, C.gold); }
-        else if (ev.red) { this.fx('cross', x, y, ang, 3, 0xff5a46); this.fx('hit', x, y, 0, 2.6); }
-        else this.fx('hit', x, y, 0, 2);
+        const x = lerp(A.x, T.x, 0.7), y = lerp(A.y, T.y, 0.7), ang = worldAngleToScreen(Math.atan2(T.y - A.y, T.x - A.x));
+        if (ev.dragon) { this.fxw('fire', T.x, T.y, 10, 0, 4); this.fxw('hit', x, y, 16, 0, 3, C.gold); }
+        else if (ev.red) { this.fxw('cross', x, y, 16, ang, 3, 0xff5a46); this.fxw('hit', x, y, 16, 0, 2.6); }
+        else this.fxw('hit', x, y, 16, 0, 2);
         break;
       }
       case 'parry': {
         const D = this.lastSt?.f[ev.by]; if (!D) break;
-        const x = D.x + Math.cos(D.facing) * 16, y = D.y + Math.sin(D.facing) * 16 - 4;
-        if (ev.perfect) this.fx('star', x, y, 0, 2.6); else this.fx('guard', x, y, 0, 1.8);
+        const x = D.x + Math.cos(D.facing) * 16, y = D.y + Math.sin(D.facing) * 16;
+        if (ev.perfect) this.fxw('star', x, y, 16, 0, 2.6); else this.fxw('guard', x, y, 16, 0, 1.8);
         break;
       }
-      case 'dodge': { const D = this.lastSt?.f[ev.by]; if (D) this.fx('sparkle', D.x, D.y - 6, 0, 2.4, 0x8ff5d0); break; }
+      case 'dodge': { const D = this.lastSt?.f[ev.by]; if (D) this.fxw('sparkle', D.x, D.y, 14, 0, 2.4, 0x8ff5d0); break; }
     }
   }
   addFloat(x: number, y: number, text: string, col: string, size = 17) {
@@ -140,17 +206,18 @@ export class Renderer {
   }
 
   // Plouf d'éjection : la gerbe d'eau, plus l'effet acheté en boutique par celui qui éjecte.
-  splash(x: number, y: number, fx: string, s: number) {
+  splash(wx: number, wy: number, fx: string, s: number) {
+    const S = this.iso(wx, wy), x = S.x, y = S.y; // l'effet se joue en coordonnées écran, à partir du point d'impact
     this.fx('splash', x, y - 22, 0, 4 * s);
-    this.rings.push({ x, y, r: 6 * s, max: 60 * s, life: 650, t: 0, col: 0xd6f0f2, w: 5 * s });
-    this.rings.push({ x, y, r: 4 * s, max: 96 * s, life: 1000, t: 0, col: 0x9fc9cf, w: 3 * s });
-    for (let i = 0; i < 16; i++) { const a = rand(0, TAU), sp = rand(90, 260) * s; this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(380, 720), t: 0, col: 0xd3ecee, s: rand(2, 4) * s, kind: 'drop' }); }
-    const mini = (p: SP) => { this.fx('splash', p.x, p.y - 8, 0, 2); this.rings.push({ x: p.x, y: p.y + 10, r: 4, max: 40, life: 600, t: 0, col: 0xd6f0f2, w: 3 }); };
+    this.rings.push({ x: wx, y: wy, r: 6 * s, max: 60 * s, life: 650, t: 0, col: 0xd6f0f2, w: 5 * s });
+    this.rings.push({ x: wx, y: wy, r: 4 * s, max: 96 * s, life: 1000, t: 0, col: 0x9fc9cf, w: 3 * s });
+    for (let i = 0; i < 16; i++) { const a = rand(0, TAU), sp = rand(90, 260) * s; this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8 - 40, life: rand(380, 720), t: 0, col: 0xd3ecee, s: rand(2, 4) * s, kind: 'drop' }); }
+    const mini = (p: SP) => { this.fx('splash', p.x, p.y - 8, 0, 2); this.rings.push({ x: p.x, y: p.y + 10, r: 4, max: 24, life: 600, t: 0, col: 0xd6f0f2, w: 3, scr: true }); };
     switch (fx) {
       case 'encre-e':
         this.spawn('smoke', x, y - 14, { fps: 10, life: 900, s0: 3.6, s1: 5, tint: 0x120c16, a: 0.9 });
-        for (let i = 0; i < 4; i++) this.after(i * 90, () => this.spawn('smoke', x + rand(-50, 50), y + rand(-50, 20), { fps: 12, life: 700, s0: 1.8, s1: 2.8, tint: 0x1b1222, a: 0.85 }));
-        for (let i = 0; i < 18; i++) { const a = rand(0, TAU), sp = rand(80, 240); this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(500, 900), t: 0, col: 0x070707, s: rand(3, 6), kind: 'drop' }); }
+        for (let i = 0; i < 4; i++) this.after(i * 90, () => this.spawn('smoke', x + rand(-50, 50), y + rand(-30, 10), { fps: 12, life: 700, s0: 1.8, s1: 2.8, tint: 0x1b1222, a: 0.85 }));
+        for (let i = 0; i < 18; i++) { const a = rand(0, TAU), sp = rand(80, 240); this.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8, life: rand(500, 900), t: 0, col: 0x070707, s: rand(3, 6), kind: 'drop' }); }
         break;
       case 'petales':
         for (let i = 0; i < 28; i++) this.spawn('leaf', x + rand(-10, 10), y - 10, { f0: (Math.random() * 6) | 0, vx: rand(-240, 240), vy: rand(-420, -120), ay: 260, drag: 1.6, rot: rand(0, TAU), vr: rand(-8, 8), life: rand(1500, 2300), s0: 2.8, s1: 2.1, wob: 8 });
@@ -170,7 +237,7 @@ export class Renderer {
           const bx = x + rand(-80, 80), by = y - rand(50, 150), col = [C.gold, 0xff5a46, 0x8ff5d0, 0xf6b6cf, 0xffffff][k % 5];
           this.fx('star', bx, by, 0, rand(2.4, 3.4), col);
           for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, sp = rand(140, 220); this.parts.push({ x: bx, y: by, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(450, 700), t: 0, col, s: 3, kind: 'dot' }); }
-          sfxAt('ui', bx, by, 0.6);
+          sfxAt('ui', wx, wy, 0.6);
         });
         break;
       case 'tresor': {
@@ -178,7 +245,7 @@ export class Renderer {
         this.after(520, () => {
           chest.f0 = 1; this.fx('sparkle', chest.x, chest.y - 10, 0, 3, C.gold);
           for (let i = 0; i < 18; i++) this.spawn('coin', chest.x, chest.y - 8, { fps: 12, loop: true, f0: (Math.random() * 4) | 0, vx: rand(-240, 240), vy: rand(-560, -240), ay: 950, life: rand(900, 1300), s0: 2.6, s1: 2.6, vr: rand(-4, 4) });
-          sfxAt('coin', chest.x, chest.y, 1);
+          sfxAt('coin', wx, wy, 1);
         });
         break;
       }
@@ -202,7 +269,7 @@ export class Renderer {
     if (!st && (this.H !== 260 || this.sudden || this.wet)) this.drawArena(260);
     for (const k of this.koi) k.a += k.sp * dt;
     this.rippleT -= ms;
-    if (this.rippleT <= 0) { this.rippleT = 260; const x = rand(view.x, view.right), y = rand(view.y, view.bottom); if (Math.abs(x) > this.H + 20 || Math.abs(y) > this.H + 20) this.ripples.push({ x, y, t: 0, life: 2400 }); }
+    if (this.rippleT <= 0) { this.rippleT = 260; const x = rand(view.x, view.right), y = rand(view.y, view.bottom); const w = unIso(x, y); if (Math.abs(w.x) > this.H + 40 || Math.abs(w.y) > this.H + 40) this.ripples.push({ x, y, t: 0, life: 2400 }); }
     for (let i = this.ripples.length - 1; i >= 0; i--) { const r = this.ripples[i]; r.t += ms; if (r.t > r.life) this.ripples.splice(i, 1); }
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.t += ms; if (p.t >= p.life) { this.parts.splice(i, 1); continue; } const d = p.kind === 'petal' ? 0.96 : p.kind === 'duck' ? 0.93 : 0.9; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= d; p.vy *= d; if (p.vr) p.rot! += p.vr * dt; }
     for (let i = this.rings.length - 1; i >= 0; i--) { const r = this.rings[i]; r.t += ms; if (r.t >= r.life) this.rings.splice(i, 1); }
@@ -216,11 +283,12 @@ export class Renderer {
     const tg = this.trailG; tg.clear();
     this.lastSt = st;
     const t = this.topG; t.clear();
-    for (const r of this.rings) { const p = r.t / r.life; t.lineStyle(r.w * (1 - p) + 1, r.col, 1 - p); t.strokeCircle(r.x, r.y, Math.max(1, lerp(r.r, r.max, easeOut(p)))); }
+    for (const r of this.rings) { const p = r.t / r.life, rad = Math.max(1, lerp(r.r, r.max, easeOut(p))); t.lineStyle(r.w * (1 - p) + 1, r.col, 1 - p); if (r.scr) t.strokeEllipse(r.x, r.y, 2 * rad, rad); else this.strokeC(t, r.x, r.y, rad); }
+    this.drawLamp(t, 1, time);
     this.drawParts(t);
     if (!st) { this.hideLabels(0); this.hideViews(0); return; }
-    if (marker) { const p = 0.5 + 0.5 * Math.sin(time * 0.006); g.fillStyle(C.jade, 0.14 + 0.1 * p); g.fillCircle(marker.x, marker.y, marker.r); g.lineStyle(3, C.jade, 0.7 + 0.3 * p); g.strokeCircle(marker.x, marker.y, marker.r + p * 4); g.lineStyle(2, C.jade, 0.35 * (1 - p)); g.strokeCircle(marker.x, marker.y, marker.r + 10 + p * 14); }
-    const fs = st.f.slice().sort((a: any, b: any) => a.y - b.y);
+    if (marker) { const p = 0.5 + 0.5 * Math.sin(time * 0.006); g.fillStyle(C.jade, 0.14 + 0.1 * p); this.fillC(g, marker.x, marker.y, marker.r); g.lineStyle(3, C.jade, 0.7 + 0.3 * p); this.strokeC(g, marker.x, marker.y, marker.r + p * 4); g.lineStyle(2, C.jade, 0.35 * (1 - p)); this.strokeC(g, marker.x, marker.y, marker.r + 10 + p * 14); }
+    const fs = st.f.slice().sort((a: any, b: any) => (a.x + a.y) - (b.x + b.y));
     const twin = st.f.length === 2 && st.f[0].look.perso === st.f[1].look.perso;
     for (const e of fs) this.drawFighter(g, e, e.idx, time, dt, myIdx, twin && e.idx === 1);
     this.hideViews(st.f.length);
@@ -231,25 +299,38 @@ export class Renderer {
 
   plank(H: number) {
     const side = (Math.random() * 4) | 0, u = rand(-H, H), nx = side === 0 ? -1 : side === 1 ? 1 : 0, ny = side === 2 ? -1 : side === 3 ? 1 : 0;
-    const x = nx ? nx * H : u, y = ny ? ny * H : u;
-    this.spawn('wood', x, y, { f0: (Math.random() * 6) | 0, vx: (nx || rand(-0.3, 0.3)) * rand(60, 140), vy: (ny || 0) * rand(60, 140) - rand(90, 170), ay: 560, vr: rand(-7, 7), life: 620, s0: 3, s1: 2.2, depth: 1.5,
-      end: p => this.rings.push({ x: p.x, y: p.y, r: 3, max: 30, life: 600, t: 0, col: 0xd6f0f2, w: 2 }) });
+    const x = nx ? nx * H : u, y = ny ? ny * H : u, S = this.iso(x, y), o = { x: (nx - ny) * ISO, y: (nx + ny) * ISO * 0.5 };
+    this.spawn('wood', S.x, S.y, { f0: (Math.random() * 6) | 0, vx: o.x * rand(90, 190), vy: o.y * rand(90, 190) - rand(90, 170), ay: 560, vr: rand(-7, 7), life: 620, s0: 3, s1: 2.2, depth: 1.5,
+      end: p => this.rings.push({ x: p.x, y: p.y, r: 3, max: 18, life: 600, t: 0, col: 0xd6f0f2, w: 2, scr: true }) });
+  }
+
+  // Lanterne sur pied aux angles du dojo ; flickering léger. back = angles du fond (sous le dojo), front = angle du bas.
+  drawLamp(g: Phaser.GameObjects.Graphics, front: number, time = performance.now()) {
+    const T = THEMES[this.theme]; if (!T.lamp) return;
+    const fl = 0.85 + 0.15 * Math.sin(time * 0.004), d = this.H + 40;
+    const corners: [number, number][] = front ? [[1, 1]] : [[-1, -1], [1, -1], [-1, 1]];
+    for (const [sx, sy] of corners) {
+      const p = this.iso(sx * d, sy * d);
+      for (const [w, a] of [[70, 0.05], [46, 0.07], [28, 0.1]]) { g.fillStyle(T.glow || 0xffd88a, a * fl); g.fillEllipse(p.x, p.y - 63, w, w * 0.9); }
+      g.fillStyle(0x2a1c10, 1); g.fillRect(p.x - 2, p.y - 54, 4, 56); g.fillRect(p.x - 12, p.y - 1, 24, 4); g.fillRect(p.x - 3, p.y - 6, 6, 6);
+      g.fillStyle(T.out, 1); g.fillRoundedRect(p.x - 9, p.y - 76, 18, 26, 5);
+      g.fillStyle(T.lamp!, 0.95 * fl); g.fillRoundedRect(p.x - 7, p.y - 74, 14, 22, 4);
+      g.fillStyle(0xffffff, 0.35 * fl); g.fillRect(p.x - 4, p.y - 71, 3, 14);
+    }
   }
 
   drawWater(time: number) {
     const g = this.waterG; g.clear(); const H = this.H;
-    g.lineStyle(2, 0xaadcdc, 0.08);
-    for (const r of this.ripples) { const p = r.t / r.life; g.lineStyle(2, 0xaadcdc, 0.09 * (1 - p)); g.strokeEllipse(r.x, r.y, 16 + p * 140, 10 + p * 84); }
+    for (const r of this.ripples) { const p = r.t / r.life; g.lineStyle(2, 0xaadcdc, 0.09 * (1 - p)); g.strokeEllipse(r.x, r.y, 16 + p * 140, 8 + p * 70); }
     for (const k of this.koi) {
-      const rr = H * 1.3 + k.off, x = Math.cos(k.a) * rr, y = Math.sin(k.a) * rr * 0.9;
-      const dir = k.a + (k.sp > 0 ? Math.PI / 2 : -Math.PI / 2) + Math.sin(time * 0.006 + k.wig) * 0.18;
+      const rr = (H * 1.25 + k.off) * ISO * 1.6, x = Math.cos(k.a) * rr, y = Math.sin(k.a) * rr * 0.5 + ISO * H * 0.5;
+      const tx = -Math.sin(k.a) * 1, ty = Math.cos(k.a) * 0.5, dir = Math.atan2(ty, tx) + (k.sp > 0 ? 0 : Math.PI) + Math.sin(time * 0.006 + k.wig) * 0.18;
       g.save(); g.translateCanvas(x, y); g.rotateCanvas(dir); g.scaleCanvas(k.size, k.size);
-      g.fillStyle(k.col, 0.62); g.fillEllipse(0, 0, 32, 12); g.fillTriangle(-14, 0, -24, -6, -24, 6);
-      if (k.spot) { g.fillStyle(0xf6f1e6, 0.62); g.fillEllipse(4, 0, 10, 7); }
+      g.fillStyle(k.col, 0.55); g.fillEllipse(0, 0, 32, 12); g.fillTriangle(-14, 0, -24, -6, -24, 6);
+      if (k.spot) { g.fillStyle(0xf6f1e6, 0.55); g.fillEllipse(4, 0, 10, 7); }
       g.restore();
     }
-    const fl = 0.85 + 0.15 * Math.sin(time * 0.004);
-    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const x = sx * (H + 10), y = sy * (H + 10); g.fillStyle(0xf2be5a, 0.12 * fl); g.fillCircle(x, y, 46); g.fillStyle(0x2a1c10, 1); g.fillRect(x - 10, y - 10, 20, 20); g.fillStyle(0xffd682, 0.85 * fl); g.fillRect(x - 6, y - 6, 12, 12); }
+    this.drawLamp(g, 0, time);
   }
 
   strike(e: any) {
@@ -269,22 +350,19 @@ export class Renderer {
   drawTelegraph(g: Phaser.GameObjects.Graphics, e: any) {
     if (e.state === 'charge' && e.chargeDef) {
       const d = e.chargeDef, p = clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1), col = e.qi >= 100 ? C.gold : C.red;
-      g.save(); g.translateCanvas(e.x, e.y); g.rotateCanvas(e.facing);
       g.fillStyle(col, 0.1 + 0.16 * p); g.lineStyle(2, col, 0.35 + 0.3 * p);
-      if (d.arc >= 360) { g.fillCircle(0, 0, d.rg + d.lunge * 0.4); g.strokeCircle(0, 0, d.rg + d.lunge * 0.4); }
-      else { const ar = Math.max(d.arc, 24) * RAD; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, d.rg + d.lunge, -ar / 2, ar / 2); g.closePath(); g.fillPath(); g.strokePath(); }
-      g.restore(); return;
+      if (d.arc >= 360) { const r = d.rg + d.lunge * 0.4; this.fillC(g, e.x, e.y, r); this.strokeC(g, e.x, e.y, r); }
+      else this.cone(g, e.x, e.y, e.facing, d.rg + d.lunge, Math.max(d.arc, 24) * RAD);
+      return;
     }
     if (e.state !== 'attack' || !e.atk) return;
     const a = e.atk, d = a.def; if (a.t >= a.su + a.ac) return;
     const act = a.t >= a.su, red = a.kind === 'red', col = red ? (a.dragon ? C.gold : C.red) : 0xfffaf0;
     const rr = d.rg + 10 + (red && !act ? d.lunge * (1 - a.t / a.su) * 0.8 : 0);
-    g.save(); g.translateCanvas(e.x, e.y); g.rotateCanvas(e.facing);
     g.fillStyle(col, red ? (act ? 0.42 : 0.22 + 0.14 * a.t / a.su) : (act ? 0.3 : 0.07 + 0.15 * a.t / a.su));
     g.lineStyle(red ? 3 : 2, col, act ? 0.9 : 0.45);
-    if (d.arc >= 360) { g.fillCircle(0, 0, rr); g.strokeCircle(0, 0, rr); }
-    else { const ar = Math.max(d.arc, 24) * RAD; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, rr, -ar / 2, ar / 2); g.closePath(); g.fillPath(); g.strokePath(); }
-    g.restore();
+    if (d.arc >= 360) { this.fillC(g, e.x, e.y, rr); this.strokeC(g, e.x, e.y, rr); }
+    else this.cone(g, e.x, e.y, e.facing, rr, Math.max(d.arc, 24) * RAD);
   }
 
   // Traînée de coup : au premier plan (au-dessus des personnages), en transparence.
@@ -311,9 +389,11 @@ export class Renderer {
   }
   hideViews(from: number) { for (let i = from; i < this.views.length; i++) { this.views[i].spr.setVisible(false); this.views[i].wpn.setVisible(false); } }
 
-  fx(key: FxKey, x: number, y: number, rot: number, scale: number, tint?: number, alpha = 1) {
+  // Effet sprite : x, y en coordonnées écran ; fxw prend un point du monde de la simulation et une hauteur en pixels.
+  fxw(key: FxKey, x: number, y: number, h: number, rot: number, scale: number, tint?: number, alpha = 1, flat = 1) { const p = this.iso(x, y, h); this.fx(key, p.x, p.y, rot, scale, tint, alpha, flat); }
+  fx(key: FxKey, x: number, y: number, rot: number, scale: number, tint?: number, alpha = 1, flat = 1) {
     const s = this.fxPool.pop() || this.scene.add.sprite(0, 0, 'fx-' + key);
-    s.setTexture('fx-' + key, 0).setPosition(x, y).setRotation(rot).setScale(scale).setAlpha(alpha).setDepth(3.5).setVisible(true).setTintMode(Phaser.TintModes.MULTIPLY);
+    s.setTexture('fx-' + key, 0).setPosition(x, y).setRotation(rot).setScale(scale, scale * flat).setAlpha(alpha).setDepth(3.5).setVisible(true).setTintMode(Phaser.TintModes.MULTIPLY);
     if (tint !== undefined) s.setTint(tint); else s.clearTint();
     s.play('fx-' + key);
     s.once('animationcomplete', () => { s.setVisible(false); this.fxPool.push(s); });
@@ -327,7 +407,7 @@ export class Renderer {
 
   drawFighter(g: Phaser.GameObjects.Graphics, e: any, i: number, time: number, dt: number, myIdx: number, twin: boolean) {
     const v = this.view(i), spr = v.spr, wpn = v.wpn, st = e.state;
-    // vitesse mesurée à l'écran, pour l'animation de marche
+    // vitesse mesurée dans le monde, pour l'animation de marche
     const moved = Math.hypot(e.x - v.px, e.y - v.py); v.px = e.x; v.py = e.y;
     if (moved < 60) { v.walk += moved; v.spd += ((dt > 0 ? moved / dt : 0) - v.spd) * Math.min(1, dt * 12); }
     v.flash = Math.max(0, v.flash - dt * 1000); v.squash = Math.max(0, v.squash - dt * 6);
@@ -338,26 +418,26 @@ export class Renderer {
     if (e.spawnInv > 0 && st !== 'climb' && st !== 'falling' && !(e.dropT > 0)) ga *= 0.55 + 0.3 * Math.sin(time * 0.02);
     const dp = e.dropT > 0 ? e.dropT / 500 : 0; if (dp) { scale *= 1 + dp * 1.2; ga *= 1 - dp * 0.45; }
 
-    // sol : ombre, anneau du joueur ou couleur de ceinture de l'adversaire
-    const fy = e.y + 15;
+    // sol : ombre, anneau du joueur ou couleur de ceinture de l'adversaire (posés à plat sur le dojo)
+    const G = this.iso(e.x, e.y);
     if (st !== 'falling' && st !== 'ledge') {
-      g.fillStyle(0x1e180c, 0.32 * ga); g.fillEllipse(e.x, fy, 34 * (1 - dp * 0.5), 12 * (1 - dp * 0.5));
+      g.fillStyle(0x1e180c, 0.34 * ga); g.fillEllipse(G.x, G.y + 2, 32 * (1 - dp * 0.5), 14 * (1 - dp * 0.5));
       const ringCol = i === myIdx ? C.ochre : hex(e.belt || beltOf(e.kos)[2]);
-      g.lineStyle(2, ringCol, (i === myIdx ? 0.85 : 0.6) * ga); g.strokeEllipse(e.x, fy, 46, 17);
+      g.lineStyle(2, ringCol, (i === myIdx ? 0.9 : 0.65) * ga); g.strokeEllipse(G.x, G.y + 2, 44, 21);
     }
     if (st === 'charge') {
       const p = clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1), pulse = 0.5 + 0.5 * Math.sin(time * 0.035), gold = e.qi >= 100, r = 26 + 10 * p + pulse * 3, col = gold ? C.gold : C.red;
-      g.fillStyle(col, (0.14 + 0.22 * p) * ga); g.fillCircle(e.x, e.y, r); g.lineStyle(2 + 2 * p, col, ga); g.strokeCircle(e.x, e.y, r);
-      if (p >= 1) { g.lineStyle(1.5, 0xffffff, 0.7 * ga); g.strokeCircle(e.x, e.y, r + 5); }
-      if (p >= 1 && !v.full) { v.full = true; this.fx('sparkle', e.x, e.y - 8, 0, 2.2, gold ? C.gold : 0xff6a50); }
+      g.fillStyle(col, (0.14 + 0.22 * p) * ga); this.fillC(g, e.x, e.y, r); g.lineStyle(2 + 2 * p, col, ga); this.strokeC(g, e.x, e.y, r);
+      if (p >= 1) { g.lineStyle(1.5, 0xffffff, 0.7 * ga); this.strokeC(g, e.x, e.y, r + 5); }
+      if (p >= 1 && !v.full) { v.full = true; this.fxw('sparkle', e.x, e.y, 20, 0, 2.2, gold ? C.gold : 0xff6a50); }
     } else v.full = false;
-    if (e.elanT > 0) { g.lineStyle(2, C.jade, ga * (0.4 + 0.4 * Math.sin(time * 0.02))); g.strokeCircle(e.x, e.y, 25); }
-    if (e.qi >= 100 && st !== 'charge') { g.lineStyle(2, C.gold, ga * (0.35 + 0.25 * Math.sin(time * 0.012))); g.strokeCircle(e.x, e.y, 28); }
-    if (st === 'parry') { const perf = e.stateT <= PARRY_PERFECT; g.fillStyle(C.bone, 0.12 * ga); g.fillCircle(e.x, e.y, 30); g.lineStyle(perf ? 4 : 3, perf ? C.gold : C.bone, (perf ? 1 : 0.85) * ga); g.strokeCircle(e.x, e.y, 30); }
+    if (e.elanT > 0) { g.lineStyle(2, C.jade, ga * (0.4 + 0.4 * Math.sin(time * 0.02))); this.strokeC(g, e.x, e.y, 25); }
+    if (e.qi >= 100 && st !== 'charge') { g.lineStyle(2, C.gold, ga * (0.35 + 0.25 * Math.sin(time * 0.012))); this.strokeC(g, e.x, e.y, 28); }
+    if (st === 'parry') { const perf = e.stateT <= PARRY_PERFECT; g.fillStyle(C.bone, 0.12 * ga); this.fillC(g, e.x, e.y, 30); g.lineStyle(perf ? 4 : 3, perf ? C.gold : C.bone, (perf ? 1 : 0.85) * ga); this.strokeC(g, e.x, e.y, 30); }
 
-    // image du personnage : colonne = direction, ligne = posture
+    // image du personnage : colonne = direction à l'écran, ligne = posture
     const P = PERSOS[e.look.perso] || PERSOS['ninja-bleu'];
-    const c = Math.cos(e.facing), sn = Math.sin(e.facing);
+    const sa = worldAngleToScreen(e.facing), c = Math.cos(sa), sn = Math.sin(sa);
     let col = Math.abs(c) >= Math.abs(sn) * 0.85 ? (c > 0 ? 3 : 2) : (sn > 0 ? 0 : 1), row = 0;
     let sx = 1, sy = 1;
     const S = st === 'attack' && e.atk && e.atk.def ? this.strike(e) : null;
@@ -380,8 +460,8 @@ export class Renderer {
     if (st === 'tumble') rot += e.stateT * 0.022;
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
-    const depth = 2.5 + (e.y + 2000) * 1e-5;
-    spr.setVisible(true).setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col).setPosition(e.x + jit, e.y - 4)
+    const depth = 2.5 + (G.y + 4000) * 1e-5;
+    spr.setVisible(true).setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col).setPosition(G.x + jit, G.y - 18)
       .setScale(PX * scale * sx, PX * scale * sy).setRotation(rot).setAlpha(ga).setDepth(depth);
     if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     else {
@@ -391,7 +471,7 @@ export class Renderer {
       else spr.clearTint();
     }
 
-    // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos
+    // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos. Calcul dans le monde, puis projection.
     const W = ARMES[e.look.arme] || ARMES.katana, WS = PX * 0.82, L = W.len * WS;
     const s0 = S ? e.atk.startStance : e.stance, side = (s0 & 1) ? 1 : -1;
     const f = e.facing, cf = Math.cos(f), sf = Math.sin(f);
@@ -406,31 +486,32 @@ export class Renderer {
     else if (st === 'stun' || st === 'recover' || st === 'tumble' || st === 'falling') { hand = toW(4, side * 12); wang = f + side * 1.2 + Math.sin(e.stateT * 0.03) * 0.4 + rot; }
     else if (st !== 'ledge' && st !== 'climb') { hand = toW(3, side * 19); wang = f + side * 0.3; }
     if (W.idx >= 0 && hand) {
-      const behind = !S && hand.y < e.y - 3;
-      wpn.setVisible(true).setFrame(W.idx).setPosition(hand.x, hand.y - 2).setRotation(wang).setFlipY(Math.cos(wang) < 0)
+      const hs = this.iso(hand.x, hand.y, 14), wsa = worldAngleToScreen(wang), behind = !S && hs.y + 14 < G.y - 2;
+      wpn.setVisible(true).setFrame(W.idx).setPosition(hs.x, hs.y).setRotation(wsa).setFlipY(Math.cos(wsa) < 0)
         .setScale(WS * scale).setAlpha(ga).setDepth(depth + (behind ? -1e-6 : 1e-6));
       if (v.flash > 0) wpn.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL); else wpn.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
     } else wpn.setVisible(false);
 
-    // traînée au bout de l'arme et effets de coup
+    // traînée au bout de l'arme (points en coordonnées écran) et effets de coup
     if (S && S.phase === 'ac' && tip) {
-      (e.trail ||= []).push({ x: tip.x, y: tip.y, t: time, red: e.atk.kind === 'red', gold: e.atk.dragon });
-      v.partT -= dt * 1000; if (v.partT <= 0) { v.partT = 26; this.trailPart(e.look.trainee, tip.x, tip.y, wang); }
+      const T = this.iso(tip.x, tip.y, 14);
+      (e.trail ||= []).push({ x: T.x, y: T.y, t: time, red: e.atk.kind === 'red', gold: e.atk.dragon });
+      v.partT -= dt * 1000; if (v.partT <= 0) { v.partT = 26; this.trailPart(e.look.trainee, T.x, T.y, worldAngleToScreen(wang)); }
     }
     const phase = S ? S.phase : '';
     if (phase === 'ac' && v.prevPhase !== 'ac') {
       const d = e.atk.def, red = e.atk.kind === 'red', drag = e.atk.dragon, tint = red && !drag ? 0xff5040 : undefined;
-      if (d.sweep && d.arc >= 300) this.fx('spin', e.x, e.y, f, (d.rg * 2 + 16) / 32, tint, red ? 0.85 : 0.65);
-      else if (d.sweep) this.fx('slash', e.x + cf * d.rg * 0.55, e.y + sf * d.rg * 0.55, f, d.rg / 32 * 1.4, tint, red ? 0.85 : 0.65);
-      else this.fx(drag ? 'fireslash' : 'arc', e.x + cf * d.rg * 0.72, e.y + sf * d.rg * 0.72, f, red ? 2.2 : 1.45, tint, red ? 0.85 : 0.6);
+      if (d.sweep && d.arc >= 300) this.fxw('spin', e.x, e.y, 6, 0, (d.rg * 2 + 16) / 32 * 1.1, tint, red ? 0.85 : 0.65, 0.5);
+      else if (d.sweep) this.fxw('slash', e.x + cf * d.rg * 0.55, e.y + sf * d.rg * 0.55, 12, sa, d.rg / 32 * 1.3, tint, red ? 0.85 : 0.65);
+      else this.fxw(drag ? 'fireslash' : 'arc', e.x + cf * d.rg * 0.72, e.y + sf * d.rg * 0.72, 12, sa, red ? 2.1 : 1.4, tint, red ? 0.85 : 0.6);
     }
     v.prevPhase = phase;
     if (st === 'dodge') {
-      if (v.prevState !== 'dodge') this.fx('smoke', e.x, e.y + 6, 0, 1.5, undefined, 0.75);
+      if (v.prevState !== 'dodge') this.fx('smoke', G.x, G.y - 4, 0, 1.5, undefined, 0.75);
       v.ghostT -= dt * 1000; if (v.ghostT <= 0) { v.ghostT = 40; this.ghost(v, depth - 1e-5, C.jade); }
     }
-    if (st === 'ledge' && v.prevState !== 'ledge') this.fx('dust', e.x, e.y + 8, 0, 1.6);
-    if (v.prevDrop > 0 && !(e.dropT > 0)) this.fx('dust', e.x, fy - 4, 0, 2.2);
+    if (st === 'ledge' && v.prevState !== 'ledge') this.fx('dust', G.x, G.y, 0, 1.6);
+    if (v.prevDrop > 0 && !(e.dropT > 0)) this.fx('dust', G.x, G.y, 0, 2.2);
     v.prevDrop = e.dropT || 0; v.prevState = st;
   }
 
@@ -462,11 +543,11 @@ export class Renderer {
   drawLabels(st: any, myIdx: number) {
     this.ensureLabels(st.f.length);
     st.f.forEach((e: any, i: number) => {
-      const L = this.labels[i]; const vis = e.state !== 'dead';
+      const L = this.labels[i], G = this.iso(e.x, e.y); const vis = e.state !== 'dead';
       const a = e.state === 'falling' ? clamp(1 - e.fallT / 400, 0, 1) : 1;
-      L.name.setVisible(vis).setText(e.name).setColor(i === myIdx ? '#e0a243' : '#fffaec').setPosition(e.x, e.y - 48).setAlpha(a);
-      L.pct.setVisible(vis).setText(Math.round(e.pct) + '%').setColor(heatCss(e.pct)).setPosition(e.x, e.y - 30).setAlpha(a);
-      if (e.emote && vis && EMOTES[e.emote.id]) { const t = e.emote.t, al = t < 150 ? t / 150 : t > 1500 ? 1 - (t - 1500) / 300 : 1; L.emo.setVisible(true).setText(EMOTES[e.emote.id]).setPosition(e.x, e.y - 64).setAlpha(clamp(al, 0, 1)); }
+      L.name.setVisible(vis).setText(e.name).setColor(i === myIdx ? '#e0a243' : '#fffaec').setPosition(G.x, G.y - 64).setAlpha(a);
+      L.pct.setVisible(vis).setText(Math.round(e.pct) + '%').setColor(heatCss(e.pct)).setPosition(G.x, G.y - 47).setAlpha(a);
+      if (e.emote && vis && EMOTES[e.emote.id]) { const t = e.emote.t, al = t < 150 ? t / 150 : t > 1500 ? 1 - (t - 1500) / 300 : 1; L.emo.setVisible(true).setText(EMOTES[e.emote.id]).setPosition(G.x, G.y - 82).setAlpha(clamp(al, 0, 1)); }
       else L.emo.setVisible(false);
     });
     this.hideLabels(st.f.length);

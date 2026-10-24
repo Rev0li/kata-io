@@ -7,6 +7,7 @@ export const FX_KEYS = ['hit', 'star', 'guard', 'sparkle', 'cross', 'arc', 'spin
 export type FxKey = typeof FX_KEYS[number];
 // Particules des effets de boutique : [largeur, hauteur] d'une image
 export const PARTS: Record<string, [number, number]> = { leaf: [12, 7], wood: [16, 16], pig: [16, 16], coin: [10, 10], shuriken: [13, 13], chest: [16, 14], ghost: [16, 16], bird: [16, 16], flame: [16, 16] };
+export const THEME_BG = ['brume', 'coucher', 'neon'];
 const BASE = import.meta.env.BASE_URL + 'assets/';
 
 export function preloadAssets(scene: Phaser.Scene) {
@@ -14,6 +15,7 @@ export function preloadAssets(scene: Phaser.Scene) {
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16 });
   scene.load.image('dojo', BASE + 'dojo.png');
   scene.load.image('dojo-mousse', BASE + 'dojo-mousse.png');
+  for (const t of THEME_BG) scene.load.image('bg-' + t, BASE + 'bg/' + t + '.png'); // horizons d'après art/reference
   for (const k of FX_KEYS) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS)) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: w, frameHeight: h });
 }

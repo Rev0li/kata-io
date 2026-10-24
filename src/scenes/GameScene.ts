@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Renderer, WATER_HEX } from '../game/render';
+import { Renderer, THEMES, iso2, unIso } from '../game/render';
 import { session } from '../net/session';
 import { controls, updateControls } from '../ui/controls';
 import { updateActionBar, actionEvent } from '../ui/actionbar';
@@ -12,7 +12,7 @@ import { viewState } from '../ui/viewstate';
 export class GameScene extends Phaser.Scene {
   r!: Renderer;
   cine: { idx: number; t: number } | null = null;
-  heartT = 0; mpOn = false;
+  heartT = 0; mpOn = false; themeOverride: string | null = null;
   view = new Phaser.Geom.Rectangle();
 
   constructor() { super('game'); }
@@ -22,9 +22,9 @@ export class GameScene extends Phaser.Scene {
   create() {
     setupAssets(this);
     const cam = this.cameras.main;
-    cam.setBackgroundColor(WATER_HEX);
     cam.centerOn(0, 0);
     this.r = new Renderer(this);
+    this.themeOverride = new URLSearchParams(location.search).get('theme');
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (!session.active || controls.blocked() || p.wasTouch) return;
@@ -35,6 +35,15 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => { if (!p.wasTouch && p.leftButtonReleased()) controls.setAtk(false); });
     this.input.on('pointermove', () => { controls.mouseSeen = true; });
     this.scene.launch('hud');
+  }
+
+  // Ambiance d'arène : l'accueil est de nuit, la Tour avance du crépuscule vers la brume puis le néon.
+  themeFor() {
+    const m = session.mode, fl = session.floor;
+    if (m === 'tower' && fl) return fl.daily ? 'neon' : fl.n <= 4 ? 'coucher' : fl.n <= 8 ? 'brume' : 'neon';
+    if (m === 'showcase' || m === 'tuto') return 'coucher';
+    if (m === 'idle') return 'neon';
+    return 'brume';
   }
 
   update(time: number, delta: number) {
@@ -49,7 +58,7 @@ export class GameScene extends Phaser.Scene {
     if (me) {
       // même ciblage pour tous : automatique sur mobile, et sur ordinateur sauf si le joueur choisit la souris
       if (controls.isTouch || controls.autoAim || !controls.mouseSeen) { if (foe && foe.state !== 'dead' && foe.state !== 'falling') aim = Math.atan2(foe.y - me.y, foe.x - me.x); }
-      else { const p = this.input.activePointer; const w = cam.getWorldPoint(p.x, p.y); if (Math.hypot(w.x - me.x, w.y - me.y) > 6) aim = Math.atan2(w.y - me.y, w.x - me.x); }
+      else { const p = this.input.activePointer; const sp = cam.getWorldPoint(p.x, p.y), w = unIso(sp.x, sp.y); if (Math.hypot(w.x - me.x, w.y - me.y) > 6) aim = Math.atan2(w.y - me.y, w.x - me.x); }
     }
     updateControls(aim);
 
@@ -70,19 +79,19 @@ export class GameScene extends Phaser.Scene {
     let tx = 0, ty = 0;
     if (this.cine) { this.cine.t -= delta; if (this.cine.t <= 0 || !st) this.cine = null; }
     const focus = st ? (this.cine ? st.f[this.cine.idx] : me) : null;
-    if (focus && focus.state !== 'dead') { tx = focus.x * 0.75; ty = focus.y * 0.75; }
-    if (session.show) { tx = session.show.focus.x; ty = session.show.focus.y; } // vitrine de la boutique
+    if (focus && focus.state !== 'dead') { const p = iso2(focus.x, focus.y); tx = p.x * 0.75; ty = p.y * 0.75 - 10; }
+    if (session.show) { const p = iso2(session.show.focus.x, session.show.focus.y); tx = p.x; ty = p.y; } // vitrine de la boutique
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
     if (viewState.shop) { const W0 = this.scale.width, H0 = this.scale.height; if (W0 > 720) tx += (Math.min(420, W0 * 0.45) / 2) / cam.zoom; else ty += (H0 * 0.3) / cam.zoom; }
     const k = 1 - Math.exp(-5 * dt);
     const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k, cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
     const W = this.scale.width, H = this.scale.height;
-    let z = clamp(Math.max(Math.min(W, H) / 380, Math.sqrt(W * H) / 600), 0.9, 1.6);
+    let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (this.cine) z *= 1.25;
     cam.setZoom(cam.zoom + (z - cam.zoom) * (1 - Math.exp(-3.5 * dt)));
     cam.centerOn(cx, cy);
-    setListener(cx, cy);
+    { const lw = unIso(cx, cy); setListener(lw.x, lw.y); }
     this.view.setTo(cam.worldView.x, cam.worldView.y, cam.worldView.width, cam.worldView.height);
 
     // balle de match : battement de cœur, plus rapide quand quelqu'un est déjà haut en pourcentage
@@ -90,6 +99,7 @@ export class GameScene extends Phaser.Scene {
     if (mp !== this.mpOn) { this.mpOn = mp; document.body.classList.toggle('mp', mp); this.heartT = 0; }
     if (mp) { this.heartT -= delta; if (this.heartT <= 0) { const hot = st.f.some((e: any) => e.pct >= 100); this.heartT = hot ? 620 : 900; sfx('heart', hot ? 1 : 0.75); document.body.style.setProperty('--beat', hot ? '.62s' : '.9s'); } }
 
+    this.r.setTheme(this.themeOverride && THEMES[this.themeOverride] ? this.themeOverride : this.themeFor());
     this.r.update(dt, time, st, session.myIdx, this.view, session.marker);
     if (st) updateActionBar(st.f[session.myIdx]);
     musicTick();

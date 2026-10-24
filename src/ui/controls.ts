@@ -2,6 +2,7 @@
 // Tout aboutit dans session.input, envoyé tel quel à la simulation ou à l'hôte.
 import { session } from '../net/session';
 import { initAudio, startMusic } from '../game/audio';
+import { screenDirToWorld } from '../game/render';
 
 const keys = new Set<string>();
 const stick = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
@@ -33,7 +34,8 @@ export function updateControls(aim: number) {
   const inp = session.input;
   if ((window as any).__autopilot) return; // tests automatisés (avec ?debug)
   if (!session.active || controls.blocked()) { inp.mx = 0; inp.my = 0; inp.atk = false; return; }
-  const m = moveVec(); inp.mx = m.x; inp.my = m.y; inp.aim = aim;
+  const m = screenDirToWorld(moveVec().x, moveVec().y); // les touches et le joystick suivent l'écran : haut = vers le fond du dojo
+  inp.mx = m.x; inp.my = m.y; inp.aim = aim;
 }
 export function clearKeys() { keys.clear(); stick.x = stick.y = 0; const i = session.input; i.atk = false; i.mx = 0; i.my = 0; session.flushInput(); }
 

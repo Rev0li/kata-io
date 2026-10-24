@@ -99,7 +99,7 @@ src/
   net/transport.ts   connexion PeerJS (production) ou BroadcastChannel (?net=local)
   net/session.ts     modes entraînement / hôte / invité, revanche, ping
   game/assets.ts     chargement des sprites (personnages, armes, effets, sol)
-  game/render.ts     rendu Phaser : dojo, combattants en sprites, cônes, traînées, ploufs, particules
+  game/render.ts     rendu Phaser en vue isométrique 2:1 : dojo (losange dessiné en code), thèmes d'ambiance, combattants en sprites, cônes, traînées, ploufs, particules
   game/audio.ts      sons et musique synthétisés en WebAudio (aucun fichier audio)
   game/tutorial.ts   étapes du tutoriel et exercices par technique
   ui/actionbar.ts    barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
@@ -126,6 +126,12 @@ Messages échangés :
 | Les deux | `rematch` | demande de revanche ; l'hôte répond `restart` quand les deux l'ont demandée |
 | Hôte | `away` | l'onglet de l'hôte est en arrière-plan, le combat est en pause |
 | Les deux | `ping` / `pong` | mesure de la latence affichée en jeu |
+
+## Direction artistique
+
+La vue est **isométrique** (losange 2:1). La simulation reste à plat en (x, y) ; `render.ts` projette tout à l'écran et les sprites restent debout. Les touches et le joystick suivent l'écran (haut = vers le fond du dojo), la souris est reconvertie dans le monde.
+
+Les visuels de référence sont dans `art/reference/` : fiche du personnage (gi bleu, ceinture rouge), maquette de l'accueil (bois, parchemins, néon) et trois arènes. Les arènes servent de **thèmes** : `brume` (jardin sous la brume), `coucher` (cartoon, soleil couchant) et `neon` (nuit). La plateforme est dessinée en code pour pouvoir rétrécir en mort subite ; les horizons viennent des visuels (`public/assets/bg/`). Dans la Tour, les étages 1 à 4 sont au coucher de soleil, 5 à 8 dans la brume, 9 et plus au néon. Avec `?theme=brume|coucher|neon`, on force une ambiance.
 
 ## Déploiement sur Vercel
 
