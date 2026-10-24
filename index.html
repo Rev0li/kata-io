@@ -142,17 +142,24 @@
           <p id="homeJoinNote" class="note invite" hidden></p>
 
           <div class="hcard rank" id="rankCard">
-            <button class="me-face" id="rankFace" type="button" aria-label="Changer de combattant">
-              <i class="face" id="rankFaceImg"></i><span class="beltsw" id="rankBelt"></span>
-            </button>
-            <div class="rk">
-              <div class="rkline"><b id="rankName">Ceinture blanche</b><small id="rankXpTxt"></small></div>
-              <div class="xpbar"><i id="rankXp"></i></div>
+            <div class="rankrow">
+              <button class="me-face" id="rankFace" type="button" aria-label="Changer de combattant">
+                <i class="face" id="rankFaceImg"></i><span class="beltsw" id="rankBelt"></span>
+              </button>
+              <div class="rk">
+                <div class="rkline"><b id="rankName">Ceinture blanche</b><small id="rankXpTxt"></small></div>
+                <div class="xpbar"><i id="rankXp"></i></div>
+              </div>
+              <div class="rknext">
+                <img class="px" id="rankNextIco" src="/assets/items/scroll-plant.png" alt="" /><span
+                  ><small id="rankNextLbl">Prochaine technique :</small><b id="rankNext"></b
+                ></span>
+              </div>
             </div>
-            <div class="rknext">
-              <img class="px" id="rankNextIco" src="/assets/items/scroll-plant.png" alt="" /><span
-                ><small id="rankNextLbl">Prochaine technique :</small><b id="rankNext"></b
-              ></span>
+            <div class="rankcta">
+              <img src="/assets/mondes/bambous/pagode-4-etages.png" alt="" />
+              <span class="rct"><b>Tour du temple</b><small id="rankTowerSub"></small></span>
+              <button id="rankTowerBtn" class="btn-gold" type="button">Gravir la Tour</button>
             </div>
           </div>
 
@@ -185,6 +192,10 @@
                 >Partie publique
               </h2>
               <p class="hint">Affronte un joueur au hasard, sans code ni lien.</p>
+              <div class="lock" id="publicLock">
+                <small id="publicLockTxt"></small>
+                <div class="xpbar"><i id="publicProg"></i></div>
+              </div>
               <button id="publicBtn" class="btn-gold wide" type="button" disabled>Bientôt</button>
             </div>
           </div>

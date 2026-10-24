@@ -2442,8 +2442,69 @@ body.touch .atk b {
 /* ceinture et prochaine technique */
 .home2 .rank {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.rankrow {
+  display: flex;
   align-items: center;
   gap: 14px;
+}
+/* le profil pousse vers la Tour */
+.rankcta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--gold-2);
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(230, 200, 142, 0.12), rgba(230, 200, 142, 0.02));
+}
+.rankcta img {
+  width: 40px;
+  height: 52px;
+  object-fit: contain;
+  flex: none;
+}
+.rct {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rct b {
+  font-family: var(--f-disp);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1;
+}
+.rct small {
+  color: var(--ochre);
+  font-size: 12px;
+}
+.rankcta .btn-gold {
+  animation: hotpulse 2.4s ease-in-out infinite;
+}
+/* partie publique verrouillée */
+.lock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lock[hidden] {
+  display: none;
+}
+.lock small {
+  color: var(--cream);
+  font-size: 12px;
+}
+.lock .xpbar i {
+  background: linear-gradient(90deg, var(--gold-2), var(--gold-1));
 }
 .home2 .rk {
   gap: 7px;

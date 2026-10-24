@@ -67,6 +67,7 @@ export function setupUI() {
   audioPrefs.music = profile.music;
   // accueil
   $('#towerBtn').addEventListener('click', () => startTower(nextFloor()));
+  $('#rankTowerBtn').addEventListener('click', () => startTower(nextFloor()));
   $('#floorsBtn').addEventListener('click', () => {
     renderFloors();
     show('floors');

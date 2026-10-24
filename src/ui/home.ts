@@ -1,5 +1,5 @@
 // Écran d'accueil (maquette art/reference/mondes/accueil-v2.png), en onglets :
-//   Accueil         profil (ceinture et XP), duel privé, partie publique (à venir)
+//   Accueil         profil (ceinture et XP) et bouton de la Tour, duel privé, partie publique (après toutes les techniques)
 //   Mon combattant  nom, combattant et arme
 //   Temple          Tour du temple, défi du jour, entraînement dans un monde
 //   Boutique        écran de la boutique (shop.ts)
@@ -13,6 +13,10 @@ import { sfx } from '../game/audio';
 import { $, toast } from './dom';
 import { profile, save, myRank, myAbil, myLook, persoOpen, armeOpen, PK, AK, nextFloor, rollDaily } from './profile';
 import { viewState } from './viewstate';
+
+// Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire, au bout de la Tour).
+const TECHS = RANKS.filter(r => r.unlock).length;
+export const publicOpen = () => myRank() >= RANKS.length - 1;
 
 // Parchemin de chaque technique (pack Ninja Adventure, public/assets/items).
 export const SCROLLS: Record<string, string> = {
@@ -188,11 +192,18 @@ export function renderHome() {
       (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
   const f = towerFloor(nextFloor());
   renderTraining();
-  $('#towerSub').textContent = !profile.tutoDone
+  $('#towerSub').textContent = $('#rankTowerSub').textContent = !profile.tutoDone
     ? 'Commence par le tutoriel (1 min)'
     : profile.streak >= 2
       ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}`
       : `Étage ${f.n} · ${f.name}`;
+  // partie publique : verrouillée tant que toutes les techniques ne sont pas acquises
+  const got = RANKS.slice(1, myRank() + 1).filter(r => r.unlock).length,
+    open = publicOpen();
+  $('#publicLock').hidden = open;
+  $('#publicLockTxt').textContent = `Gravis la Tour : il faut toutes les techniques (${got} sur ${TECHS}).`;
+  ($('#publicProg') as HTMLElement).style.width = Math.round((got / TECHS) * 100) + '%';
+  $('#publicBtn').textContent = open ? 'Bientôt' : 'Verrouillée';
   renderCoins();
   ($('#setSfx') as HTMLInputElement).checked = profile.sfx;
   ($('#setMusic') as HTMLInputElement).checked = profile.music;
