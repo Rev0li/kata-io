@@ -57,7 +57,9 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 
 - [ ] Équilibrage de la Tour (`npx tsx scripts/towercheck.ts 0.45`) : l'étage 2 (47 %) est plus dur que les étages 3 à 6, les étages 9 à 12 sont à 10 % ou moins, l'étage 5 dure 131 s.
 - [ ] Trancher les questions ouvertes de DECISIONS : bonus d'équilibre (D2), affichage de son propre état (D3), indicateur de spam (D9), option « effets réduits » (D4), stockage des mesures (D12).
-- [ ] **Fonds en images fixes** générées ailleurs : définir le format (WebP, dimensions, zone utile x=500 à 1900 sur 2400) et mettre à jour D11 (qui fixe aujourd'hui le décor en SVG).
+- [ ] **Mondes** (remplacent les six dojos, voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md) section 5) : décor plein écran en isométrique trois quarts, premier plan en parallaxe, plateforme en pièces détachables. Définir le format des images (WebP, dimensions) et mettre à jour D11 (qui fixe aujourd'hui le décor en SVG).
+- [ ] **Tour par mondes** : cerisiers (étages 1 à 3), bambous (4 à 6), neige (7 à 9), forge (10 à 12), puis les quatre mondes en boucle dans la tour sans fin.
+- [ ] **Plus tard : de nouveaux mondes** à partir des dojos `brume` (jardin zen sous la brume) et `neon` (ville de nuit), qui n'ont pas encore de monde.
 - [ ] **Classes** de combattants : profils de multiplicateurs sur `RULES` (D8).
 - [ ] **Vraies armes** (aujourd'hui cosmétiques) : statistiques via les mêmes multiplicateurs (D8).
 - [ ] **Inventaire** : modèle d'objets possédés et équipés (remplace la liste `owned` du profil). À terme, comptes en ligne pour ne plus dépendre du navigateur.
