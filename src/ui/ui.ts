@@ -28,6 +28,8 @@ function show(id: string | null) {
   for (const s of SCREENS) $('#' + s).hidden = s !== id;
   $('#quitBtn').hidden = !!id || !session.active;
   $('#touch').hidden = !!id || !session.active || !controls.isTouch;
+  $('#actions').hidden = !!id || !session.active;
+  if (id === 'joining') $('#joinSpin').hidden = false;
   if (id) clearKeys();
 }
 controls.blockedFn = () => current !== '';
@@ -53,20 +55,20 @@ function cycle(kind: 'tenue' | 'masque', d: number) {
 /* ---------- actions ---------- */
 async function createRoom() {
   wake(); myName(); show('lobby');
-  $('#lobbyCode').textContent = '······'; ($('#lobbyLink') as HTMLInputElement).value = ''; $('#lobbyStatus').textContent = 'Création de la salle…';
+  $('#lobbyCode').textContent = '······'; ($('#lobbyLink') as HTMLInputElement).value = ''; $('#lobbyStatus').textContent = 'Création de la salle…'; $('#lobbyWait').hidden = true;
   try {
     host = await hostRoom(net, conn => { session.startHost(conn, mySpec()); }, err => toast(err));
-    $('#lobbyCode').textContent = host.code; ($('#lobbyLink') as HTMLInputElement).value = inviteLink(host.code);
-    $('#lobbyStatus').textContent = 'En attente de ton adversaire. Envoie-lui le lien.';
+    revealCode(host.code); ($('#lobbyLink') as HTMLInputElement).value = inviteLink(host.code);
+    $('#lobbyStatus').textContent = 'En attente de ton adversaire. Envoie-lui le lien.'; $('#lobbyWait').hidden = false;
     ($('#shareBtn') as HTMLButtonElement).hidden = !navigator.share;
-  } catch (e: any) { $('#lobbyStatus').textContent = e.message || 'Impossible de créer la salle.'; }
+  } catch (e: any) { $('#lobbyStatus').textContent = e.message || 'Impossible de créer la salle.'; $('#lobbyWait').hidden = true; }
 }
 async function join(codeRaw: string) {
   const code = cleanCode(codeRaw); if (code.length < 4) { toast('Code de salle invalide'); return; }
   wake(); myName(); show('joining');
   $('#joinTitle').textContent = 'Salle ' + code; $('#joinStatus').textContent = 'Connexion à la salle…';
   try { const conn = await joinRoom(net, code); session.startGuest(conn, mySpec()); }
-  catch (e: any) { $('#joinStatus').textContent = e.message || 'Connexion impossible.'; }
+  catch (e: any) { $('#joinStatus').textContent = e.message || 'Connexion impossible.'; $('#joinSpin').hidden = true; }
 }
 function practice() { wake(); session.startPractice(mySpec(), profile.level); }
 function leave() {
@@ -88,20 +90,49 @@ session.hooks = {
       $('#resTitle').textContent = win ? 'Victoire' : 'Défaite'; $('#resTitle').className = win ? 'win' : 'lose';
       $('#resScore').textContent = `${score[session.myIdx]} – ${score[1 - session.myIdx]} contre ${op ? op.name : 'ton adversaire'}`;
       $('#resStatus').textContent = session.mode === 'practice' ? '' : 'Une revanche ? Il faut que vous la demandiez tous les deux.';
-      ($('#rematchBtn') as HTMLButtonElement).disabled = false; ($('#rematchBtn') as HTMLButtonElement).textContent = 'Revanche';
-      sfx(win ? 'win' : 'lose'); show('result');
+      ($('#rematchBtn') as HTMLButtonElement).disabled = false; $('#rematchLbl').textContent = 'Revanche';
+      sfx(win ? 'win' : 'lose'); show('result'); restartAnim($('#resTitle')); if (win) confetti();
     }, 1400);
   },
   onRematch(me, them) {
     const st = session.state; const op = st ? st.f[1 - session.myIdx].name : 'Ton adversaire';
     $('#resStatus').textContent = me && them ? 'C’est reparti !' : me ? `En attente de ${op}…` : `${op} veut une revanche.`;
-    if (me) { ($('#rematchBtn') as HTMLButtonElement).disabled = true; ($('#rematchBtn') as HTMLButtonElement).textContent = 'Revanche demandée'; }
+    if (me) { ($('#rematchBtn') as HTMLButtonElement).disabled = true; $('#rematchLbl').textContent = 'Revanche demandée'; }
   },
   onDisconnect() { if (current === 'home') return; $('#lostMsg').textContent = 'Ton adversaire s’est déconnecté.'; show('lost'); },
   onStatus(msg) { if (msg) { $('#lobbyStatus').textContent = msg; $('#joinStatus').textContent = msg; } },
 };
 
+// Petits effets d'interface : onde sous le doigt, survol sonore, lettres du code, confettis.
+function restartAnim(el: HTMLElement) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+function revealCode(code: string) { $('#lobbyCode').innerHTML = [...code].map((c, i) => `<span style="animation-delay:${i * 70}ms">${c}</span>`).join(''); }
+function confetti() {
+  const box = $('#confetti'); box.innerHTML = '';
+  const cols = ['#f2c14e', '#e0a243', '#ecdfc6', '#62c2a2', '#f2a7c3', '#e5483a'];
+  for (let i = 0; i < 36; i++) {
+    const el = document.createElement('i'); const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 170;
+    el.style.background = cols[i % cols.length];
+    el.style.setProperty('--dx', Math.cos(a) * d + 'px'); el.style.setProperty('--dy', Math.sin(a) * d * 0.8 + 60 + 'px'); el.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+    el.style.animationDelay = Math.random() * 120 + 'ms'; box.append(el);
+  }
+}
+function setupButtonFx() {
+  document.addEventListener('pointerdown', e => {
+    const b = (e.target as HTMLElement).closest('.btn-play, .btn2, .ghost') as HTMLElement | null; if (!b || (b as HTMLButtonElement).disabled) return;
+    const r = b.getBoundingClientRect(), size = Math.max(r.width, r.height) * 2.2, s = document.createElement('span');
+    s.className = 'ripple'; s.style.width = s.style.height = size + 'px'; s.style.left = (e.clientX - r.left) + 'px'; s.style.top = (e.clientY - r.top) + 'px';
+    b.append(s); setTimeout(() => s.remove(), 600); sfx('ui');
+  });
+  document.addEventListener('pointerover', e => {
+    if (controls.isTouch) return;
+    const b = (e.target as HTMLElement).closest('.btn-play, .btn2') as HTMLElement | null;
+    const from = (e.relatedTarget as HTMLElement | null)?.closest?.('.btn-play, .btn2');
+    if (b && b !== from && !(b as HTMLButtonElement).disabled) sfx('hover');
+  });
+}
+
 export function setupUI() {
+  setupButtonFx();
   renderHome();
   audioPrefs.sfx = profile.sfx; audioPrefs.music = profile.music;
   $('#createBtn').addEventListener('click', createRoom);
@@ -116,12 +147,13 @@ export function setupUI() {
   $('#setMusic').addEventListener('change', e => { profile.music = audioPrefs.music = (e.target as HTMLInputElement).checked; save(); wake(); setMusicLevel(0.07); });
   $('#copyBtn').addEventListener('click', async () => {
     const v = ($('#lobbyLink') as HTMLInputElement).value; if (!v) return;
-    try { await navigator.clipboard.writeText(v); toast('Lien copié'); } catch (e) { ($('#lobbyLink') as HTMLInputElement).select(); toast('Sélectionne le lien et copie-le'); }
+    const b = $('#copyBtn');
+    try { await navigator.clipboard.writeText(v); b.textContent = 'Copié ✓'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Copier'; b.classList.remove('ok'); }, 1600); } catch (e) { ($('#lobbyLink') as HTMLInputElement).select(); toast('Sélectionne le lien et copie-le'); }
   });
   $('#shareBtn').addEventListener('click', () => { const v = ($('#lobbyLink') as HTMLInputElement).value; if (v && navigator.share) navigator.share({ title: 'Kata.io', text: 'Je te défie en duel sur Kata.io', url: v }).catch(() => { /* annulé */ }); });
   $('#lobbyCancel').addEventListener('click', leave);
   $('#joinCancel').addEventListener('click', leave);
-  $('#rematchBtn').addEventListener('click', () => { sfx('ui'); session.requestRematch(); });
+  $('#rematchBtn').addEventListener('click', () => { session.requestRematch(); });
   $('#resHome').addEventListener('click', leave);
   $('#lostHome').addEventListener('click', leave);
   $('#quitBtn').addEventListener('click', () => show('quit'));

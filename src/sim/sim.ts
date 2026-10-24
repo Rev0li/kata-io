@@ -307,7 +307,9 @@ function turnRate(e: Fighter) {
 }
 function updAttack(e: Fighter, ms: number) {
   const a = e.atk, d = a.def, prev = a.t; a.t += ms;
-  if (a.kind === 'white' && e.holding && e.holdT >= CHARGE_START && a.t < a.su && e.souffle >= 1) { startCharge(e); return; }
+  // Le coup blanc se transforme en charge si le bouton est encore tenu. La marge évite de rater
+  // la fenêtre quand le démarrage du coup est à peine plus long que le seuil (pas de 16,7 ms).
+  if (a.kind === 'white' && e.holding && e.holdT >= CHARGE_START && a.t < Math.max(a.su, CHARGE_START + 30) && a.hit.size === 0 && e.souffle >= 1) { startCharge(e); return; }
   const l0 = a.su * 0.3, l1 = a.su + a.ac;
   if (d.lunge && a.t > l0 && prev < l1) { const dd = d.lunge * (Math.min(a.t, l1) - Math.max(prev, l0)) / (l1 - l0); moveSafe(e, Math.cos(e.facing) * dd, Math.sin(e.facing) * dd); }
   checkHits(e);

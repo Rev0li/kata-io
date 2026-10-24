@@ -46,33 +46,33 @@ export class HudScene extends Phaser.Scene {
 
   layout() {
     const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch;
-    this.score.setPosition(W / 2, 12); this.sub.setPosition(W / 2, 46);
-    this.ping.setPosition(W - m, 14);
+    this.score.setPosition(W / 2, 12).setFontSize(touch ? '22px' : '30px'); this.sub.setPosition(W / 2, 46).setVisible(!touch);
+    this.ping.setPosition(W - m, touch ? 44 : 14);
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
     if (touch) {
       this.myName.setPosition(m, 64); this.myPct.setPosition(m, 80).setFontSize('46px'); this.myMoves.setVisible(false);
       this.opName.setPosition(W - m, 64); this.opPct.setPosition(W - m, 80).setFontSize('34px');
-      this.hint.setPosition(W / 2, H - 200);
+      this.hint.setPosition(W / 2, 196);
     } else {
       this.myName.setPosition(m + 4, H - 128); this.myPct.setPosition(m, H - 112).setFontSize('58px'); this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
-      this.opName.setPosition(W - m - 4, H - 100); this.opPct.setPosition(W - m, H - 84).setFontSize('40px');
-      this.hint.setPosition(W / 2, H - 24);
+      this.opName.setPosition(W - m - 4, 40); this.opPct.setPosition(W - m, 56).setFontSize('40px');
+      this.hint.setPosition(W / 2, 92);
     }
   }
 
   update(_time: number, delta: number) {
     const st = session.state, show = !!st;
-    for (const o of [this.score, this.sub, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && (o !== this.myMoves || !controls.isTouch));
+    for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && (o !== this.myMoves || !controls.isTouch));
     this.g.clear();
     this.bigT += delta;
     const bp = this.bigT / this.bigLife;
     this.big.setAlpha(bp >= 1 ? 0 : bp < 0.15 ? bp / 0.15 : bp > 0.7 ? 1 - (bp - 0.7) / 0.3 : 1).setScale(1 + 0.08 * Math.max(0, 1 - bp));
-    if (!st) return;
+    if (!st) { this.sub.setVisible(false); return; }
     this.matchT += delta;
     const me = st.f[session.myIdx], op = st.f[1 - session.myIdx], D = st.duel;
     const sMe = D.score[session.myIdx], sOp = D.score[1 - session.myIdx];
     this.score.setText(`TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
-    this.sub.setText(`Manche ${D.round} · premier à ${FIRST_TO}`);
+    this.sub.setVisible(!controls.isTouch).setText(`Manche ${D.round} · premier à ${FIRST_TO}`);
     this.ping.setText(session.mode === 'practice' ? `Entraînement · ${LEVELS[session.level].name}` : session.ping >= 0 ? `Ping ${session.ping} ms` : 'Connexion…');
     this.myName.setText(me.name);
     this.myPct.setText(Math.round(me.pct) + '%').setColor(heatCss(me.pct));

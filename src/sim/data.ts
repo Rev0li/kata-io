@@ -15,7 +15,7 @@ export const TUMBLE_V = 420;
 export const LEDGE_MAX = 55;
 export const PARRY_WIN = 240, PARRY_PERFECT = 80, PARRY_MISS = 300;
 export const DODGE_T = 300, DODGE_IF0 = 20, DODGE_IF1 = 260, DODGE_DIST = 125;
-export const CHARGE_START = 140, CHARGE_FULL = 800, CHARGE_MAX = 1600;
+export const CHARGE_START = 120, CHARGE_FULL = 800, CHARGE_MAX = 1600;
 export const SOUFFLE_REGEN = 1.3, MOVE_SPEED = 210;
 export const FIRST_TO = 3;
 

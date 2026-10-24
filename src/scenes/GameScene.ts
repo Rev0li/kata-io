@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Renderer, WATER_HEX } from '../game/render';
 import { session } from '../net/session';
 import { controls, updateControls } from '../ui/controls';
+import { updateActionBar, actionEvent } from '../ui/actionbar';
 import { initAudio, setListener, musicTick } from '../game/audio';
 import { clamp } from '../sim/sim';
 
@@ -51,6 +52,7 @@ export class GameScene extends Phaser.Scene {
       if (ev.t === 'shake') cam.shake(140, Math.min(0.012, ev.n * 0.0011));
       if (ev.t === 'cine') this.cine = { idx: ev.id, t: ev.ms };
       if (ev.t === 'ko') cam.flash(160, 255, 255, 255, false);
+      actionEvent(ev, session.myIdx);
       this.game.events.emit('fx', ev);
     }
 
@@ -71,6 +73,7 @@ export class GameScene extends Phaser.Scene {
     this.view.setTo(cam.worldView.x, cam.worldView.y, cam.worldView.width, cam.worldView.height);
 
     this.r.update(dt, time, st, session.myIdx, this.view);
+    if (st) updateActionBar(st.f[session.myIdx]);
     musicTick();
   }
 }

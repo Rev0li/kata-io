@@ -6,17 +6,17 @@ import { initAudio, startMusic } from '../game/audio';
 const keys = new Set<string>();
 const stick = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
 const EMOTE_KEYS: Record<string, string> = { Digit1: 'salut', Digit2: 'rire', Digit3: 'gg', Digit4: 'viens' };
-let emoteCycle = 0;
 
 export const controls = {
   isTouch: matchMedia('(pointer: coarse)').matches,
   mouseSeen: false,
   blockedFn: () => false as boolean,
   blocked() { return this.blockedFn(); },
-  setAtk(v: boolean) { session.input.atk = v; },
-  parry() { session.input.parryN++; },
-  dodge() { session.input.dodgeN++; },
-  emote(id: string) { session.input.emote = id; session.input.emoteN++; },
+  onPress: null as null | ((t: string, down: boolean) => void),
+  setAtk(v: boolean) { if (session.input.atk !== v) this.onPress?.('atk', v); session.input.atk = v; },
+  parry() { session.input.parryN++; this.onPress?.('parry', true); },
+  dodge() { session.input.dodgeN++; this.onPress?.('dodge', true); },
+  emote(id: string) { session.input.emote = id; session.input.emoteN++; this.onPress?.('emote', true); },
 };
 
 function moveVec() {
@@ -76,14 +76,4 @@ export function setupControls() {
   });
   const end = (e: PointerEvent) => { if (e.pointerId !== stick.id) return; stick.id = -1; stick.x = stick.y = 0; knob.hidden = true; };
   zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
-  document.querySelectorAll<HTMLButtonElement>('#tbtns button').forEach(b => {
-    const t = b.dataset.t;
-    b.addEventListener('pointerdown', e => {
-      e.preventDefault(); b.classList.add('held'); try { b.setPointerCapture(e.pointerId); } catch (_) { /* rien */ }
-      if (t === 'atk') controls.setAtk(true); else if (t === 'parry') controls.parry(); else if (t === 'dodge') controls.dodge();
-      else if (t === 'emote') { const ids = ['salut', 'rire', 'gg', 'viens']; controls.emote(ids[emoteCycle++ % ids.length]); }
-    });
-    const up = () => { b.classList.remove('held'); if (t === 'atk') controls.setAtk(false); };
-    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
-  });
 }

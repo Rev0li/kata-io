@@ -3,10 +3,12 @@ import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
 import { setupControls } from './ui/controls';
 import { setupUI } from './ui/ui';
+import { setupActionBar } from './ui/actionbar';
 import { session } from './net/session';
 import './style.css';
 
 setupControls();
+setupActionBar();
 setupUI();
 
 const game = new Phaser.Game({
