@@ -387,7 +387,7 @@ export class Renderer {
     else {
       spr.setTintMode(Phaser.TintModes.MULTIPLY);
       if (st === 'charge') { const k = 0.35 + 0.35 * Math.sin(time * 0.035); spr.setTint(mix(0xffffff, e.qi >= 100 ? 0xffd25a : 0xff5a46, k)); }
-      else if (twin) spr.setTint(0xffc8b4);
+      else if (twin) spr.setTint(0xffa890); // même personnage des deux côtés : le second est teinté
       else spr.clearTint();
     }
 
