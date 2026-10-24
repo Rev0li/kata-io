@@ -82,7 +82,7 @@ export class GameScene extends Phaser.Scene {
     if (focus && focus.state !== 'dead') { const p = iso2(focus.x, focus.y); tx = p.x * 0.75; ty = p.y * 0.75 - 10; }
     if (session.show) { const p = iso2(session.show.focus.x, session.show.focus.y); tx = p.x; ty = p.y; } // vitrine de la boutique
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
-    if (viewState.shop) { const W0 = this.scale.width, H0 = this.scale.height; if (W0 > 720) tx += (Math.min(420, W0 * 0.45) / 2) / cam.zoom; else ty += (H0 * 0.3) / cam.zoom; }
+    if (viewState.shop) { const W0 = this.scale.width, H0 = this.scale.height; if (W0 > H0) tx += (Math.min(420, W0 * 0.5) / 2) / cam.zoom; else ty += (H0 * 0.3) / cam.zoom; }
     const k = 1 - Math.exp(-5 * dt);
     const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k, cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
     const W = this.scale.width, H = this.scale.height;

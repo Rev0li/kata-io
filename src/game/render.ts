@@ -31,6 +31,8 @@ export const THEMES: Record<string, Theme> = {
   coucher: { water: '#355d62', sky: '#d9a982', top: 0xc98450, top2: 0xd89462, seam: 0x7a4624, rim: 0xb36a38, side: 0x7d4a27, out: 0x3a2314, line: 0x2f6f7d },
   neon: { water: '#0a1020', sky: '#0c1229', top: 0x3a2a3c, top2: 0x45324b, seam: 0x1b1220, rim: 0x2b2132, side: 0x18111f, out: 0x080610, line: 0x2de6ea, edge: 0xff9a3c, lamp: 0x2de6ea, glow: 0xff9a3c },
 };
+// secteur (0 = droite, 1 = bas-droite, 2 = bas ...) -> colonne : bas 0, haut 1, gauche 2, droite 3, bas-droite 4, bas-gauche 5, haut-droite 6, haut-gauche 7
+const DIR8 = [3, 4, 0, 5, 2, 7, 1, 6];
 const cache = new Map<string, number>();
 export function hex(s: string): number { let v = cache.get(s); if (v === undefined) { v = parseInt(s.slice(1), 16); cache.set(s, v); } return v; }
 function mix(a: number, b: number, t: number) { const r = Math.round(lerp(a >> 16, b >> 16, t)), g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t)), bl = Math.round(lerp(a & 255, b & 255, t)); return (r << 16) | (g << 8) | bl; }
@@ -438,7 +440,8 @@ export class Renderer {
     // image du personnage : colonne = direction à l'écran, ligne = posture
     const P = PERSOS[e.look.perso] || PERSOS['ninja-bleu'];
     const sa = worldAngleToScreen(e.facing), c = Math.cos(sa), sn = Math.sin(sa);
-    let col = Math.abs(c) >= Math.abs(sn) * 0.85 ? (c > 0 ? 3 : 2) : (sn > 0 ? 0 : 1), row = 0;
+    // 8 directions : secteurs de 45 degrés autour de l'angle écran (0 = droite, y vers le bas) -> colonne de la planche
+    let col = DIR8[((Math.round(Math.atan2(sn, c) / (Math.PI / 4)) % 8) + 8) % 8], row = 0;
     let sx = 1, sy = 1;
     const S = st === 'attack' && e.atk && e.atk.def ? this.strike(e) : null;
     const moving = v.spd > 40;
@@ -461,7 +464,7 @@ export class Renderer {
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
     const depth = 2.5 + (G.y + 4000) * 1e-5;
-    spr.setVisible(true).setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col).setPosition(G.x + jit, G.y - 18)
+    spr.setVisible(true).setFrame(row * PERSO_COUNT * 8 + P.idx * 8 + col).setPosition(G.x + jit, G.y - 18)
       .setScale(PX * scale * sx, PX * scale * sy).setRotation(rot).setAlpha(ga).setDepth(depth);
     if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     else {

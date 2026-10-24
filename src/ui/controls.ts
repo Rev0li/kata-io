@@ -4,6 +4,7 @@ import { session } from '../net/session';
 import { initAudio, startMusic } from '../game/audio';
 import { screenDirToWorld } from '../game/render';
 
+let fsTried = false;
 const keys = new Set<string>();
 const stick = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
 const EMOTE_KEYS: Record<string, string> = { Digit1: 'salut', Digit2: 'rire', Digit3: 'gg', Digit4: 'viens' };
@@ -37,9 +38,20 @@ export function updateControls(aim: number) {
   const m = screenDirToWorld(moveVec().x, moveVec().y); // les touches et le joystick suivent l'écran : haut = vers le fond du dojo
   inp.mx = m.x; inp.my = m.y; inp.aim = aim;
 }
+// Plein écran : il faut un geste de l'utilisateur. Sur iPhone Safari l'API n'existe pas : il faut « Sur l'écran d'accueil ».
+export function toggleFullscreen() {
+  const d: any = document, el: any = document.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen)?.call(d); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) { alert('Sur iPhone : touche Partager, puis « Sur l’écran d’accueil » pour jouer sans barre du navigateur.'); return; }
+  Promise.resolve(req.call(el, { navigationUI: 'hide' })).then(() => (screen.orientation as any)?.lock?.('landscape')).catch(() => {});
+}
 export function clearKeys() { keys.clear(); stick.x = stick.y = 0; const i = session.input; i.atk = false; i.mx = 0; i.my = 0; session.flushInput(); }
 
 export function setupControls() {
+  const fsb = document.getElementById('fsBtn'); fsb?.addEventListener('click', () => toggleFullscreen());
+  document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
+  window.addEventListener('keydown', ev => { if (ev.code === 'KeyF' && !(ev.target as HTMLElement)?.matches?.('input,textarea') && !session.active) toggleFullscreen(); });
   window.addEventListener('keydown', ev => {
     const tg = ev.target as HTMLElement | null;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA')) return;
@@ -60,6 +72,10 @@ export function setupControls() {
   window.addEventListener('pointerdown', ev => {
     initAudio(); startMusic();
     const t = ev.pointerType === 'touch';
+    if (t && !fsTried) { // premier toucher : plein écran et verrou en paysage quand le navigateur le permet (Android)
+      fsTried = true;
+      try { document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).then(() => (screen.orientation as any)?.lock?.('landscape')).catch(() => {}); } catch (_) { /* iOS : pas disponible */ }
+    }
     if (t !== controls.isTouch) { controls.isTouch = t; document.body.classList.toggle('touch', t); }
   }, true);
   document.body.classList.toggle('touch', controls.isTouch);

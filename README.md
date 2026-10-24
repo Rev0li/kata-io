@@ -133,6 +133,12 @@ La vue est **isométrique** (losange 2:1). La simulation reste à plat en (x, y)
 
 Les visuels de référence sont dans `art/reference/` : fiche du personnage (gi bleu, ceinture rouge), maquette de l'accueil (bois, parchemins, néon) et trois arènes. Les arènes servent de **thèmes** : `brume` (jardin sous la brume), `coucher` (cartoon, soleil couchant) et `neon` (nuit). La plateforme est dessinée en code pour pouvoir rétrécir en mort subite ; les horizons viennent des visuels (`public/assets/bg/`). Dans la Tour, les étages 1 à 4 sont au coucher de soleil, 5 à 8 dans la brume, 9 et plus au néon. Avec `?theme=brume|coucher|neon`, on force une ambiance.
 
+## Mobile : paysage uniquement
+
+Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écran « Tourne ton téléphone » prend la place. En paysage court (hauteur de 540 px ou moins), l'interface se compacte : accueil en deux colonnes, boutique en panneau à droite, commandes réduites, HUD en haut. Le plein écran (bouton en haut à droite, touche F, ou premier toucher sur Android) masque la barre du navigateur ; sur iPhone il faut « Sur l'écran d'accueil » (le manifeste demande plein écran et paysage).
+
+Les personnages ont 8 directions : les 4 du pack plus 4 diagonales assemblées en trois quarts par `scripts/diagonals.py` (à remplacer par de vrais sprites plus tard).
+
 ## Déploiement sur Vercel
 
 À faire une seule fois :

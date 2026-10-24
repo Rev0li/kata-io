@@ -46,7 +46,7 @@ function show(id: string | null) {
   current = id || '';
   for (const s of SCREENS) $('#' + s).hidden = s !== id;
   const inGame = !id && session.active;
-  $('#quitBtn').hidden = !inGame;
+  $('#quitBtn').hidden = !inGame; document.body.classList.toggle('ingame', inGame);
   $('#touch').hidden = !inGame || !controls.isTouch;
   $('#actions').hidden = !inGame;
   $('#tutoBar').hidden = !inGame || session.mode !== 'tuto';

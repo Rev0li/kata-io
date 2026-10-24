@@ -6,14 +6,25 @@
   <title>Kata.io</title>
   <meta name="description" content="Duel de kung-fu en 1 contre 1 : frappe, pare, esquive, et envoie ton adversaire à l'eau.">
   <meta name="theme-color" content="#0f1719">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&display=swap">
 </head>
 <body>
+  <div id="rotate" role="alert">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="18" y="6" width="28" height="52" rx="5"/><path d="M28 51h8"/><path d="M52 18c4 3 6 7 6 12M58 30l-3-3M58 30l3-3" /></svg>
+    <b>Tourne ton téléphone</b>
+    <span>Kata.io se joue en mode paysage, pouces sur les côtés.</span>
+  </div>
   <div id="game"></div>
   <div id="vig"></div>
 
+  <button id="fsBtn" class="iconbtn" type="button" aria-label="Plein écran" title="Plein écran (F)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   <button id="quitBtn" class="iconbtn" type="button" hidden>Quitter</button>
 
   <div id="touch" hidden>
@@ -46,6 +57,7 @@
 
   <section id="home" class="screen">
     <div class="col">
+      <div class="hcol">
       <div class="logo">
         <svg class="enso" viewBox="0 0 200 200" aria-hidden="true"><path pathLength="100" d="M146 45 A72 72 0 1 0 168 125" fill="none" stroke="#c8463b" stroke-width="15" stroke-linecap="round" opacity=".88"/></svg>
         <h1>KATA<span>.io</span></h1>
@@ -65,6 +77,8 @@
         <button id="floorsBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5"/></svg>Étages</button>
         <button id="practiceBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Entraînement</button>
       </div>
+      </div>
+      <div class="hcol">
       <button id="dailyBtn" class="btn2 wide dailybtn" type="button"><img class="px" src="/assets/items/scroll-thunder.png" alt=""><span class="dl"><b>Défi du jour</b><small id="dailySub"></small></span></button>
       <button id="shopBtn" class="btn2 wide shopbtn" type="button"><i class="sico chest" style="background-image:url(/assets/fx/chest.png);--n:2;--f:1;--ar:.875"></i><span>Boutique d'effets</span><span class="coins"><img class="px" src="/assets/items/gold-coin.png" alt=""><b id="homeCoins">0</b></span></button>
       <div class="box">
@@ -114,6 +128,7 @@
           <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
         </div>
       </details>
+      </div>
       <p class="ver">Version de développement</p>
     </div>
   </section>

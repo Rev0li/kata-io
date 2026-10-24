@@ -53,7 +53,7 @@ export class HudScene extends Phaser.Scene {
     if (touch) {
       this.myName.setPosition(m, 64); this.myPct.setPosition(m, 80).setFontSize('46px'); this.myMoves.setVisible(false);
       this.opName.setPosition(W - m, 64); this.opPct.setPosition(W - m, 80).setFontSize('34px');
-      this.hint.setPosition(W / 2, 196);
+      this.hint.setPosition(W / 2, 72);
     } else {
       this.myName.setPosition(m + 4, H - 128); this.myPct.setPosition(m, H - 112).setFontSize('58px'); this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
       this.opName.setPosition(W - m - 4, 40); this.opPct.setPosition(W - m, 56).setFontSize('40px');
