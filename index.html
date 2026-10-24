@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kata.io</title>
+  <meta name="description" content="Duel de kung-fu en 1 contre 1 : frappe, pare, esquive, et envoie ton adversaire à l'eau.">
+  <meta name="theme-color" content="#0f1719">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600;700&display=swap">
+</head>
+<body>
+  <div id="game"></div>
+  <div id="vig"></div>
+
+  <button id="quitBtn" class="iconbtn" type="button" hidden>Quitter</button>
+
+  <div id="touch" hidden>
+    <div id="stickZone"><div id="stick" hidden><i></i></div></div>
+    <div id="tbtns">
+      <button data-t="emote" class="sm" type="button">Emote</button>
+      <button data-t="parry" class="pa" type="button">Parer</button>
+      <button data-t="dodge" class="do" type="button">Esquive</button>
+      <button data-t="atk" class="big" type="button">Frapper</button>
+    </div>
+  </div>
+
+  <section id="home" class="screen">
+    <div class="col">
+      <div class="logo">
+        <svg class="enso" viewBox="0 0 200 200" aria-hidden="true"><path d="M146 45 A72 72 0 1 0 168 125" fill="none" stroke="#c8463b" stroke-width="15" stroke-linecap="round" opacity=".88"/></svg>
+        <h1>KATA<span>.io</span></h1>
+        <p>Duel de kung-fu en 1 contre 1. Envoie ton adversaire à l'eau.</p>
+      </div>
+      <p id="homeJoinNote" class="note" hidden></p>
+      <div class="box">
+        <label for="nameIn" class="lbl">Nom de combattant</label>
+        <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier">
+        <div class="look">
+          <div class="cyc"><button id="tPrev" type="button" aria-label="Tenue précédente">‹</button><span><i id="tenueSw"></i><b id="tenueName"></b></span><button id="tNext" type="button" aria-label="Tenue suivante">›</button></div>
+          <div class="cyc"><button id="mPrev" type="button" aria-label="Masque précédent">‹</button><span><b id="masqueName"></b></span><button id="mNext" type="button" aria-label="Masque suivant">›</button></div>
+        </div>
+      </div>
+      <button id="createBtn" class="btn-play" type="button">Créer un duel privé</button>
+      <form id="joinForm" class="joinrow">
+        <label for="codeIn" class="sr">Code de la salle</label>
+        <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE">
+        <button id="joinBtn" class="btn2" type="submit">Rejoindre</button>
+      </form>
+      <div class="box">
+        <div class="row-between"><span class="lbl">S'entraîner contre un bot</span>
+          <div class="lvls" id="lvls" role="radiogroup" aria-label="Niveau du bot"><button type="button" role="radio" data-l="0">Disciple</button><button type="button" role="radio" data-l="1">Adepte</button><button type="button" role="radio" data-l="2">Maître</button></div>
+        </div>
+        <button id="practiceBtn" class="btn2 wide" type="button">Lancer l'entraînement</button>
+      </div>
+      <details class="help">
+        <summary>Commandes et réglages</summary>
+        <div class="keys">
+          <span><kbd>ZQSD</kbd> <kbd>flèches</kbd></span><span>Se déplacer</span>
+          <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span><span>Frapper. Maintenu : coup chargé rouge</span>
+          <span><kbd>Clic droit</kbd> <kbd>K</kbd></span><span>Parer un coup blanc juste avant l'impact</span>
+          <span><kbd>Espace</kbd> <kbd>Shift</kbd></span><span>Esquiver (coûte un souffle)</span>
+          <span><kbd>1</kbd>–<kbd>4</kbd></span><span>Emotes</span>
+          <span><kbd>Échap</kbd></span><span>Quitter le duel</span>
+        </div>
+        <label class="tgl"><span>Effets sonores</span><input type="checkbox" id="setSfx"></label>
+        <label class="tgl"><span>Musique</span><input type="checkbox" id="setMusic"></label>
+      </details>
+      <p class="ver">Version de développement · duel sur invitation</p>
+    </div>
+  </section>
+
+  <section id="lobby" class="screen" hidden>
+    <div class="col card">
+      <span class="lbl">Ta salle</span>
+      <div class="code" id="lobbyCode">······</div>
+      <p class="sub">Envoie ce lien à ton adversaire. Le duel commence dès qu'il l'ouvre.</p>
+      <div class="linkrow"><input id="lobbyLink" readonly aria-label="Lien d'invitation"><button id="copyBtn" class="btn2" type="button">Copier</button></div>
+      <button id="shareBtn" class="btn2 wide" type="button" hidden>Partager le lien</button>
+      <p class="status" id="lobbyStatus"></p>
+      <button id="lobbyCancel" class="ghost" type="button">Annuler</button>
+    </div>
+  </section>
+
+  <section id="joining" class="screen" hidden>
+    <div class="col card">
+      <span class="lbl">Invitation</span>
+      <div class="code" id="joinTitle"></div>
+      <p class="status" id="joinStatus"></p>
+      <button id="joinCancel" class="ghost" type="button">Retour</button>
+    </div>
+  </section>
+
+  <section id="result" class="screen dim" hidden>
+    <div class="col card">
+      <h2 id="resTitle">Victoire</h2>
+      <p class="sub" id="resScore"></p>
+      <button id="rematchBtn" class="btn-play" type="button">Revanche</button>
+      <p class="status" id="resStatus"></p>
+      <button id="resHome" class="ghost" type="button">Accueil</button>
+    </div>
+  </section>
+
+  <section id="lost" class="screen dim" hidden>
+    <div class="col card">
+      <h2>Fin du duel</h2>
+      <p class="sub" id="lostMsg"></p>
+      <button id="lostHome" class="btn-play" type="button">Accueil</button>
+    </div>
+  </section>
+
+  <section id="quit" class="screen dim" hidden>
+    <div class="col card">
+      <h2>Quitter ?</h2>
+      <p class="sub">Le duel sera abandonné.</p>
+      <button id="quitNo" class="btn-play" type="button">Continuer</button>
+      <button id="quitYes" class="ghost" type="button">Quitter le duel</button>
+    </div>
+  </section>
+
+  <div id="toast" role="status"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

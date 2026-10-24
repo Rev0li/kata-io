@@ -1,0 +1,24 @@
+{
+  "name": "kata-io",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kata.io — duel de kung-fu en 1 contre 1 sur invitation (Phaser + PeerJS)",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "sim": "tsx scripts/simcheck.ts"
+  },
+  "dependencies": {
+    "peerjs": "1.5.5",
+    "phaser": "4.2.1"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "8.3.4"
+  }
+}
