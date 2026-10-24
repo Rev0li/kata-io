@@ -16,8 +16,6 @@ const BASE = import.meta.env.BASE_URL + 'assets/';
 export function preloadAssets(scene: Phaser.Scene) {
   scene.load.spritesheet('persos', BASE + 'persos.png', { frameWidth: 16, frameHeight: 16 });
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16 });
-  scene.load.image('dojo', BASE + 'dojo.png');
-  scene.load.image('dojo-mousse', BASE + 'dojo-mousse.png');
   // Rastérisés à la taille demandée (4096 px de large au plus : limite des GPU mobiles) puis affichés à 2400 × 420.
   for (const t of THEME_BG) scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', { width: 4096, height: 717 });
   for (const s of SPECIES) scene.load.svg('fish-' + s, BASE + 'decor/fish-' + s + '.svg', { width: 276, height: 96 }); // un seul tenant : déformé en tranches par le jeu
@@ -28,7 +26,7 @@ export function preloadAssets(scene: Phaser.Scene) {
 
 export function setupAssets(scene: Phaser.Scene) {
   // Pixel art : pas de lissage quand on agrandit.
-  for (const k of ['persos', 'armes', 'dojo', 'dojo-mousse', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)]) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
+  for (const k of ['persos', 'armes', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)]) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
   for (const k of FX_KEYS) {
     if (scene.anims.exists('fx-' + k)) continue;
     scene.anims.create({ key: 'fx-' + k, frames: scene.anims.generateFrameNumbers('fx-' + k), frameRate: k === 'splash' || k === 'smoke' ? 16 : 22, repeat: 0 });

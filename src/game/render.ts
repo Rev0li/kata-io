@@ -34,7 +34,7 @@ export const THEMES: Record<string, Theme> = {
   volcan: { water: '#3a1208', sky: '#2a0f12', top: 0x4a3028, top2: 0x563830, seam: 0x2a1a16, rim: 0x6a4a3c, side: 0x2a1a16, out: 0x120606, line: 0xff7a2a, edge: 0xff9a3c, lamp: 0xff9a3c, glow: 0xff7a2a },
   neon: { water: '#0a1020', sky: '#0c1229', top: 0x3a2a3c, top2: 0x45324b, seam: 0x1b1220, rim: 0x2b2132, side: 0x18111f, out: 0x080610, line: 0x2de6ea, edge: 0xff9a3c, lamp: 0x2de6ea, glow: 0xff9a3c },
 };
-// Vie de chaque dojo : espèces de poissons (lignes de fauna.png), objets flottants (colonnes de floats.png), particules d'ambiance.
+// Vie de chaque dojo : espèces de poissons (decor/fish-*.svg), objets flottants (decor/float-*.svg), particules d'ambiance.
 const LIFE: Record<string, { fish: string[]; floats: string[]; amb: string; glint: number; nFish: number }> = {
   coucher: { fish: ['koi_orange', 'koi_blanc', 'koi_or'], floats: ['nenuphar', 'fleur'], amb: 'petal', glint: 0xfbe2b4, nFish: 5 },
   brume: { fish: ['koi_blanc', 'argente', 'carpe_jade'], floats: ['nenuphar', 'feuille'], amb: 'leaf', glint: 0xdfe2d6, nFish: 4 },

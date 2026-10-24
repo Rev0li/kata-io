@@ -21,9 +21,9 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Phase 1 : nettoyage et refacto
 
-- [ ] Supprimer les assets morts : `dojo.png`, `dojo-mousse.png`, `items/gold-cup`, `silver-cup`, `gold-key`, `little-treasure-chest`.
-- [ ] Supprimer les commentaires périmés (`fauna.png`, `floats.png` dans `render.ts`).
-- [ ] Réécrire la section « Direction artistique » du README (parle de `public/assets/bg/` et de 3 thèmes, plus vrai).
+- [x] Archiver les assets morts dans `archive/` (`dojo.png`, `dojo-mousse.png`, `items/gold-cup`, `silver-cup`, `gold-key`, `little-treasure-chest`).
+- [x] Supprimer les commentaires périmés (`fauna.png`, `floats.png` dans `render.ts`).
+- [ ] Réécrire la section « Direction artistique » du README (parle de `public/assets/bg/` et de 3 thèmes, plus vrai). **Traité dans une autre session.**
 - [ ] Décider d'un formatage automatique (Prettier) pour casser les lignes de 300 à 470 caractères.
 - [ ] Découper `src/game/render.ts` (57 Ko) : dojo, décor et faune, combattants, effets.
 - [ ] Découper `src/ui/ui.ts` : profil et sauvegarde, accueil, Tour, boutique, salon, résultat.

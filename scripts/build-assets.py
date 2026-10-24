@@ -16,6 +16,8 @@ from PIL import Image
 
 NA, SP = sys.argv[1], os.path.join(sys.argv[2], 'ninja-adventure')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets')
+# Assets générés mais plus utilisés par le jeu : gardés hors de public/ (non déployés).
+ARCHIVE = os.path.join(os.path.dirname(__file__), '..', 'archive', 'assets')
 
 # Personnages : planche de 4 colonnes (bas, haut, gauche, droite) sur 7 lignes de 16 px.
 PERSOS = [
@@ -49,12 +51,14 @@ FX = {
     'fire': 12, 'splash': 15, 'dust': 16, 'smoke': 18, 'fireslash': 20,
 }
 ITEMS = ['scroll-empty', 'scroll-fire', 'scroll-ice', 'scroll-plant', 'scroll-rock', 'scroll-thunder',
-         'gold-cup', 'silver-cup', 'shuriken', 'gold-coin', 'little-treasure-chest', 'gold-key']
+         'shuriken', 'gold-coin']
+ITEMS_ARCHIVE = ['gold-cup', 'silver-cup', 'little-treasure-chest', 'gold-key']
 
 
 def main():
     os.makedirs(os.path.join(OUT, 'fx'), exist_ok=True)
     os.makedirs(os.path.join(OUT, 'items'), exist_ok=True)
+    os.makedirs(os.path.join(ARCHIVE, 'items'), exist_ok=True)
 
     sheet = Image.new('RGBA', (64 * len(PERSOS), 112))
     faces = Image.new('RGBA', (38 * len(PERSOS), 38))
@@ -84,9 +88,10 @@ def main():
     weap.save(os.path.join(OUT, 'armes.png'), optimize=True)
 
     # Sol du dojo : un motif de 3 x 3 tuiles du temple (pierre claire, ou mousse pour le tatami mouillé).
+    # Archivé : la plateforme est maintenant dessinée en code (render.ts).
     floor = Image.open(os.path.join(NA, 'content/map/tileset_interior_floor.png')).convert('RGBA')
-    floor.crop((11 * 16, 0, 14 * 16, 48)).save(os.path.join(OUT, 'dojo.png'), optimize=True)
-    floor.crop((11 * 16, 6 * 16, 14 * 16, 9 * 16)).save(os.path.join(OUT, 'dojo-mousse.png'), optimize=True)
+    floor.crop((11 * 16, 0, 14 * 16, 48)).save(os.path.join(ARCHIVE, 'dojo.png'), optimize=True)
+    floor.crop((11 * 16, 6 * 16, 14 * 16, 9 * 16)).save(os.path.join(ARCHIVE, 'dojo-mousse.png'), optimize=True)
 
     # Particules des effets de la boutique (traînées, ploufs) : bandes horizontales d'images.
     def strip(frames, name):
@@ -114,6 +119,8 @@ def main():
         shutil.copy(os.path.join(SP, 'fx/%d.png' % n), os.path.join(OUT, 'fx', name + '.png'))
     for name in ITEMS:
         shutil.copy(os.path.join(SP, 'items', name + '.png'), os.path.join(OUT, 'items', name + '.png'))
+    for name in ITEMS_ARCHIVE:
+        shutil.copy(os.path.join(SP, 'items', name + '.png'), os.path.join(ARCHIVE, 'items', name + '.png'))
     print('ok', len(PERSOS), 'personnages,', len(ARMES), 'armes,', len(FX), 'effets,', len(ITEMS), 'objets')
 
 
