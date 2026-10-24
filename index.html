@@ -53,7 +53,7 @@
       </div>
       <p id="homeJoinNote" class="note" hidden></p>
       <div class="rank" id="rankCard">
-        <span class="beltsw" id="rankBelt"></span>
+        <button class="me-face" id="rankFace" type="button" aria-label="Changer de combattant"><i class="face" id="rankFaceImg"></i><span class="beltsw" id="rankBelt"></span></button>
         <div class="rk">
           <b id="rankName">Ceinture blanche</b>
           <div class="xpbar"><i id="rankXp"></i></div>
@@ -80,9 +80,10 @@
           <label for="nameIn" class="lbl">Nom</label>
           <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier">
           <div class="look">
-            <div class="cyc"><button id="tPrev" type="button" aria-label="Tenue précédente">‹</button><span><i id="tenueSw"></i><b id="tenueName"></b></span><button id="tNext" type="button" aria-label="Tenue suivante">›</button></div>
-            <div class="cyc"><button id="mPrev" type="button" aria-label="Masque précédent">‹</button><span><b id="masqueName"></b></span><button id="mNext" type="button" aria-label="Masque suivant">›</button></div>
+            <div class="cyc" id="persoCyc"><button id="tPrev" type="button" aria-label="Personnage précédent">‹</button><span><i class="face sm" id="persoFace"></i><span class="cn"><b id="persoName"></b><small id="persoReq"></small></span></span><button id="tNext" type="button" aria-label="Personnage suivant">›</button></div>
+            <div class="cyc" id="armeCyc"><button id="mPrev" type="button" aria-label="Arme précédente">‹</button><span><i class="wico" id="armeIco"></i><span class="cn"><b id="armeName"></b><small id="armeReq"></small></span></span><button id="mNext" type="button" aria-label="Arme suivante">›</button></div>
           </div>
+          <p class="lookhint" id="lookCount"></p>
         </div>
       </details>
       <details class="help">
@@ -115,7 +116,7 @@
   <section id="floors" class="screen dim" hidden>
     <div class="col card floors">
       <h2>La Tour</h2>
-      <p class="sub">Bats chaque gardien pour monter. Trois étoiles : sans perdre de manche, et vite.</p>
+      <p class="sub">Bats chaque gardien pour monter et gagner son apparence. Trois étoiles : sans perdre de manche, et vite.</p>
       <ol id="floorList"></ol>
       <button id="floorsClose" class="ghost" type="button">Fermer</button>
     </div>
@@ -152,10 +153,14 @@
       <p class="near" id="resNear" hidden></p>
       <div class="xpgain" id="resXp" hidden><span id="resXpTxt"></span><div class="xpbar"><i id="resXpBar"></i></div></div>
       <div class="unlock" id="resUnlock" hidden>
-        <span class="lbl">Nouvelle ceinture</span>
-        <b id="unlockBelt"></b>
+        <div class="uhead"><img class="px scroll" id="unlockScroll" src="/assets/items/scroll-fire.png" alt=""><div><span class="lbl">Nouvelle ceinture</span><b id="unlockBelt"></b></div></div>
         <p><strong id="unlockTitle"></strong> <span id="unlockText"></span></p>
+        <p class="newwpn" id="unlockWpn" hidden><i class="wico" id="unlockWpnIco"></i><span id="unlockWpnTxt"></span></p>
         <button id="unlockTry" class="btn2 wide" type="button">Essayer la technique</button>
+      </div>
+      <div class="unlock perso" id="resPerso" hidden>
+        <div class="uhead"><i class="face big" id="resPersoFace"></i><div><span class="lbl">Nouveau combattant</span><b id="resPersoName"></b></div></div>
+        <button id="resPersoUse" class="btn2 wide" type="button">Le prendre</button>
       </div>
       <button id="resMain" class="btn-play" type="button"><span id="resMainLbl">Revanche</span></button>
       <p class="status" id="resStatus"></p>

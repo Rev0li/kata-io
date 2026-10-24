@@ -1,6 +1,6 @@
 // Progression : ceintures, techniques débloquées, étages de la Tour du temple.
 // Aucune dépendance au DOM : ces règles serviront aussi côté serveur.
-import { Look, Deck, DEFAULT_DECK, randDeck } from './data';
+import { Look, Deck, DEFAULT_DECK, randDeck, PERSOS, ARMES } from './data';
 
 /* ---------- techniques ---------- */
 export interface Abil { chain: number; parry: boolean; charge: boolean; elan: boolean; dragon: boolean }
@@ -36,18 +36,18 @@ export function rankProgress(xp: number) {
 /* ---------- Tour du temple ---------- */
 export interface Floor { n: number; name: string; skill: number; tier: number; firstTo: number; H: number; damp: number; twist: string; boss: boolean; look: Look; deck: Deck; par: number }
 const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
-  { name: 'Le gardien de la porte', skill: 0.12, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { tenue: 'gi-ecru', masque: 'aucun', trainee: 'aucune', ejection: 'plouf' } },
-  { name: 'Le moine distrait', skill: 0.16, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { tenue: 'brume', masque: 'bandeau', trainee: 'aucune', ejection: 'plouf' } },
-  { name: 'La sentinelle', skill: 0.26, tier: 1, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { tenue: 'gi-encre', masque: 'corbeau', trainee: 'aucune', ejection: 'plouf' } },
-  { name: 'Le batelier', skill: 0.3, tier: 1, firstTo: 2, H: 208, damp: 3.2, twist: 'Petit radeau : le bord est tout près', boss: false, look: { tenue: 'robe-jade', masque: 'lune', trainee: 'jade-t', ejection: 'plouf' } },
-  { name: 'Maître Kenji', skill: 0.36, tier: 2, firstTo: 3, H: 260, damp: 3.2, twist: 'Gardien de la ceinture orange : il pare', boss: true, look: { tenue: 'laque', masque: 'oni', trainee: 'braise', ejection: 'feu' } },
-  { name: 'La danseuse', skill: 0.4, tier: 2, firstTo: 2, H: 260, damp: 2.6, twist: 'Tatami mouillé : on glisse plus loin', boss: false, look: { tenue: 'kimono-pourpre', masque: 'kitsune', trainee: 'aurore', ejection: 'petales' } },
-  { name: 'Le forgeron', skill: 0.46, tier: 3, firstTo: 2, H: 260, damp: 3.2, twist: 'Il charge ses coups : esquive le rouge', boss: false, look: { tenue: 'laque', masque: 'aucun', trainee: 'braise', ejection: 'feu' } },
-  { name: 'L’ombre', skill: 0.52, tier: 3, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { tenue: 'gi-encre', masque: 'corbeau', trainee: 'encre', ejection: 'encre-e' } },
-  { name: 'Le tigre blanc', skill: 0.58, tier: 4, firstTo: 3, H: 260, damp: 3.2, twist: '', boss: false, look: { tenue: 'gi-ecru', masque: 'cerf', trainee: 'aucune', ejection: 'petales' } },
-  { name: 'La grande prêtresse', skill: 0.66, tier: 5, firstTo: 3, H: 234, damp: 2.8, twist: 'Gardienne de la ceinture marron', boss: true, look: { tenue: 'soie-or', masque: 'couronne', trainee: 'aurore', ejection: 'petales' } },
-  { name: 'Le dragon de jade', skill: 0.75, tier: 6, firstTo: 3, H: 260, damp: 3.2, twist: 'Son qi se remplit vite', boss: false, look: { tenue: 'robe-jade', masque: 'oni', trainee: 'jade-t', ejection: 'canards' } },
-  { name: 'Le maître du temple', skill: 0.85, tier: 6, firstTo: 3, H: 260, damp: 3.2, twist: 'Le dernier gardien', boss: true, look: { tenue: 'nuit', masque: 'couronne', trainee: 'aurore', ejection: 'canards' } },
+  { name: 'Le gardien de la porte', skill: 0.12, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'bandit', arme: 'massue', trainee: 'aucune', ejection: 'plouf' } },
+  { name: 'Le moine distrait', skill: 0.16, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'plouf' } },
+  { name: 'La sentinelle', skill: 0.26, tier: 1, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'samourai', arme: 'yari', trainee: 'aucune', ejection: 'plouf' } },
+  { name: 'Le batelier', skill: 0.3, tier: 1, firstTo: 2, H: 208, damp: 3.2, twist: 'Petit radeau : le bord est tout près', boss: false, look: { perso: 'ronin', arme: 'katana', trainee: 'jade-t', ejection: 'plouf' } },
+  { name: 'Maître Kenji', skill: 0.36, tier: 2, firstTo: 3, H: 260, damp: 3.2, twist: 'Gardien de la ceinture orange : il pare', boss: true, look: { perso: 'oni', arme: 'nodachi', trainee: 'braise', ejection: 'feu' } },
+  { name: 'Le squelette dansant', skill: 0.4, tier: 2, firstTo: 2, H: 260, damp: 2.6, twist: 'Tatami mouillé : on glisse plus loin', boss: false, look: { perso: 'squelette', arme: 'sai', trainee: 'aurore', ejection: 'petales' } },
+  { name: 'Le forgeron', skill: 0.46, tier: 3, firstTo: 2, H: 260, damp: 3.2, twist: 'Il charge ses coups : esquive le rouge', boss: false, look: { perso: 'sumo', arme: 'massue', trainee: 'braise', ejection: 'feu' } },
+  { name: 'L’ombre', skill: 0.52, tier: 3, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'ombre', arme: 'katana', trainee: 'encre', ejection: 'encre-e' } },
+  { name: 'Le loup blanc', skill: 0.58, tier: 4, firstTo: 3, H: 260, damp: 3.2, twist: '', boss: false, look: { perso: 'loup', arme: 'trident', trainee: 'aucune', ejection: 'petales' } },
+  { name: 'Le vieil ermite', skill: 0.66, tier: 5, firstTo: 3, H: 234, damp: 2.8, twist: 'Gardien de la ceinture marron', boss: true, look: { perso: 'ermite', arme: 'yari', trainee: 'aurore', ejection: 'petales' } },
+  { name: 'Le dragon de jade', skill: 0.75, tier: 6, firstTo: 3, H: 260, damp: 3.2, twist: 'Son qi se remplit vite', boss: false, look: { perso: 'ninja-vert', arme: 'sai', trainee: 'jade-t', ejection: 'canards' } },
+  { name: 'Le maître du temple', skill: 0.85, tier: 6, firstTo: 3, H: 260, damp: 3.2, twist: 'Le dernier gardien', boss: true, look: { perso: 'shogun', arme: 'nodachi', trainee: 'aurore', ejection: 'canards' } },
 ];
 export const TOWER_LEN = FLOORS.length;
 function seeded(n: number) { let h = (n * 2654435761) >>> 0; return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; }; }
@@ -60,8 +60,8 @@ export function towerFloor(n: number): Floor {
   // Tour infinie : au-delà du dernier gardien, des adversaires générés, de plus en plus coriaces.
   const rnd = seeded(n), twists = [['', 260, 3.2], ['Petit radeau : le bord est tout près', 208, 3.2], ['Tatami mouillé : on glisse plus loin', 260, 2.6]] as const;
   const tw = twists[(rnd() * twists.length) | 0];
-  const tenues = ['gi-ecru', 'gi-encre', 'kimono-pourpre', 'robe-jade', 'laque', 'brume', 'soie-or', 'nuit'], masques = ['aucun', 'bandeau', 'kitsune', 'corbeau', 'lune', 'oni', 'cerf', 'couronne'];
-  return { n, name: 'Ombre de l’étage ' + n, skill: Math.min(0.95, 0.86 + (n - FLOORS.length) * 0.005), tier: 6, firstTo: 3, H: tw[1], damp: tw[2], twist: tw[0], boss: n % 5 === 0, look: { tenue: tenues[(rnd() * 8) | 0], masque: masques[(rnd() * 8) | 0], trainee: 'aurore', ejection: 'canards' }, deck: randDeck(rnd), par: 75 };
+  const persos = Object.keys(PERSOS), armes = Object.keys(ARMES);
+  return { n, name: 'Ombre de l’étage ' + n, skill: Math.min(0.95, 0.86 + (n - FLOORS.length) * 0.005), tier: 6, firstTo: 3, H: tw[1], damp: tw[2], twist: tw[0], boss: n % 5 === 0, look: { perso: persos[(rnd() * persos.length) | 0], arme: armes[(rnd() * armes.length) | 0], trainee: 'aurore', ejection: 'canards' }, deck: randDeck(rnd), par: 75 };
 }
 // Étoiles : 1 pour la victoire, 2 sans perdre de manche, 3 sans perdre de manche et sous le temps de référence.
 export function starsFor(won: boolean, roundsLost: number, seconds: number, par: number) { if (!won) return 0; if (roundsLost > 0) return 1; return seconds <= par ? 3 : 2; }

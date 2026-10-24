@@ -37,12 +37,17 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
 input { width: 100%; min-width: 0; background: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; padding: 11px 12px; font-size: 16px; }
 input:focus { border-color: var(--ochre); outline: none; }
 #nameIn { text-align: center; font-size: 17px; }
-.look { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.look { display: grid; grid-template-columns: 1fr; gap: 6px; }
 .cyc { display: flex; align-items: center; gap: 4px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px; min-width: 0; }
 .cyc button { width: 30px; height: 30px; flex: none; border: 0; border-radius: 4px; background: var(--stone); font-size: 18px; line-height: 1; }
 .cyc span { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; overflow: hidden; }
 .cyc b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cyc i { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0,0,0,.4); }
+.cyc .cn { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; line-height: 1.15; }
+.cyc small { font-size: 11px; color: var(--ochre); white-space: nowrap; }
+.cyc small:empty { display: none; }
+.cyc.locked .face, .cyc.locked .wico { filter: grayscale(1) brightness(.5); }
+.cyc.locked b { color: var(--mist); }
+.lookhint { margin: 0; font-size: 12px; color: var(--mist); text-align: center; }
 .btn-play { background: var(--ochre); color: var(--ink); border: 0; border-radius: 6px; padding: 14px 18px 12px; font-family: var(--f-disp); font-weight: 900; font-size: clamp(22px, 6.4vw, 28px); line-height: 1; letter-spacing: .05em; text-transform: uppercase; box-shadow: 0 5px 0 #8f6020; transition: transform .08s, box-shadow .08s; }
 .btn-play:active { transform: translateY(4px); box-shadow: 0 1px 0 #8f6020; }
 .btn2 { background: rgba(15,23,25,.9); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px 8px; font-family: var(--f-disp); font-weight: 800; font-size: 18px; line-height: 1.1; letter-spacing: .05em; text-transform: uppercase; }
@@ -200,7 +205,21 @@ body.touch .atk b { font-size: 15px; }
   .logo .enso path { stroke-dashoffset: 0; }
 }
 
+/* ---------- sprites du pack Ninja Adventure ---------- */
+.face { --i: 0; display: block; width: 44px; height: 44px; flex: none; border-radius: 6px; background: #020202 url(/assets/portraits.png) no-repeat; background-size: 1400% 100%; background-position: calc(var(--i) * 100% / 13) 0; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--line); }
+.face.sm { width: 34px; height: 34px; border-radius: 4px; }
+.face.big { width: 64px; height: 64px; }
+.face.mystery { filter: grayscale(1) brightness(.45); }
+.wico { --i: 0; display: block; width: 34px; height: 34px; flex: none; background: url(/assets/armes.png) no-repeat; background-size: 700% 100%; background-position: calc(var(--i) * 100% / 6) 0; image-rendering: pixelated; }
+.wico.none { background: none; border: 1px dashed var(--line); border-radius: 4px; }
+.px { image-rendering: pixelated; }
+
 /* ---------- progression ---------- */
+.me-face { position: relative; flex: none; padding: 0; border: 0; background: none; border-radius: 6px; }
+.me-face .face { width: 52px; height: 52px; }
+.me-face .beltsw { position: absolute; left: 4px; right: 4px; bottom: -5px; width: auto; height: 8px; }
+.me-face .beltsw::after { top: -2px; width: 8px; height: 12px; margin-left: -4px; }
+.me-face:hover .face { box-shadow: 0 0 0 2px var(--ochre); }
 .rank { display: flex; align-items: center; gap: 12px; background: rgba(15,23,25,.82); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 .beltsw { width: 44px; height: 14px; border-radius: 3px; flex: none; position: relative; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.4); }
 .beltsw::after { content: ""; position: absolute; left: 50%; top: -3px; width: 10px; height: 20px; margin-left: -5px; background: inherit; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
@@ -222,10 +241,11 @@ body.touch .atk b { font-size: 15px; }
 .floors h2 { text-align: center; }
 .floors .sub { text-align: center; }
 #floorList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 52vh; overflow-y: auto; }
-#floorList li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--ink-2); }
+#floorList li { display: grid; grid-template-columns: 26px 40px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--ink-2); }
+#floorList .face { width: 40px; height: 40px; }
 #floorList li.boss { border-color: rgba(229,72,58,.6); }
 #floorList li.cur { border-color: var(--ochre); box-shadow: 0 0 0 1px rgba(224,162,67,.4); }
-#floorList li.locked { opacity: .45; }
+#floorList li.locked { opacity: .55; }
 #floorList .fn { font-family: var(--f-disp); font-weight: 900; font-size: 22px; text-align: center; color: var(--ochre); }
 #floorList .fi { min-width: 0; display: flex; flex-direction: column; }
 #floorList .fi b { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -244,6 +264,12 @@ body.touch .atk b { font-size: 15px; }
 .unlock { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--gold); border-radius: 8px; padding: 12px; background: rgba(242,193,78,.08); animation: pop .4s cubic-bezier(.2,1.4,.4,1) .3s both; }
 .unlock b { font-family: var(--f-disp); font-weight: 900; font-size: 26px; text-transform: uppercase; color: var(--gold); line-height: 1; }
 .unlock p { margin: 0; font-size: 14px; }
+.unlock .uhead { display: flex; align-items: center; gap: 12px; text-align: left; }
+.unlock .uhead > div { display: flex; flex-direction: column; gap: 4px; }
+.unlock .scroll { width: 48px; height: 48px; flex: none; }
+.unlock .newwpn { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--jade); font-weight: 600; }
+.unlock.perso { border-color: var(--jade); background: rgba(98,194,162,.08); }
+.unlock.perso b { color: var(--jade); }
 
 #tutoBar { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 58px); z-index: 4; width: min(560px, calc(100% - 32px)); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; background: rgba(15,23,25,.92); border: 1px solid var(--ochre); border-radius: 8px; padding: 10px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.4); animation: riseC .35s ease both; }
 @keyframes riseC { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }

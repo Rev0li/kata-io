@@ -5,6 +5,7 @@ import { controls, updateControls } from '../ui/controls';
 import { updateActionBar, actionEvent } from '../ui/actionbar';
 import { initAudio, setListener, musicTick } from '../game/audio';
 import { clamp } from '../sim/sim';
+import { preloadAssets, setupAssets } from '../game/assets';
 
 // Scène de combat : avance la partie, applique les effets et suit le joueur avec la caméra.
 export class GameScene extends Phaser.Scene {
@@ -14,7 +15,10 @@ export class GameScene extends Phaser.Scene {
 
   constructor() { super('game'); }
 
+  preload() { preloadAssets(this); }
+
   create() {
+    setupAssets(this);
     const cam = this.cameras.main;
     cam.setBackgroundColor(WATER_HEX);
     cam.centerOn(0, 0);

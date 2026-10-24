@@ -1,7 +1,7 @@
 // Écrans HTML posés au-dessus du jeu : accueil, Tour du temple, salon d'invitation, résultat, tutoriel.
 import { session, MeSpec } from '../net/session';
 import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
-import { TENUES, MASQUES, sanitizeLook, Look } from '../sim/data';
+import { PERSOS, ARMES, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
 import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil } from '../sim/progression';
 import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { controls, clearKeys } from './controls';
@@ -50,28 +50,46 @@ function show(id: string | null) {
 controls.blockedFn = () => current !== '';
 function toast(msg: string) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout((toast as any)._t); (toast as any)._t = setTimeout(() => t.classList.remove('on'), 2400); }
 function myName() { const v = ($('#nameIn') as HTMLInputElement).value.trim().slice(0, 16); profile.name = v || profile.name || 'Disciple ' + ((Math.random() * 900 + 100) | 0); ($('#nameIn') as HTMLInputElement).value = profile.name; save(); return profile.name; }
-function mySpec(abil: Abil = myAbil()): MeSpec { return { name: myName(), look: profile.look, abil, belt: RANKS[myRank()].belt }; }
+function mySpec(abil: Abil = myAbil()): MeSpec { return { name: myName(), look: myLook(), abil, belt: RANKS[myRank()].belt }; }
 function inviteLink(code: string) { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('salle', code); if (net === 'local') u.searchParams.set('net', 'local'); return u.toString(); }
 function cleanUrl() { const u = new URL(location.href); u.searchParams.delete('salle'); history.replaceState(null, '', u.toString()); }
 function wake() { initAudio(); startMusic(); }
 
-/* ================= apparence ================= */
-const TK = Object.keys(TENUES), MK = Object.keys(MASQUES);
+/* ================= apparence : personnages gagnés dans la Tour, armes gagnées avec les ceintures ================= */
+const PK = Object.keys(PERSOS), AK = Object.keys(ARMES);
+const persoOpen = (id: string) => PERSOS[id].floor === 0 || profile.towerMax > PERSOS[id].floor;
+const armeOpen = (id: string) => myRank() >= ARMES[id].rank;
+// Le look réellement utilisé : si un choix n'est plus débloqué (remise à zéro), on revient au défaut.
+function myLook(): Look { const l = profile.look; return { ...l, perso: persoOpen(l.perso) ? l.perso : DEFAULT_LOOK.perso, arme: armeOpen(l.arme) ? l.arme : DEFAULT_LOOK.arme }; }
+let viewP = -1, viewA = -1; // ce que montre le sélecteur (peut être verrouillé)
+function setFace(el: HTMLElement, id: string) { el.style.setProperty('--i', String(PERSOS[id].idx)); }
+function setWico(el: HTMLElement, id: string) { const w = ARMES[id]; el.classList.toggle('none', w.idx < 0); if (w.idx >= 0) el.style.setProperty('--i', String(w.idx)); }
 function renderLook() {
-  $('#tenueName').textContent = TENUES[profile.look.tenue].name;
-  $('#masqueName').textContent = MASQUES[profile.look.masque];
-  $('#tenueSw').style.background = `linear-gradient(90deg,${TENUES[profile.look.tenue].body} 0 70%,${TENUES[profile.look.tenue].trim} 70%)`;
+  const l = myLook();
+  if (viewP < 0) viewP = PK.indexOf(l.perso); if (viewA < 0) viewA = AK.indexOf(l.arme);
+  const p = PK[viewP], a = AK[viewA], po = persoOpen(p), ao = armeOpen(a);
+  setFace($('#persoFace'), p); $('#persoName').textContent = PERSOS[p].name;
+  $('#persoReq').textContent = po ? '' : `Bats le gardien de l’étage ${PERSOS[p].floor}`;
+  $('#persoCyc').classList.toggle('locked', !po);
+  setWico($('#armeIco'), a); $('#armeName').textContent = ARMES[a].name;
+  $('#armeReq').textContent = ao ? '' : RANKS[ARMES[a].rank].name;
+  $('#armeCyc').classList.toggle('locked', !ao);
+  const np = PK.filter(persoOpen).length, na = AK.filter(armeOpen).length;
+  $('#lookCount').textContent = `${np} combattants sur ${PK.length} · ${na} armes sur ${AK.length}`;
+  setFace($('#rankFaceImg'), l.perso);
 }
-function cycle(kind: 'tenue' | 'masque', d: number) {
-  const list = kind === 'tenue' ? TK : MK; const i = list.indexOf(profile.look[kind]);
-  profile.look = { ...profile.look, [kind]: list[(i + d + list.length) % list.length] }; save(); renderLook(); sfx('ui');
+function cycle(kind: 'perso' | 'arme', d: number) {
+  if (kind === 'perso') { viewP = (viewP + d + PK.length) % PK.length; if (persoOpen(PK[viewP])) profile.look = { ...profile.look, perso: PK[viewP] }; }
+  else { viewA = (viewA + d + AK.length) % AK.length; if (armeOpen(AK[viewA])) profile.look = { ...profile.look, arme: AK[viewA] }; }
+  save(); renderLook(); sfx('ui');
 }
+const SCROLLS: Record<string, string> = { chain2: 'scroll-plant', parry: 'scroll-ice', charge: 'scroll-rock', chain3: 'scroll-empty', elan: 'scroll-thunder', dragon: 'scroll-fire' };
 
 /* ================= accueil ================= */
 const starStr = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 function nextFloor() { return Math.max(1, profile.towerMax); }
 function renderHome() {
-  ($('#nameIn') as HTMLInputElement).value = profile.name; renderLook();
+  ($('#nameIn') as HTMLInputElement).value = profile.name; viewP = viewA = -1; renderLook();
   const rp = rankProgress(profile.xp);
   $('#rankBelt').style.background = rp.cur.belt;
   $('#rankName').textContent = rp.cur.name;
@@ -90,7 +108,9 @@ function renderFloors() {
   for (let n = 1; n <= top; n++) {
     const f = towerFloor(n), locked = n > max, st = profile.stars[n] || 0;
     const li = document.createElement('li'); li.className = (f.boss ? 'boss ' : '') + (locked ? 'locked ' : '') + (n === max ? 'cur' : '');
-    li.innerHTML = `<span class="fn">${n}</span><span class="fi"><b>${f.name}${f.boss ? ' · gardien' : ''}</b><small>${f.twist || (f.firstTo === 3 ? 'Premier à 3' : 'Premier à 2')}</small></span>`;
+    const gift = n <= TOWER_LEN ? PK.find(id => PERSOS[id].floor === n) : undefined;
+    const reward = gift ? (n < max ? `Gagné : ${PERSOS[gift].name}` : 'Récompense : son apparence') : '';
+    li.innerHTML = `<span class="fn">${n}</span><i class="face${locked ? ' mystery' : ''}" style="--i:${PERSOS[f.look.perso].idx}"></i><span class="fi"><b>${locked ? '???' : f.name}${f.boss ? ' · gardien' : ''}</b><small>${[f.twist || (f.firstTo === 3 ? 'Premier à 3' : 'Premier à 2'), reward].filter(Boolean).join(' · ')}</small></span>`;
     const right = document.createElement('span');
     if (locked) right.innerHTML = '<span class="fs">Verrouillé</span>';
     else { const b = document.createElement('button'); b.className = 'btn2'; b.type = 'button'; b.textContent = st ? starStr(st) : 'Combattre'; b.addEventListener('click', () => startTower(n)); right.append(b); }
@@ -148,8 +168,16 @@ function showUnlock(rank: number) {
   const r = RANKS[rank], u = r.unlock; const box = $('#resUnlock');
   if (!u) { box.hidden = true; return; }
   box.hidden = false; $('#unlockBelt').textContent = r.name; $('#unlockTitle').textContent = u.title + ' :'; $('#unlockText').textContent = u.text + ' ' + u.how;
+  ($('#unlockScroll') as HTMLImageElement).src = `/assets/items/${SCROLLS[u.key] || 'scroll-empty'}.png`;
+  const w = AK.find(id => ARMES[id].rank === rank); $('#unlockWpn').hidden = !w;
+  if (w) { setWico($('#unlockWpnIco'), w); $('#unlockWpnTxt').textContent = `Nouvelle arme : ${ARMES[w].name}`; }
   $('#unlockTry').onclick = () => startTuto(u.key === 'chain2' ? 'chain2' : u.key === 'chain3' ? 'chain3' : String(u.key));
   sfx('gong', 0.7);
+}
+function showPerso(id: string) {
+  $('#resPerso').hidden = false; setFace($('#resPersoFace'), id); $('#resPersoName').textContent = PERSOS[id].name;
+  const b = $('#resPersoUse') as HTMLButtonElement; b.disabled = false; b.textContent = 'Le prendre';
+  b.onclick = () => { profile.look = { ...profile.look, perso: id }; save(); viewP = -1; renderLook(); b.disabled = true; b.textContent = 'C’est ton combattant'; };
 }
 function showXp(gain: number, before: number) {
   $('#resXp').hidden = gain <= 0; if (gain <= 0) return;
@@ -164,7 +192,7 @@ function onEnd(winner: number, score: number[]) {
     const win = winner === session.myIdx, st = session.state, me = st ? st.f[session.myIdx] : null, op = st ? st.f[1 - session.myIdx] : null;
     const sMe = score[session.myIdx], sOp = score[1 - session.myIdx];
     $('#resTitle').className = win ? 'win' : 'lose';
-    $('#resStatus').textContent = ''; $('#resNear').hidden = true; $('#resUnlock').hidden = true;
+    $('#resStatus').textContent = ''; $('#resNear').hidden = true; $('#resUnlock').hidden = true; $('#resPerso').hidden = true;
     const starsEl = $('#resStars'); starsEl.hidden = true; starsEl.querySelectorAll('i').forEach(i => i.classList.remove('on'));
     const xpBefore = profile.xp; let gain = 0, newRank = -1;
     if (!win && op && op.pct >= 70) { $('#resNear').hidden = false; $('#resNear').textContent = `Il était à ${Math.round(op.pct)} % : encore un coup et il tombait.`; }
@@ -176,7 +204,10 @@ function onEnd(winner: number, score: number[]) {
       $('#resScore').textContent = `${sMe} – ${sOp}` + (win ? ` en ${session.seconds} s` : '');
       if (win) {
         starsEl.hidden = false; starsEl.querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < stars));
+        const firstClear = profile.towerMax <= f.n;
         profile.stars[f.n] = Math.max(profile.stars[f.n] || 0, stars); profile.towerMax = Math.max(profile.towerMax, f.n + 1); save();
+        const gift = firstClear ? PK.find(id => PERSOS[id].floor === f.n) : undefined;
+        if (gift) showPerso(gift);
         if (stars < 3) $('#resStatus').textContent = stars === 1 ? 'Deuxième étoile : gagne sans perdre une manche.' : `Troisième étoile : gagne en moins de ${f.par} s.`;
         setResultButtons(`Étage ${f.n + 1}`, () => startTower(f.n + 1), 'Rejouer', () => startTower(f.n));
       } else setResultButtons('Réessayer', () => startTower(f.n), null, null);
@@ -282,8 +313,9 @@ export function setupUI() {
   $('#joinForm').addEventListener('submit', e => { e.preventDefault(); join(($('#codeIn') as HTMLInputElement).value); });
   $('#codeIn').addEventListener('input', e => { const i = e.target as HTMLInputElement; i.value = cleanCode(i.value); });
   $('#nameIn').addEventListener('change', () => myName());
-  $('#tPrev').addEventListener('click', () => cycle('tenue', -1)); $('#tNext').addEventListener('click', () => cycle('tenue', 1));
-  $('#mPrev').addEventListener('click', () => cycle('masque', -1)); $('#mNext').addEventListener('click', () => cycle('masque', 1));
+  $('#tPrev').addEventListener('click', () => cycle('perso', -1)); $('#tNext').addEventListener('click', () => cycle('perso', 1));
+  $('#mPrev').addEventListener('click', () => cycle('arme', -1)); $('#mNext').addEventListener('click', () => cycle('arme', 1));
+  $('#rankFace').addEventListener('click', () => { const d = $('#fighterBox') as HTMLDetailsElement; d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
   $('#setSfx').addEventListener('change', e => { profile.sfx = audioPrefs.sfx = (e.target as HTMLInputElement).checked; save(); });
   $('#setMusic').addEventListener('change', e => { profile.music = audioPrefs.music = (e.target as HTMLInputElement).checked; save(); wake(); setMusicLevel(0.07); });
   $('#copyBtn').addEventListener('click', async () => {

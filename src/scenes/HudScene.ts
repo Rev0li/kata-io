@@ -44,8 +44,9 @@ export class HudScene extends Phaser.Scene {
     if (ev.t === 'big' && ev.text === 'MANCHE 1') this.matchT = 0;
   }
 
+  layoutTouch: boolean | null = null;
   layout() {
-    const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch;
+    const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch; this.layoutTouch = touch;
     this.score.setPosition(W / 2, 12).setFontSize(touch ? '22px' : '30px'); this.sub.setPosition(W / 2, 46).setVisible(!touch);
     this.ping.setPosition(W - m, touch ? 44 : 14);
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
@@ -62,6 +63,7 @@ export class HudScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     const st = session.state, show = !!st;
+    if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
     for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && (o !== this.myMoves || !controls.isTouch));
     this.g.clear();
     this.bigT += delta;

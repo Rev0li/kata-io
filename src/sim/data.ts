@@ -76,20 +76,39 @@ export function randDeck(rnd: () => number = Math.random): Deck {
 }
 
 /* ---------- apparence ---------- */
-export interface Look { tenue: string; masque: string; trainee: string; ejection: string }
-export const TENUES: Record<string, { name: string; body: string; trim: string; fx?: string }> = {
-  'gi-ecru': { name: 'Gi écru', body: '#d6cab0', trim: '#8f826a' },
-  'gi-encre': { name: "Gi d'encre", body: '#2c3236', trim: '#69737a' },
-  'kimono-pourpre': { name: 'Kimono pourpre', body: '#6d2a4a', trim: '#c58aa3' },
-  'robe-jade': { name: 'Robe de jade', body: '#2f7a62', trim: '#9fdcc5' },
-  'laque': { name: 'Armure laquée', body: '#a8322a', trim: '#2a1612', fx: 'plates' },
-  'brume': { name: 'Manteau de brume', body: '#8fa3b5', trim: '#e7eef2' },
-  'soie-or': { name: "Soie d'or", body: '#c99a3a', trim: '#fff1c4', fx: 'shine' },
-  'nuit': { name: 'Nuit étoilée', body: '#1b2350', trim: '#9fb3ff', fx: 'stars' },
+// Personnages et armes du pack Ninja Adventure (Pixel-boy, CC0). `idx` = position dans
+// public/assets/persos.png, portraits.png et armes.png (voir scripts/build-assets.py).
+// Un personnage se débloque en battant le gardien de l'étage `floor` (0 = dès le départ),
+// une arme en atteignant la ceinture `rank`. Tout est cosmétique.
+export interface Look { perso: string; arme: string; trainee: string; ejection: string }
+export const PERSOS: Record<string, { name: string; idx: number; floor: number }> = {
+  'ninja-bleu': { name: 'Ninja bleu', idx: 0, floor: 0 },
+  'ninja-pourpre': { name: 'Ninja pourpre', idx: 2, floor: 0 },
+  bandit: { name: 'Bandit masqué', idx: 4, floor: 1 },
+  moine: { name: 'Moine', idx: 5, floor: 2 },
+  samourai: { name: 'Samouraï', idx: 6, floor: 3 },
+  ronin: { name: 'Rōnin', idx: 7, floor: 4 },
+  oni: { name: 'Oni', idx: 8, floor: 5 },
+  squelette: { name: 'Squelette', idx: 13, floor: 6 },
+  sumo: { name: 'Sumo', idx: 9, floor: 7 },
+  ombre: { name: 'Ninja de l’ombre', idx: 3, floor: 8 },
+  loup: { name: 'Loup blanc', idx: 10, floor: 9 },
+  ermite: { name: 'Vieil ermite', idx: 11, floor: 10 },
+  'ninja-vert': { name: 'Ninja de jade', idx: 1, floor: 11 },
+  shogun: { name: 'Shōgun d’or', idx: 12, floor: 12 },
 };
-export const MASQUES: Record<string, string> = {
-  aucun: 'Tête nue', bandeau: 'Bandeau', kitsune: 'Kitsune', corbeau: 'Corbeau', lune: 'Croissant de lune', oni: 'Oni', cerf: 'Esprit du cerf', couronne: 'Couronne de jade',
+export const PERSO_COUNT = 14;
+export const ARMES: Record<string, { name: string; idx: number; rank: number; len: number }> = {
+  katana: { name: 'Katana', idx: 0, rank: 0, len: 10 },
+  mains: { name: 'Mains nues', idx: -1, rank: 0, len: 0 },
+  sai: { name: 'Saï', idx: 1, rank: 1, len: 8 },
+  yari: { name: 'Yari', idx: 2, rank: 2, len: 16 },
+  massue: { name: 'Massue', idx: 3, rank: 3, len: 14 },
+  trident: { name: 'Trident', idx: 4, rank: 4, len: 12 },
+  hache: { name: 'Hache', idx: 5, rank: 5, len: 13 },
+  nodachi: { name: 'Nodachi', idx: 6, rank: 6, len: 16 },
 };
+export const ARME_COUNT = 7;
 export const TRAINEES: Record<string, { name: string; col: string | null }> = {
   aucune: { name: 'Traînée simple', col: null }, braise: { name: 'Braise', col: '#ff8a3d' }, 'jade-t': { name: 'Souffle de jade', col: '#62e0b5' }, encre: { name: 'Encre', col: '#050505' }, aurore: { name: 'Aurore', col: 'rainbow' },
 };
@@ -97,18 +116,18 @@ export const EJECTIONS: Record<string, string> = {
   plouf: 'Plouf classique', petales: 'Pétales de cerisier', 'encre-e': "Éclaboussure d'encre", feu: "Feu d'artifice", canards: 'Canards en plastique',
 };
 export const EMOTES: Record<string, string> = { salut: 'Salut !', rire: 'Ha ha !', gg: 'GG', viens: 'Viens !', lent: 'Trop lent', mouille: "L'eau est bonne ?" };
-export const DEFAULT_LOOK: Look = { tenue: 'gi-ecru', masque: 'bandeau', trainee: 'aucune', ejection: 'plouf' };
+export const DEFAULT_LOOK: Look = { perso: 'ninja-bleu', arme: 'katana', trainee: 'aucune', ejection: 'plouf' };
 export function randLook(rnd: () => number = Math.random): Look {
   const p = (o: object) => { const k = Object.keys(o); return k[(rnd() * k.length) | 0]; };
-  return { tenue: p(TENUES), masque: p(MASQUES), trainee: p(TRAINEES), ejection: p(EJECTIONS) };
+  return { perso: p(PERSOS), arme: p(ARMES), trainee: p(TRAINEES), ejection: p(EJECTIONS) };
 }
 export function sanitizeLook(l: any): Look {
   const o = Object.assign({}, DEFAULT_LOOK, l && typeof l === 'object' ? l : {});
-  if (!TENUES[o.tenue]) o.tenue = DEFAULT_LOOK.tenue;
-  if (!MASQUES[o.masque]) o.masque = DEFAULT_LOOK.masque;
+  if (!PERSOS[o.perso]) o.perso = DEFAULT_LOOK.perso;
+  if (!ARMES[o.arme]) o.arme = DEFAULT_LOOK.arme;
   if (!TRAINEES[o.trainee]) o.trainee = DEFAULT_LOOK.trainee;
   if (!EJECTIONS[o.ejection]) o.ejection = DEFAULT_LOOK.ejection;
-  return { tenue: o.tenue, masque: o.masque, trainee: o.trainee, ejection: o.ejection };
+  return { perso: o.perso, arme: o.arme, trainee: o.trainee, ejection: o.ejection };
 }
 
 export const BELTS: [number, string, string][] = [[0, 'Blanche', '#efe8da'], [1, 'Jaune', '#e8c64a'], [2, 'Orange', '#e48a3a'], [3, 'Verte', '#5aa86a']];

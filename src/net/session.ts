@@ -67,7 +67,7 @@ class Session {
     this.leave(true);
     this.mode = 'tuto'; this.myIdx = 0; this.floor = null;
     const first = steps[0];
-    this.specs = [me, { name: 'Mannequin', look: { tenue: 'gi-encre', masque: 'aucun', trainee: 'aucune', ejection: 'plouf' }, dummy: true, atkSlow: 1.9, abil: FULL_ABIL,
+    this.specs = [me, { name: 'Mannequin', look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'plouf' }, dummy: true, atkSlow: 1.9, abil: FULL_ABIL,
       deck: { chain: [['direct', 'direct', 'direct'], ['direct', 'direct', 'direct'], ['direct', 'direct', 'direct'], ['direct', 'direct', 'direct']], heavy: ['belier', 'belier', 'belier', 'belier'] } }];
     this.opts = { free: true, pos: [first.me || [-110, 0], first.foe || [80, 0]] };
     this.tuto = { steps, i: 0, count: 0, done: false, endT: 0, avoid: { active: false, dodged: false, hit: false }, hintT: 0 };
