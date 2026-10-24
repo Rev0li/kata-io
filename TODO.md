@@ -24,11 +24,11 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [x] Archiver les assets morts dans `archive/` (`dojo.png`, `dojo-mousse.png`, `items/gold-cup`, `silver-cup`, `gold-key`, `little-treasure-chest`).
 - [x] Supprimer les commentaires périmés (`fauna.png`, `floats.png` dans `render.ts`).
 - [ ] Réécrire la section « Direction artistique » du README (parle de `public/assets/bg/` et de 3 thèmes, plus vrai). **Traité dans une autre session.**
-- [ ] Décider d'un formatage automatique (Prettier) pour casser les lignes de 300 à 470 caractères.
-- [ ] Découper `src/game/render.ts` (57 Ko) : dojo, décor et faune, combattants, effets.
-- [ ] Découper `src/ui/ui.ts` : profil et sauvegarde, accueil, Tour, boutique, salon, résultat.
-- [ ] Découper `src/sim/sim.ts` : combat, bot, mannequin, instantanés réseau.
-- [ ] Supprimer la variable globale `S` de la simulation (prérequis pour un serveur qui fait tourner plusieurs salles).
+- [x] Formatage automatique Prettier (120 colonnes, `npm run format`).
+- [x] Découper le rendu : `src/game/render/` (iso, palette, themes, arena, lake, effects, fighters).
+- [x] Découper l'interface : `src/ui/` (dom, nav, profile, home, launch, floors, shop, lobby, result, tutobar).
+- [x] Découper la simulation : `src/sim/` (core, fighter, duel, actions, hits, update, bot, snapshot).
+- [x] Supprimer la variable globale `S` de la simulation (l'état de la partie est passé en paramètre).
 
 ## Phase 2 : retest
 
