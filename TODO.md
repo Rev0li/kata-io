@@ -35,6 +35,19 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [ ] Tester le jeu et lister ce qu'il faut enlever ou simplifier.
 - [ ] Retirer ce qui a été listé.
 
+## Phase 2b : assets remplaçables (après le retest)
+
+Règle : chaque élément visible est décrit dans un fichier de données ; **si l'image existe, le jeu l'affiche, sinon il le dessine en code comme aujourd'hui**. Remplacer = déposer un fichier, supprimer = retirer une ligne. Aucun changement visuel tant qu'aucune image n'est déposée.
+
+- [ ] Registre d'assets : chargeur générique qui lit les fichiers de données et applique « image si présente, sinon dessin en code ».
+- [ ] Dojos en données : un dossier par dojo (`public/assets/dojos/<id>/dojo.json` + images) à la place de `THEMES` et `LIFE`.
+- [ ] Plateforme en dalles (images détachables qui tombent en mort subite), planches actuelles en secours.
+- [ ] Couche de décor : objets posés autour du dojo (torii, lanternes, arbres, ponts), rangés en profondeur avec les combattants.
+- [ ] Combattants et armes en données : planche, taille d'image, point des pieds, échelle, poses par ligne.
+- [ ] Icônes de l'interface en fichiers `public/assets/ui/*.svg` au lieu d'être écrites dans `index.html`.
+- [ ] Ranger les visuels générés : sources et maquettes dans `art/source/`, images prêtes pour le jeu dans `public/assets/` (et pas dans `src/`).
+- [ ] Plus tard (option) : mode éditeur `?editeur` pour placer le décor à la souris et exporter le `dojo.json`.
+
 ## Phase 3 : bugs, tests, typage
 
 - [ ] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).
