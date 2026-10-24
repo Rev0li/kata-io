@@ -17,7 +17,7 @@ import { audioPrefs, setMusicLevel } from '../game/audio';
 import { $, toast, wake, setupButtonFx } from './dom';
 import { nav, show } from './nav';
 import { profile, save, nextFloor, ShopKind } from './profile';
-import { renderHome, cycle, myName, setupDevPanel, setupTraining, homeTab, renderLook } from './home';
+import { renderHome, cycle, myName, setupDevPanel, setupTraining, homeTab, HomeTab } from './home';
 import { startTower, startDaily, startTuto, practice } from './launch';
 import { renderFloors } from './floors';
 import { openShop, closeShop, selectTab, shopAction } from './shop';
@@ -75,9 +75,9 @@ export function setupUI() {
   $('#practiceBtn').addEventListener('click', () => practice());
   document
     .querySelectorAll<HTMLElement>('#home .htab[data-tab]')
-    .forEach(b => b.addEventListener('click', () => homeTab(b.dataset.tab as 'accueil' | 'combattants')));
-  $('#meEdit').addEventListener('click', () => homeTab('combattants'));
-  $('#meBack').addEventListener('click', () => homeTab('accueil'));
+    .forEach(b => b.addEventListener('click', () => homeTab(b.dataset.tab as HomeTab)));
+  $('#setBtn').addEventListener('click', () => show('settings'));
+  $('#setClose').addEventListener('click', () => show('home'));
   $('#tutoBtn').addEventListener('click', () => startTuto(null));
   $('#tutoSkip').addEventListener('click', skipTuto);
   $('#createBtn').addEventListener('click', createRoom);
@@ -89,10 +89,7 @@ export function setupUI() {
     const i = e.target as HTMLInputElement;
     i.value = cleanCode(i.value);
   });
-  $('#nameIn').addEventListener('change', () => {
-    myName();
-    renderLook();
-  });
+  $('#nameIn').addEventListener('change', () => myName());
   $('#tPrev').addEventListener('click', () => cycle('perso', -1));
   $('#tNext').addEventListener('click', () => cycle('perso', 1));
   $('#mPrev').addEventListener('click', () => cycle('arme', -1));
@@ -154,7 +151,7 @@ export function setupUI() {
     if (e.code === 'Escape') {
       if (current === '' && session.active) show('quit');
       else if (current === 'quit') show(null);
-      else if (current === 'floors') show('home');
+      else if (current === 'floors' || current === 'settings') show('home');
       else if (current === 'shop') closeShop();
       return;
     }

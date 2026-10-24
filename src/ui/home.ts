@@ -1,5 +1,10 @@
-// Écran d'accueil (maquette art/reference/mondes/accueil-v2.png) : onglets, ceinture et XP, recommandations,
-// entraînement dans un monde, duel, combattant et arme, pièces, réglages, panneau de test.
+// Écran d'accueil (maquette art/reference/mondes/accueil-v2.png), en onglets :
+//   Accueil         profil (ceinture et XP), duel privé, partie publique (à venir)
+//   Mon combattant  nom, combattant et arme
+//   Temple          Tour du temple, défi du jour, entraînement dans un monde
+//   Boutique        écran de la boutique (shop.ts)
+//   Mode test       panneau de test, à la place de Communauté en attendant
+// Les paramètres (commandes, son, plein écran) s'ouvrent par la roue en haut à droite.
 import { PERSOS, ARMES, MONDES, LEVELS } from '../sim/data';
 import { RANKS, rankProgress, towerFloor, streakMult, dailyFloor, DAILY_COINS, Abil } from '../sim/progression';
 import { MeSpec } from '../net/session';
@@ -26,15 +31,21 @@ const WORLD_TILE: Record<string, [string, string, string]> = {
   forge: ['forge/tour-a', '#2b1713', '#e2561f'],
 };
 
-/* ---------- onglets : Accueil et Combattants sont des panneaux, Temple et Boutique ouvrent leur écran ---------- */
-export function homeTab(tab: 'accueil' | 'combattants') {
-  $('#panelAccueil').hidden = tab !== 'accueil';
-  $('#panelCombattants').hidden = tab !== 'combattants';
+/* ---------- onglets : des panneaux de l'accueil ; la Boutique ouvre son écran ---------- */
+export type HomeTab = 'accueil' | 'combattants' | 'temple' | 'test';
+const PANELS: Record<HomeTab, string> = {
+  accueil: '#panelAccueil',
+  combattants: '#panelCombattants',
+  temple: '#panelTemple',
+  test: '#panelTest',
+};
+export function homeTab(tab: HomeTab) {
+  for (const [t, sel] of Object.entries(PANELS)) $(sel).hidden = t !== tab;
   document.querySelectorAll<HTMLElement>('#home .htab[data-tab]').forEach(b => {
     b.classList.toggle('on', b.dataset.tab === tab);
     b.setAttribute('aria-current', String(b.dataset.tab === tab));
   });
-  if (tab === 'accueil') renderHome();
+  renderHome();
   $('#home').scrollTop = 0;
 }
 
@@ -137,9 +148,6 @@ export function renderLook() {
     na = AK.filter(armeOpen).length;
   $('#lookCount').textContent = `${np} combattants sur ${PK.length} · ${na} armes sur ${AK.length}`;
   setFace($('#rankFaceImg'), l.perso);
-  setFace($('#meFace'), l.perso);
-  setWico($('#meWico'), l.arme);
-  $('#meName').textContent = profile.name || 'Choisis ton nom';
 }
 export function cycle(kind: 'perso' | 'arme', d: number) {
   if (kind === 'perso') {

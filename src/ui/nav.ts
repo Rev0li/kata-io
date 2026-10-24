@@ -3,7 +3,7 @@ import { session } from '../net/session';
 import { controls, clearKeys } from './controls';
 import { $ } from './dom';
 
-const SCREENS = ['home', 'floors', 'shop', 'lobby', 'joining', 'result', 'lost', 'quit'];
+const SCREENS = ['home', 'settings', 'floors', 'shop', 'lobby', 'joining', 'result', 'lost', 'quit'];
 export type LastMode = {
   kind: 'tower' | 'practice' | 'duel' | 'tuto' | 'daily';
   floor?: number;

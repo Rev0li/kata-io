@@ -82,6 +82,14 @@
     </div>
 
     <section id="home" class="screen home2">
+      <button id="setBtn" class="topbtn" type="button" aria-label="Paramètres" title="Paramètres">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.2" />
+          <path
+            d="M12 2.8l1.6 2.4 2.8-.6.6 2.8 2.4 1.6-1.3 2.6 1.3 2.6-2.4 1.6-.6 2.8-2.8-.6L12 21.2l-1.6-2.4-2.8.6-.6-2.8-2.4-1.6 1.3-2.6L4.6 9.8 7 8.2l.6-2.8 2.8.6z"
+          />
+        </svg>
+      </button>
       <div class="col">
         <div class="logo">
           <svg class="enso" viewBox="0 0 200 200" aria-hidden="true">
@@ -106,9 +114,9 @@
           <button class="htab" data-tab="combattants" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 4l9 9M4 5l2-1M14 13l-2 4 2 2 2-2 4-2M19 4l-9 9M20 5l-2-1M10 13l2 4-2 2-2-2-4-2" /></svg
-            ><span>Combattants</span>
+            ><span>Mon combattant</span>
           </button>
-          <button class="htab" id="floorsBtn" type="button">
+          <button class="htab" data-tab="temple" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 8l9-4 9 4M5 8v10M19 8v10M9 8v10M15 8v10M3 20h18M2 8h20" /></svg
             ><span>Temple</span>
@@ -123,12 +131,10 @@
               ><img class="px" src="/assets/items/gold-coin.png" alt="" /><b id="homeCoins">0</b></span
             >
           </button>
-          <button class="htab" type="button" disabled>
+          <button class="htab" data-tab="test" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="9" cy="8" r="3" />
-              <circle cx="17" cy="9" r="2.5" />
-              <path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6M15 13.5c3 0 6 2 6 5" /></svg
-            ><span>Communauté</span><small>bientôt</small>
+              <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 14h9" /></svg
+            ><span>Mode test</span>
           </button>
         </nav>
 
@@ -150,14 +156,52 @@
             </div>
           </div>
 
+          <div class="duo">
+            <div class="hcard">
+              <h2 class="hlbl">
+                <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
+                >Duel privé
+              </h2>
+              <button id="createBtn" class="btn-gold wide" type="button">Créer un duel privé</button>
+              <form id="joinForm" class="joinrow">
+                <label for="codeIn" class="sr">Code de la salle</label>
+                <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE" /><button
+                  id="joinBtn"
+                  class="btn-ghost"
+                  type="submit"
+                >
+                  Rejoindre
+                </button>
+              </form>
+            </div>
+            <div class="hcard">
+              <h2 class="hlbl">
+                <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path
+                    d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"
+                  /></svg
+                >Partie publique
+              </h2>
+              <p class="hint">Affronte un joueur au hasard, sans code ni lien.</p>
+              <button id="publicBtn" class="btn-gold wide" type="button" disabled>Bientôt</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hpanel" id="panelTemple" hidden>
           <div class="hcard">
-            <h2 class="hlbl">Recommandations</h2>
+            <h2 class="hlbl">Le temple <small>Tour, défi du jour et entraînement</small></h2>
             <div class="reco">
               <div class="rcard">
                 <img class="rimg" src="/assets/mondes/bambous/pagode-4-etages.png" alt="" />
                 <div class="rtx">
                   <b>Tour du temple</b><small id="towerSub">Étage 1</small>
-                  <button id="towerBtn" class="btn-gold" type="button">Jouer</button>
+                  <span class="rbtns"
+                    ><button id="towerBtn" class="btn-gold" type="button">Jouer</button
+                    ><button id="floorsBtn" class="btn-ghost" type="button">Étages</button></span
+                  >
                 </div>
               </div>
               <div class="rcard">
@@ -178,62 +222,36 @@
               <button id="practiceBtn" class="btn-gold" type="button">S’entraîner</button>
             </div>
           </div>
+        </div>
 
-          <div class="duo">
-            <div class="hcard">
-              <h2 class="hlbl">
-                <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
-                >Créer un duel privé
-              </h2>
-              <button id="createBtn" class="btn-gold wide" type="button">Créer la salle</button>
-            </div>
-            <form id="joinForm" class="hcard">
-              <h2 class="hlbl"><label for="codeIn">Rejoindre par code</label></h2>
-              <div class="joinrow">
-                <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE" /><button
-                  id="joinBtn"
-                  class="btn-gold"
-                  type="submit"
-                >
-                  Rejoindre
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div class="hcard me">
+        <div class="hpanel" id="panelCombattants" hidden>
+          <div class="hcard" id="fighterBox">
             <h2 class="hlbl">Mon combattant</h2>
-            <div class="merow">
-              <b id="meName"></b><i class="face big" id="meFace"></i><i class="wico big" id="meWico"></i
-              ><button id="meEdit" class="btn-gold" type="button">Modifier</button>
+            <label for="nameIn" class="lbl">Nom</label>
+            <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier" />
+            <div class="look">
+              <div class="cyc" id="persoCyc">
+                <button id="tPrev" type="button" aria-label="Personnage précédent">‹</button
+                ><span
+                  ><i class="face sm" id="persoFace"></i
+                  ><span class="cn"><b id="persoName"></b><small id="persoReq"></small></span></span
+                ><button id="tNext" type="button" aria-label="Personnage suivant">›</button>
+              </div>
+              <div class="cyc" id="armeCyc">
+                <button id="mPrev" type="button" aria-label="Arme précédente">‹</button
+                ><span
+                  ><i class="wico" id="armeIco"></i
+                  ><span class="cn"><b id="armeName"></b><small id="armeReq"></small></span></span
+                ><button id="mNext" type="button" aria-label="Arme suivante">›</button>
+              </div>
             </div>
+            <p class="lookhint" id="lookCount"></p>
           </div>
+        </div>
 
-          <details class="help">
-            <summary>Commandes et réglages</summary>
-            <div class="keys">
-              <span><kbd>ZQSD</kbd> <kbd>flèches</kbd></span
-              ><span>Se déplacer</span> <span><kbd>Souris</kbd></span
-              ><span>Viser, si la visée automatique est désactivée</span>
-              <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span
-              ><span>Frapper. Maintenu : coup chargé (ceinture verte)</span>
-              <span><kbd>Clic droit</kbd> <kbd>K</kbd></span
-              ><span>Parer (ceinture orange)</span> <span><kbd>Espace</kbd> <kbd>Shift</kbd></span
-              ><span>Esquiver (coûte un souffle)</span> <span><kbd>1</kbd>–<kbd>4</kbd></span
-              ><span>Emotes</span> <span><kbd>Échap</kbd></span
-              ><span>Quitter le combat</span>
-            </div>
-            <label class="tgl pc-only"
-              ><span>Visée automatique (comme sur mobile)</span><input type="checkbox" id="setAutoAim"
-            /></label>
-            <button id="fsBtn" class="ghost wide fs-only" type="button">Plein écran</button>
-            <label class="tgl"><span>Effets sonores</span><input type="checkbox" id="setSfx" /></label>
-            <label class="tgl"><span>Musique</span><input type="checkbox" id="setMusic" /></label>
-            <button id="tutoBtn" class="ghost wide" type="button">Refaire le tutoriel</button>
-          </details>
-          <details class="help dev" open>
-            <summary>Mode test <small>(version de dev)</small></summary>
+        <div class="hpanel" id="panelTest" hidden>
+          <div class="hcard dev">
+            <h2 class="hlbl">Mode test <small>version de dev, en attendant l’onglet Communauté</small></h2>
             <div class="inner">
               <label class="drow"
                 ><span>Ceinture</span
@@ -267,35 +285,37 @@
               </div>
               <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
             </div>
-          </details>
-        </div>
-
-        <div class="hpanel" id="panelCombattants" hidden>
-          <div class="hcard" id="fighterBox">
-            <h2 class="hlbl">Ton combattant</h2>
-            <label for="nameIn" class="lbl">Nom</label>
-            <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier" />
-            <div class="look">
-              <div class="cyc" id="persoCyc">
-                <button id="tPrev" type="button" aria-label="Personnage précédent">‹</button
-                ><span
-                  ><i class="face sm" id="persoFace"></i
-                  ><span class="cn"><b id="persoName"></b><small id="persoReq"></small></span></span
-                ><button id="tNext" type="button" aria-label="Personnage suivant">›</button>
-              </div>
-              <div class="cyc" id="armeCyc">
-                <button id="mPrev" type="button" aria-label="Arme précédente">‹</button
-                ><span
-                  ><i class="wico" id="armeIco"></i
-                  ><span class="cn"><b id="armeName"></b><small id="armeReq"></small></span></span
-                ><button id="mNext" type="button" aria-label="Arme suivante">›</button>
-              </div>
-            </div>
-            <p class="lookhint" id="lookCount"></p>
-            <button id="meBack" class="btn-gold wide" type="button">Retour à l’accueil</button>
           </div>
         </div>
         <p class="ver">Version de développement</p>
+      </div>
+    </section>
+
+    <section id="settings" class="screen dim" hidden>
+      <div class="col">
+        <div class="hcard settings">
+          <h2 class="hlbl">Paramètres</h2>
+          <label class="tgl pc-only"
+            ><span>Visée automatique (comme sur mobile)</span><input type="checkbox" id="setAutoAim"
+          /></label>
+          <button id="fsBtn" class="ghost wide fs-only" type="button">Plein écran</button>
+          <label class="tgl"><span>Effets sonores</span><input type="checkbox" id="setSfx" /></label>
+          <label class="tgl"><span>Musique</span><input type="checkbox" id="setMusic" /></label>
+          <button id="tutoBtn" class="ghost wide" type="button">Refaire le tutoriel</button>
+          <h3 class="lbl">Commandes</h3>
+          <div class="keys">
+            <span><kbd>ZQSD</kbd> <kbd>flèches</kbd></span
+            ><span>Se déplacer</span> <span><kbd>Souris</kbd></span
+            ><span>Viser, si la visée automatique est désactivée</span> <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span
+            ><span>Frapper. Maintenu : coup chargé (ceinture verte)</span>
+            <span><kbd>Clic droit</kbd> <kbd>K</kbd></span
+            ><span>Parer (ceinture orange)</span> <span><kbd>Espace</kbd> <kbd>Shift</kbd></span
+            ><span>Esquiver (coûte un souffle)</span> <span><kbd>1</kbd>–<kbd>4</kbd></span
+            ><span>Emotes</span> <span><kbd>Échap</kbd></span
+            ><span>Quitter le combat</span>
+          </div>
+          <button id="setClose" class="btn-gold wide" type="button">Fermer</button>
+        </div>
       </div>
     </section>
 
