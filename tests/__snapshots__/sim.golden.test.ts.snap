@@ -1,0 +1,827 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Tour du temple > étage 1 1`] = `
+{
+  "end": {
+    "score": [
+      2,
+      1,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "700230ac",
+  "events": {
+    "big": 15,
+    "cine": 1,
+    "dodge": 13,
+    "end": 1,
+    "exhausted": 3,
+    "final": 1,
+    "float": 20,
+    "hit": 61,
+    "ko": 3,
+    "point": 3,
+    "ring": 6,
+    "saved": 1,
+    "sfx": 210,
+    "shake": 61,
+    "spam": 2,
+    "sparks": 61,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 35,
+      "qi": 0,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 167.61,
+      "y": -92.35,
+    },
+    {
+      "pct": 102,
+      "qi": 0,
+      "souffle": 2.14,
+      "state": "dead",
+      "x": 333.58,
+      "y": -0.14,
+    },
+  ],
+  "kos": [
+    35,
+    101,
+    102,
+  ],
+  "steps": 4181,
+}
+`;
+
+exports[`Tour du temple > étage 2 1`] = `
+{
+  "end": {
+    "score": [
+      2,
+      1,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "444ec171",
+  "events": {
+    "big": 15,
+    "cine": 1,
+    "dodge": 10,
+    "end": 1,
+    "exhausted": 5,
+    "final": 1,
+    "float": 18,
+    "hit": 64,
+    "ko": 3,
+    "point": 3,
+    "ring": 7,
+    "sfx": 235,
+    "shake": 64,
+    "spam": 5,
+    "sparks": 64,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 25,
+      "qi": 0,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -122.6,
+      "y": 35.31,
+    },
+    {
+      "pct": 110,
+      "qi": 0,
+      "souffle": 3,
+      "state": "dead",
+      "x": -311.77,
+      "y": -34.88,
+    },
+  ],
+  "kos": [
+    65,
+    58,
+    110,
+  ],
+  "steps": 4309,
+}
+`;
+
+exports[`Tour du temple > étage 5 1`] = `
+{
+  "end": {
+    "score": [
+      3,
+      1,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "6a42bf66",
+  "events": {
+    "big": 22,
+    "cine": 2,
+    "dodge": 2,
+    "end": 1,
+    "final": 1,
+    "float": 27,
+    "hit": 126,
+    "ko": 4,
+    "parry": 19,
+    "point": 4,
+    "ring": 27,
+    "saved": 2,
+    "sfx": 396,
+    "shake": 147,
+    "sparks": 147,
+    "splash": 4,
+    "sudden": 2,
+  },
+  "fighters": [
+    {
+      "pct": 37,
+      "qi": 0,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 171.49,
+      "y": -85.84,
+    },
+    {
+      "pct": 134,
+      "qi": 0,
+      "souffle": 3,
+      "state": "dead",
+      "x": 342.59,
+      "y": -4.11,
+    },
+  ],
+  "kos": [
+    106,
+    135,
+    68,
+    134,
+  ],
+  "steps": 7580,
+}
+`;
+
+exports[`Tour du temple > étage 9 1`] = `
+{
+  "end": {
+    "score": [
+      1,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "3bbdc129",
+  "events": {
+    "big": 21,
+    "cine": 1,
+    "dodge": 6,
+    "end": 1,
+    "final": 1,
+    "float": 38,
+    "hit": 79,
+    "ko": 4,
+    "parry": 16,
+    "point": 4,
+    "ring": 40,
+    "saved": 1,
+    "sfx": 345,
+    "shake": 96,
+    "sparks": 95,
+    "splash": 4,
+    "sudden": 1,
+  },
+  "fighters": [
+    {
+      "pct": 53.83,
+      "qi": 0,
+      "souffle": 3,
+      "state": "dead",
+      "x": -167.93,
+      "y": 377.59,
+    },
+    {
+      "pct": 19,
+      "qi": 0,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -60,
+      "y": 186.45,
+    },
+  ],
+  "kos": [
+    112,
+    99,
+    64,
+    54,
+  ],
+  "steps": 6144,
+}
+`;
+
+exports[`Tour du temple > étage 12 1`] = `
+{
+  "end": {
+    "score": [
+      0,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "6237efe0",
+  "events": {
+    "big": 15,
+    "cine": 2,
+    "dodge": 1,
+    "end": 1,
+    "final": 1,
+    "float": 13,
+    "hit": 24,
+    "ko": 3,
+    "parry": 9,
+    "point": 3,
+    "ring": 27,
+    "sfx": 121,
+    "shake": 33,
+    "sparks": 33,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 55.02,
+      "qi": 22,
+      "souffle": 3,
+      "state": "dead",
+      "x": 339.57,
+      "y": 169.73,
+    },
+    {
+      "pct": 15.82,
+      "qi": 81,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 151.51,
+      "y": 86.62,
+    },
+  ],
+  "kos": [
+    79,
+    43,
+    55,
+  ],
+  "steps": 2692,
+}
+`;
+
+exports[`bot contre bot > Adepte contre Adepte 1`] = `
+{
+  "end": {
+    "score": [
+      1,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "7b14eb75",
+  "events": {
+    "big": 20,
+    "cine": 3,
+    "dodge": 3,
+    "end": 1,
+    "final": 1,
+    "float": 30,
+    "hit": 67,
+    "ko": 4,
+    "parry": 15,
+    "point": 4,
+    "ring": 45,
+    "saved": 2,
+    "sfx": 280,
+    "shake": 82,
+    "sparks": 82,
+    "splash": 4,
+  },
+  "fighters": [
+    {
+      "pct": 43.59,
+      "qi": 100,
+      "souffle": 3,
+      "state": "dead",
+      "x": -329.41,
+      "y": -103.88,
+    },
+    {
+      "pct": 90.13,
+      "qi": 23,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -96.11,
+      "y": -28.63,
+    },
+  ],
+  "kos": [
+    51,
+    47,
+    55,
+    44,
+  ],
+  "steps": 5208,
+}
+`;
+
+exports[`bot contre bot > Disciple contre Disciple 1`] = `
+{
+  "end": {
+    "score": [
+      1,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "06414eff",
+  "events": {
+    "big": 22,
+    "cine": 3,
+    "dodge": 3,
+    "end": 1,
+    "final": 1,
+    "float": 32,
+    "hit": 116,
+    "ko": 4,
+    "parry": 8,
+    "point": 4,
+    "ring": 26,
+    "saved": 2,
+    "sfx": 360,
+    "shake": 126,
+    "sparks": 124,
+    "splash": 4,
+    "sudden": 2,
+  },
+  "fighters": [
+    {
+      "pct": 104.22,
+      "qi": 87,
+      "souffle": 3,
+      "state": "dead",
+      "x": -433.96,
+      "y": 417.79,
+    },
+    {
+      "pct": 66,
+      "qi": 23,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -72.89,
+      "y": 184.73,
+    },
+  ],
+  "kos": [
+    102,
+    120,
+    102,
+    104,
+  ],
+  "steps": 7509,
+}
+`;
+
+exports[`bot contre bot > Disciple contre Maître 1`] = `
+{
+  "end": {
+    "score": [
+      0,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "cb4cbe06",
+  "events": {
+    "big": 15,
+    "cine": 2,
+    "dodge": 1,
+    "end": 1,
+    "final": 1,
+    "float": 13,
+    "hit": 31,
+    "ko": 3,
+    "parry": 7,
+    "point": 3,
+    "ring": 23,
+    "saved": 1,
+    "sfx": 144,
+    "shake": 38,
+    "sparks": 38,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 53.87,
+      "qi": 36,
+      "souffle": 3,
+      "state": "dead",
+      "x": -334.53,
+      "y": -9.27,
+    },
+    {
+      "pct": 37.84,
+      "qi": 100,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -97.31,
+      "y": -22.02,
+    },
+  ],
+  "kos": [
+    64,
+    51,
+    54,
+  ],
+  "steps": 2942,
+}
+`;
+
+exports[`bot contre bot > Maître contre Disciple 1`] = `
+{
+  "end": {
+    "score": [
+      3,
+      1,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "8225b40f",
+  "events": {
+    "big": 20,
+    "cine": 2,
+    "dodge": 1,
+    "end": 1,
+    "exhausted": 1,
+    "final": 1,
+    "float": 29,
+    "hit": 39,
+    "ko": 4,
+    "parry": 9,
+    "perfect": 1,
+    "point": 4,
+    "ring": 31,
+    "saved": 3,
+    "sfx": 187,
+    "shake": 48,
+    "spam": 1,
+    "sparks": 50,
+    "splash": 4,
+  },
+  "fighters": [
+    {
+      "pct": 28.29,
+      "qi": 15,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 181.47,
+      "y": 211.58,
+    },
+    {
+      "pct": 92.23,
+      "qi": 46,
+      "souffle": 3,
+      "state": "dead",
+      "x": 256.98,
+      "y": 386.17,
+    },
+  ],
+  "kos": [
+    73,
+    51,
+    32,
+    92,
+  ],
+  "steps": 3723,
+}
+`;
+
+exports[`bot contre bot > Maître contre Maître 1`] = `
+{
+  "end": {
+    "score": [
+      3,
+      2,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "74f756cb",
+  "events": {
+    "big": 25,
+    "cine": 3,
+    "dodge": 4,
+    "end": 1,
+    "final": 1,
+    "float": 33,
+    "hit": 38,
+    "ko": 5,
+    "parry": 20,
+    "perfect": 1,
+    "point": 5,
+    "ring": 60,
+    "saved": 1,
+    "sfx": 246,
+    "shake": 58,
+    "sparks": 58,
+    "splash": 5,
+  },
+  "fighters": [
+    {
+      "pct": 43.23,
+      "qi": 56,
+      "souffle": 3,
+      "state": "frozen",
+      "x": -130.94,
+      "y": -156.85,
+    },
+    {
+      "pct": 62.98,
+      "qi": 98,
+      "souffle": 3,
+      "state": "dead",
+      "x": -319.86,
+      "y": -334.6,
+    },
+  ],
+  "kos": [
+    50,
+    33,
+    56,
+    46,
+    63,
+  ],
+  "steps": 4777,
+}
+`;
+
+exports[`entrées humaines > deux humains scriptés (duel entre amis) 1`] = `
+{
+  "end": {
+    "score": [
+      0,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "93debaa9",
+  "events": {
+    "big": 15,
+    "cine": 1,
+    "dodge": 1,
+    "end": 1,
+    "exhausted": 1,
+    "final": 1,
+    "float": 26,
+    "hit": 40,
+    "ko": 3,
+    "parry": 7,
+    "point": 3,
+    "ring": 13,
+    "saved": 1,
+    "sfx": 141,
+    "shake": 47,
+    "spam": 12,
+    "spamblock": 10,
+    "sparks": 47,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 65,
+      "qi": 83,
+      "souffle": 2.23,
+      "state": "dead",
+      "x": -320.14,
+      "y": 0,
+    },
+    {
+      "pct": 20,
+      "qi": 67,
+      "souffle": 2.13,
+      "state": "frozen",
+      "x": -163.11,
+      "y": 0,
+    },
+  ],
+  "kos": [
+    58,
+    47,
+    65,
+  ],
+  "steps": 2314,
+}
+`;
+
+exports[`entrées humaines > joueur sans techniques (ceinture blanche) contre bot 1`] = `
+{
+  "end": {
+    "score": [
+      3,
+      2,
+    ],
+    "winner": 0,
+  },
+  "eventHash": "65129f93",
+  "events": {
+    "big": 29,
+    "cine": 2,
+    "dodge": 33,
+    "end": 1,
+    "exhausted": 1,
+    "final": 1,
+    "float": 35,
+    "hit": 204,
+    "ko": 5,
+    "point": 5,
+    "ring": 10,
+    "sfx": 676,
+    "shake": 208,
+    "spam": 1,
+    "sparks": 204,
+    "splash": 5,
+    "sudden": 4,
+  },
+  "fighters": [
+    {
+      "pct": 144,
+      "qi": 0,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 156.07,
+      "y": 105.43,
+    },
+    {
+      "pct": 105,
+      "qi": 0,
+      "souffle": 1.56,
+      "state": "dead",
+      "x": 279.02,
+      "y": -23.07,
+    },
+  ],
+  "kos": [
+    102,
+    90,
+    144,
+    110,
+    105,
+  ],
+  "steps": 10977,
+}
+`;
+
+exports[`entrées humaines > joueur scripté contre bot Adepte 1`] = `
+{
+  "end": {
+    "score": [
+      0,
+      3,
+    ],
+    "winner": 1,
+  },
+  "eventHash": "34b644b1",
+  "events": {
+    "big": 15,
+    "cine": 1,
+    "dodge": 3,
+    "end": 1,
+    "final": 1,
+    "float": 27,
+    "hit": 56,
+    "ko": 3,
+    "parry": 11,
+    "point": 3,
+    "ring": 30,
+    "saved": 1,
+    "sfx": 224,
+    "shake": 67,
+    "sparks": 67,
+    "splash": 3,
+  },
+  "fighters": [
+    {
+      "pct": 54.28,
+      "qi": 87,
+      "souffle": 3,
+      "state": "dead",
+      "x": 323.89,
+      "y": 133.48,
+    },
+    {
+      "pct": 39.68,
+      "qi": 82,
+      "souffle": 3,
+      "state": "frozen",
+      "x": 152.34,
+      "y": 25.89,
+    },
+  ],
+  "kos": [
+    69,
+    101,
+    54,
+  ],
+  "steps": 3972,
+}
+`;
+
+exports[`entrées humaines > martèlement contre bot : le bot s’adapte (D9) 1`] = `
+{
+  "end": null,
+  "eventHash": "f2497db1",
+  "events": {
+    "big": 15,
+    "exhausted": 1,
+    "float": 12,
+    "hit": 24,
+    "ko": 2,
+    "parry": 2,
+    "point": 2,
+    "ring": 11,
+    "saved": 1,
+    "sfx": 95,
+    "shake": 26,
+    "spam": 5,
+    "spamblock": 3,
+    "sparks": 26,
+    "splash": 2,
+  },
+  "fighters": [
+    {
+      "pct": 8.67,
+      "qi": 10,
+      "souffle": 3,
+      "state": "attack",
+      "x": -75.05,
+      "y": -1.29,
+    },
+    {
+      "pct": 11,
+      "qi": 12,
+      "souffle": 2.44,
+      "state": "stun",
+      "x": -15.36,
+      "y": -15.02,
+    },
+  ],
+  "kos": [
+    11,
+    64,
+  ],
+  "steps": 1800,
+}
+`;
+
+exports[`mannequin (tutoriel) > mannequin qui attaque en blanc, mode libre 1`] = `
+{
+  "end": null,
+  "eventHash": "89683b60",
+  "events": {
+    "hit": 11,
+    "ko": 1,
+    "sfx": 49,
+    "shake": 11,
+    "sparks": 11,
+    "splash": 1,
+  },
+  "fighters": [
+    {
+      "pct": 15,
+      "qi": 53,
+      "souffle": 3,
+      "state": "recover",
+      "x": 254,
+      "y": 0,
+    },
+    {
+      "pct": 43,
+      "qi": 28,
+      "souffle": 3,
+      "state": "dead",
+      "x": 330.95,
+      "y": 0,
+    },
+  ],
+  "kos": [
+    43,
+  ],
+  "steps": 1200,
+}
+`;
+
+exports[`réseau : instantanés appliqués chez l’invité > le miroir suit la simulation de l’hôte 1`] = `
+{
+  "maxSnapBytes": 287,
+  "mirror": "d34fd661",
+}
+`;

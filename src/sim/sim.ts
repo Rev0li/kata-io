@@ -12,13 +12,20 @@ export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
 export const angDiff = (a: number, b: number) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
-const rand = (a: number, b: number) => a + Math.random() * (b - a);
-const pick = <T>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
+// Hasard de la simulation : celui de la partie en cours (graine fixe dans les tests, Math.random sinon).
+const rnd = () => S.rng();
+// Générateur à graine (mulberry32) : même graine, même suite de nombres, donc même match.
+export function seededRng(seed: number) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const rand = (a: number, b: number) => a + rnd() * (b - a);
+const pick = <T>(arr: T[]) => arr[(rnd() * arr.length) | 0];
 
 export interface Input { mx: number; my: number; aim: number; atk: boolean; parryN: number; dodgeN: number; emoteN: number; emote: string | null }
 export const emptyInput = (): Input => ({ mx: 0, my: 0, aim: 0, atk: false, parryN: 0, dodgeN: 0, emoteN: 0, emote: null });
 export interface Spec { name: string; look: Look; deck?: Deck; bot?: number | null; abil?: Abil; belt?: string; dummy?: boolean; atkSlow?: number }
-export interface SimOpts { firstTo?: number; H?: number; damp?: number; free?: boolean; pos?: [number, number][] }
+export interface SimOpts { firstTo?: number; H?: number; damp?: number; free?: boolean; pos?: [number, number][]; seed?: number }
 export type Ev = { t: string; [k: string]: any };
 // Mort subite : passé ce délai dans une manche, le dojo rétrécit jusqu'à SUDDEN_MIN.
 export const SUDDEN_T = 25000, SUDDEN_RATE = 9, SUDDEN_MIN = 110;
@@ -41,7 +48,7 @@ const fx = {
 
 /* ================= création ================= */
 export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
-  const st: Sim = { H: opts.H || DUEL_H, H0: opts.H || DUEL_H, damp: opts.damp || KB_DAMP, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null };
+  const st: Sim = { H: opts.H || DUEL_H, H0: opts.H || DUEL_H, damp: opts.damp || KB_DAMP, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null, rng: opts.seed != null ? seededRng(opts.seed) : Math.random };
   S = st;
   specs.forEach((sp, i) => {
     const e = makeFighter({ idx: i, name: String(sp.name || 'Combattant').slice(0, 24), look: sanitizeLook(sp.look), deck: sp.deck ? cloneDeck(sp.deck) : cloneDeck(DEFAULT_DECK), abil: { ...(sp.abil || FULL_ABIL) }, belt: sp.belt || null, atkSlow: sp.atkSlow || 1 });
@@ -435,7 +442,7 @@ function botUpdate(e: Fighter, dt: number) {
   if (e.holding) { b.holdFor -= ms; if (b.holdFor <= 0) doAction(e, 'releaseAtk'); }
   if (e.state === 'ledge') { if (b.climbAt == null) b.climbAt = rand(150, 900) * (1.25 - s); b.climbAt -= ms; if (b.climbAt <= 0) { b.climbAt = null; climb(e); } e.move = { x: 0, y: 0 }; return; }
   b.climbAt = null;
-  if (b.strafeT <= 0) { b.strafe = Math.random() < 0.5 ? -1 : 1; b.strafeT = rand(700, 2000); b.pref = rand(50, 64); }
+  if (b.strafeT <= 0) { b.strafe = rnd() < 0.5 ? -1 : 1; b.strafeT = rand(700, 2000); b.pref = rand(50, 64); }
   const T = S.f.find((o: Fighter) => o !== e && alive(o));
   if (T) {
     const dx0 = e.x - T.x, dy0 = e.y - T.y, d0 = Math.hypot(dx0, dy0);
@@ -444,10 +451,10 @@ function botUpdate(e: Fighter, dt: number) {
       const a = T.atk;
       if (d0 <= a.def.rg + a.def.lunge + 40 && (a.def.arc >= 360 || Math.abs(angDiff(T.facing, Math.atan2(dy0, dx0))) <= a.def.arc * RAD / 2 + 0.6)) {
         b.seen.set(T.id, a.uid); const left = a.su - a.t;
-        if (a.kind === 'red') { if (Math.random() < s * 0.95) { const react = rand(80, 230) * (1.3 - s); if (react < left + a.ac * 0.6) b.plan = { act: 'dodge', at: Math.max(0, Math.min(react, left - 50)) }; } }
+        if (a.kind === 'red') { if (rnd() < s * 0.95) { const react = rand(80, 230) * (1.3 - s); if (react < left + a.ac * 0.6) b.plan = { act: 'dodge', at: Math.max(0, Math.min(react, left - 50)) }; } }
         else {
-          const r = Math.random();
-          if (r < s * 0.78 && e.abil.parry) { const react = rand(70, 210) * (1.3 - s); const lead = s > 0.8 ? rand(40, 120) : rand(100, 200); let at = left - lead; if (at < react) at = Math.random() < s ? react : 1e9; if (at < left + a.ac) b.plan = { act: 'parry', at }; }
+          const r = rnd();
+          if (r < s * 0.78 && e.abil.parry) { const react = rand(70, 210) * (1.3 - s); const lead = s > 0.8 ? rand(40, 120) : rand(100, 200); let at = left - lead; if (at < react) at = rnd() < s ? react : 1e9; if (at < left + a.ac) b.plan = { act: 'parry', at }; }
           else if (r < s * 0.92 || (!e.abil.parry && r < s * 0.85)) b.plan = { act: 'dodge', at: Math.max(rand(50, 150) * (1.3 - s), left - 120) };
         }
       }
@@ -455,7 +462,7 @@ function botUpdate(e: Fighter, dt: number) {
   }
   if (b.plan) { b.plan.at -= ms; if (b.plan.at <= 0) { const p = b.plan; b.plan = null;
     if (p.act === 'parry') doAction(e, 'parry');
-    else if (T) { const sg = Math.random() < 0.5 ? 1 : -1; const px = -Math.sin(T.facing) * sg, py = Math.cos(T.facing) * sg; const inw = edgeInward(e); doAction(e, 'dodge', { x: px + inw.x * 1.5, y: py + inw.y * 1.5 }); } } }
+    else if (T) { const sg = rnd() < 0.5 ? 1 : -1; const px = -Math.sin(T.facing) * sg, py = Math.cos(T.facing) * sg; const inw = edgeInward(e); doAction(e, 'dodge', { x: px + inw.x * 1.5, y: py + inw.y * 1.5 }); } } }
   let mx = 0, my = 0;
   if (T) {
     const dx = T.x - e.x, dy = T.y - e.y, dist = Math.max(1, Math.hypot(dx, dy)), ux = dx / dist, uy = dy / dist;
@@ -471,16 +478,16 @@ function botUpdate(e: Fighter, dt: number) {
     if (e.state === 'idle' && !b.plan && b.atkCd <= 0 && tOk) {
       const wr = nextWhite(e).rg + 12, hv = HA[e.deck.heavy[e.stance]];
       if (T.state === 'ledge' && dist < wr + 20) botPress(e, 0);
-      else if (T.state === 'charge' && dist < wr + 18 && Math.random() < 0.35 + s * 0.55) botPress(e, 0);
-      else if ((T.state === 'parry' || T.state === 'recover' || T.state === 'stun') && dist < hv.rg + hv.lunge && e.souffle >= 1 && Math.random() < 0.3 + s * 0.6) botPress(e, T.state === 'parry' ? rand(160, 260) : rand(200, 500));
-      else if (dist < wr) { if (e.souffle >= 1 && Math.random() < 0.22) botPress(e, rand(260, 820)); else { botPress(e, 0); b.chain = Math.random() < 0.35 + s * 0.5 ? (Math.random() < 0.5 ? 1 : 2) : 0; } }
-      else if (dist < hv.rg + hv.lunge && e.souffle >= 1 && Math.random() < 0.015 + s * 0.012) botPress(e, rand(300, 760));
+      else if (T.state === 'charge' && dist < wr + 18 && rnd() < 0.35 + s * 0.55) botPress(e, 0);
+      else if ((T.state === 'parry' || T.state === 'recover' || T.state === 'stun') && dist < hv.rg + hv.lunge && e.souffle >= 1 && rnd() < 0.3 + s * 0.6) botPress(e, T.state === 'parry' ? rand(160, 260) : rand(200, 500));
+      else if (dist < wr) { if (e.souffle >= 1 && rnd() < 0.22) botPress(e, rand(260, 820)); else { botPress(e, 0); b.chain = rnd() < 0.35 + s * 0.5 ? (rnd() < 0.5 ? 1 : 2) : 0; } }
+      else if (dist < hv.rg + hv.lunge && e.souffle >= 1 && rnd() < 0.015 + s * 0.012) botPress(e, rand(300, 760));
       b.atkCd = rand(220, 700) * (1.45 - s);
     }
     if (e.state === 'charge' && T.state === 'dodge' && s > 0.65 && !b.waited) { b.holdFor += 260; b.waited = true; }
     if (e.state !== 'charge') b.waited = false;
     if (e.state === 'attack' && e.atk.kind === 'white' && e.atk.t > e.atk.su && !e.buffer && b.chain > 0 && dist < 95) { doAction(e, 'pressAtk'); b.holdFor = 0; b.chain--; }
-    if (Math.random() < 0.0008 && e.state === 'idle') doAction(e, 'emote', pick(['salut', 'rire', 'viens', 'lent']));
+    if (rnd() < 0.0008 && e.state === 'idle') doAction(e, 'emote', pick(['salut', 'rire', 'viens', 'lent']));
   }
   const inw = edgeInward(e); mx += inw.x * (0.6 + s); my += inw.y * (0.6 + s);
   const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; } e.move = { x: mx, y: my };

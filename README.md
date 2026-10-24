@@ -83,7 +83,10 @@ npm run dev        # serveur de dev Vite sur http://localhost:5173
 npm run build      # vérification TypeScript puis build de production dans dist/
 npm run preview    # sert le build de production
 npm run sim        # duels bot contre bot dans le terminal, pour vérifier l'équilibrage
+npm test           # tests Vitest (non-régression de la simulation)
 ```
+
+**Tests de non-régression** : `tests/sim.golden.test.ts` joue des matchs à graine fixe (`createSim(specs, { seed })`) et compare leur résumé à `tests/__snapshots__/`. Si un réglage de `RULES` change volontairement le combat, accepter les nouveaux résumés avec `npm test -- -u`. Sinon, un échec signale une régression.
 
 **Tester un duel seul sur sa machine** : ouvrir `http://localhost:5173/?net=local`, créer un duel, puis ouvrir le lien d'invitation dans un deuxième onglet du même navigateur. Les deux onglets communiquent par `BroadcastChannel`, sans passer par Internet.
 
