@@ -6,11 +6,11 @@
 // - guest    : ce navigateur envoie ses entrées et affiche les instantanés reçus
 import { createSim, stepSim, drainEvents, snapshot, createMirror, applySnapshot, advanceMirror, emptyInput, Input, Spec, Ev, respawn, setDummy, alive } from '../sim/sim';
 import { Conn } from './transport';
-import { LEVELS, randLook, randDeck, BOT_NAMES, sanitizeLook } from '../sim/data';
+import { LEVELS, randLook, randDeck, BOT_NAMES, sanitizeLook, Look } from '../sim/data';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 
-export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest';
+export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
 const STEP = 1 / 60, SNAP_MS = 33;
 
 export interface Hooks {
@@ -38,12 +38,15 @@ class Session {
   acc = 0; snapT = 0; sendT = 0; lastSent = ''; pingT = 0; ping = -1;
   ended = false; rematchMe = false; rematchThem = false; level = 1; notice = '';
   floor: Floor | null = null; roundsLost = 0; seconds = 0;
+  attempt = 1; teaser = ''; bonus = { saves: 0, perfects: 0 };
   tuto: { steps: TutoStep[]; i: number; count: number; done: boolean; endT: number; avoid: { active: boolean; dodged: boolean; hit: boolean }; hintT: number } | null = null;
   hooks: Hooks = {};
 
   get state() { return this.mode === 'guest' ? this.mirror : this.sim; }
   get active() { return this.mode !== 'idle' && !!this.state; }
   get local() { return this.mode === 'practice' || this.mode === 'tower' || this.mode === 'tuto'; }
+  // Vitrine de la boutique : vraie simulation, le joueur frappe un mannequin pour montrer une traînée ou un plouf.
+  show: { kind: 'trainee' | 'ejection'; t: number; presses: number[]; dir: [number, number]; focus: { x: number; y: number } } | null = null;
   get marker() { const t = this.tuto; return t && !t.done ? t.steps[t.i].marker || null : null; }
 
   resetInput() { const i = this.input; this.input = { ...emptyInput(), parryN: i.parryN, dodgeN: i.dodgeN, emoteN: i.emoteN }; }
@@ -56,12 +59,44 @@ class Session {
     this.specs = [me, { name: BOT_NAMES[(Math.random() * BOT_NAMES.length) | 0], look: randLook(), deck: randDeck(), bot: lv.skill, abil: me.abil, belt: RANKS[Math.min(RANKS.length - 1, level * 3)].belt }];
     this.begin();
   }
-  startTower(me: MeSpec, floor: Floor) {
+  // extra : techniques du gardien (avant-goût de la prochaine technique), numéro d'essai, réplique de défi
+  startTower(me: MeSpec, floor: Floor, extra: { abil?: Abil; attempt?: number; taunt?: string; teaser?: string } = {}) {
     this.leave(true);
-    this.mode = 'tower'; this.myIdx = 0; this.floor = floor;
-    this.specs = [me, { name: floor.name, look: floor.look, deck: floor.deck, bot: floor.skill, abil: abilFor(floor.tier), belt: RANKS[floor.tier].belt }];
+    this.mode = 'tower'; this.myIdx = 0; this.floor = floor; this.attempt = extra.attempt || 1; this.teaser = extra.teaser || '';
+    this.specs = [me, { name: floor.name, look: floor.look, deck: floor.deck, bot: floor.skill, abil: extra.abil || abilFor(floor.tier), belt: RANKS[floor.tier].belt }];
     this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp };
     this.begin();
+    if (extra.taunt && this.sim) this.sim.f[1].emote = { id: extra.taunt, t: -700 };
+  }
+  startShowcase(me: MeSpec) {
+    this.leave(true);
+    this.mode = 'showcase'; this.myIdx = 0; this.floor = null; this.teaser = ''; this.attempt = 1;
+    this.specs = [me, { name: 'Mannequin', look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'plouf' }, dummy: true, atkSlow: 1.9, abil: FULL_ABIL }];
+    this.opts = { free: true, pos: [[-50, 20], [30, 20]] };
+    this.begin(true);
+    setDummy(this.sim, 1, 'idle', 30, 20);
+  }
+  // Joue une démonstration : trois coups pour une traînée, une éjection pour un plouf (dans la direction dir).
+  showcase(kind: 'trainee' | 'ejection', look: Look, dir: [number, number]) {
+    const S = this.sim; if (this.mode !== 'showcase' || !S) return;
+    const me = S.f[0], foe = S.f[1], H = S.H;
+    me.look = { ...look };
+    const place = (e: any, x: number, y: number) => { respawn(S, e, x, y); e.dropT = 0; e.spawnInv = 0; e.vx = e.vy = 0; };
+    if (kind === 'trainee') { place(me, -50, 20); place(foe, 30, 20); foe.pct = 0; this.show = { kind, t: 0, presses: [150, 430, 710], dir, focus: { x: -10, y: 20 } }; }
+    else {
+      const ex = dir[0] * (H - 60), ey = dir[1] * (H - 60) + (dir[1] ? 0 : 20);
+      place(foe, ex, ey); place(me, ex - dir[0] * 70, ey - dir[1] * 70); foe.pct = 175;
+      this.show = { kind, t: 0, presses: [250], dir, focus: { x: dir[0] * (H + 40), y: dir[1] * (H + 40) + 10 } };
+    }
+    setDummy(S, 1, 'idle', foe.x, foe.y);
+  }
+  private showcaseTick(dt: number) {
+    const sh = this.show, S = this.sim; if (!sh || !S) return;
+    sh.t += dt * 1000;
+    const me = S.f[0], foe = S.f[1], inp = this.input;
+    inp.mx = inp.my = 0; inp.aim = Math.atan2(foe.y - me.y, foe.x - me.x);
+    inp.atk = sh.presses.some(p => sh.t >= p && sh.t < p + 70);
+    if (foe.state === 'dead' && sh.t > 2600) { respawn(S, foe, 30, 20); foe.dropT = 0; setDummy(S, 1, 'idle', 30, 20); }
   }
   startTuto(me: MeSpec, steps: TutoStep[]) {
     this.leave(true);
@@ -87,12 +122,12 @@ class Session {
     conn.send({ t: 'hello', spec: { name: me.name, look: me.look, belt: me.belt } });
     this.hooks.onStatus?.('Connecté. Le combat se prépare…');
   }
-  private begin() {
-    this.ended = false; this.rematchMe = this.rematchThem = false; this.acc = 0; this.fx = []; this.outEv = []; this.roundsLost = 0; this.seconds = 0;
+  private begin(silent = false) {
+    this.ended = false; this.rematchMe = this.rematchThem = false; this.acc = 0; this.fx = []; this.outEv = []; this.roundsLost = 0; this.seconds = 0; this.bonus = { saves: 0, perfects: 0 };
     this.resetInput(); this.remote = emptyInput();
     if (this.mode === 'guest') this.mirror = createMirror(this.specs);
     else this.sim = createSim(this.specs, this.opts);
-    this.hooks.onStart?.();
+    if (!silent) this.hooks.onStart?.();
   }
 
   /* ---------- tutoriel ---------- */
@@ -186,6 +221,8 @@ class Session {
     this.fx.push(e);
     if (forward) this.outEv.push(e);
     if (e.t === 'point' && e.to !== this.myIdx) this.roundsLost++;
+    if (e.t === 'saved' && e.idx === this.myIdx) this.bonus.saves++;
+    if (e.t === 'perfect' && e.idx === this.myIdx) this.bonus.perfects++;
     if (this.tuto) this.tutoEvent(e);
     if (e.t === 'end') {
       this.ended = true;
@@ -208,6 +245,7 @@ class Session {
       return;
     }
     // hôte ou mode local : pas fixe de 1/60 s
+    if (this.mode === 'showcase') this.showcaseTick(dt);
     this.acc += Math.min(dt, 0.1);
     let n = 0;
     while (this.acc >= STEP && n < 6) {
@@ -248,7 +286,7 @@ class Session {
   leave(silent = false) {
     const c = this.conn; this.conn = null;
     if (c) c.close();
-    this.mode = 'idle'; this.sim = null; this.mirror = null; this.ended = false; this.fx = []; this.outEv = []; this.ping = -1; this.notice = ''; this.tuto = null;
+    this.mode = 'idle'; this.sim = null; this.mirror = null; this.show = null; this.ended = false; this.fx = []; this.outEv = []; this.ping = -1; this.notice = ''; this.tuto = null;
     if (!silent) this.hooks.onStatus?.('');
   }
 }

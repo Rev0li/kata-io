@@ -65,6 +65,7 @@
         <button id="floorsBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5"/></svg>Étages</button>
         <button id="practiceBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Entraînement</button>
       </div>
+      <button id="dailyBtn" class="btn2 wide dailybtn" type="button"><img class="px" src="/assets/items/scroll-thunder.png" alt=""><span class="dl"><b>Défi du jour</b><small id="dailySub"></small></span></button>
       <button id="shopBtn" class="btn2 wide shopbtn" type="button"><i class="sico chest" style="background-image:url(/assets/fx/chest.png);--n:2;--f:1;--ar:.875"></i><span>Boutique d'effets</span><span class="coins"><img class="px" src="/assets/items/gold-coin.png" alt=""><b id="homeCoins">0</b></span></button>
       <div class="box">
         <span class="lbl">Duel avec un ami</span>
@@ -91,12 +92,14 @@
         <summary>Commandes et réglages</summary>
         <div class="keys">
           <span><kbd>ZQSD</kbd> <kbd>flèches</kbd></span><span>Se déplacer</span>
+          <span><kbd>Souris</kbd></span><span>Viser, si la visée automatique est désactivée</span>
           <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span><span>Frapper. Maintenu : coup chargé (ceinture verte)</span>
           <span><kbd>Clic droit</kbd> <kbd>K</kbd></span><span>Parer (ceinture orange)</span>
           <span><kbd>Espace</kbd> <kbd>Shift</kbd></span><span>Esquiver (coûte un souffle)</span>
           <span><kbd>1</kbd>–<kbd>4</kbd></span><span>Emotes</span>
           <span><kbd>Échap</kbd></span><span>Quitter le combat</span>
         </div>
+        <label class="tgl pc-only"><span>Visée automatique (comme sur mobile)</span><input type="checkbox" id="setAutoAim"></label>
         <label class="tgl"><span>Effets sonores</span><input type="checkbox" id="setSfx"></label>
         <label class="tgl"><span>Musique</span><input type="checkbox" id="setMusic"></label>
         <button id="tutoBtn" class="ghost wide" type="button">Refaire le tutoriel</button>
@@ -107,7 +110,7 @@
           <label class="drow"><span>Ceinture</span><select id="devRank"></select></label>
           <label class="drow"><span>Étages débloqués</span><select id="devFloor"></select></label>
           <label class="drow"><span>Niveau du bot d'entraînement</span><select id="devLvl"><option value="0">Disciple</option><option value="1">Adepte</option><option value="2">Maître</option></select></label>
-          <button id="devCoins" class="ghost wide" type="button">+500 pièces</button>
+          <div class="drow"><span>Ajouter des pièces</span><span class="addc"><input id="devCoinsN" type="number" inputmode="numeric" value="500" min="1" max="999999" aria-label="Nombre de pièces"><button id="devCoins" class="btn2" type="button">Ajouter</button></span></div>
           <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
         </div>
       </details>
@@ -169,6 +172,7 @@
       <p class="sub" id="resScore"></p>
       <p class="near" id="resNear" hidden></p>
       <p class="streak" id="resStreak" hidden></p>
+      <p class="bonusl" id="resBonus" hidden></p>
       <div class="xpgain" id="resXp" hidden><span id="resXpTxt"></span><div class="xpbar"><i id="resXpBar"></i></div></div>
       <div class="unlock" id="resUnlock" hidden>
         <div class="uhead"><img class="px scroll" id="unlockScroll" src="/assets/items/scroll-fire.png" alt=""><div><span class="lbl">Nouvelle ceinture</span><b id="unlockBelt"></b></div></div>

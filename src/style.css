@@ -337,3 +337,12 @@ body.touch .emo { grid-area: 1 / 1; } body.touch .par { grid-area: 1 / 2; } body
   .shop .btn-play { padding: 12px 14px 10px; font-size: 22px; }
 }
 #shopAct .coin { width: 18px; height: 18px; vertical-align: -2px; margin-left: 2px; }
+.dailybtn { display: flex; align-items: center; gap: 10px; text-align: left; }
+.dailybtn img { width: 28px; height: 28px; flex: none; }
+.dailybtn .dl { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.dailybtn small { font-family: var(--f-body); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ochre); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bonusl { margin: 0; font-weight: 700; color: var(--gold); font-size: 14px; }
+.addc { display: inline-flex; gap: 6px; align-items: center; }
+.addc input { width: 92px; background: var(--ink-2); color: var(--bone); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; font-size: 13px; }
+.addc .btn2 { padding: 6px 10px 5px; font-size: 14px; }
+body.touch .pc-only { display: none; }

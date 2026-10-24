@@ -1,0 +1,5 @@
+Sprites : pack « Ninja Adventure » de Pixel-boy et AAA, licence CC0 1.0 (domaine public).
+https://pixel-boy.itch.io/ninja-adventure-asset-pack
+Sources : https://github.com/pixel-boy/NinjaAdventure
+          https://github.com/sparklinlabs/superpowers-asset-packs (dossier ninja-adventure, CC0)
+Assemblé par scripts/build-assets.py.

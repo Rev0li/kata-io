@@ -2,7 +2,7 @@
 import { session, MeSpec } from '../net/session';
 import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
 import { PERSOS, ARMES, TRAINEES, EJECTIONS, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
-import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil, towerCoins, COINS_PRACTICE, COINS_DUEL, COINS_TUTO, streakMult } from '../sim/progression';
+import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil, towerCoins, COINS_PRACTICE, COINS_DUEL, COINS_TUTO, streakMult, Floor, dayKey, dailyFloor, DAILY_COINS, DAILY_XP } from '../sim/progression';
 import { viewState } from './viewstate';
 import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { controls, clearKeys } from './controls';
@@ -13,7 +13,8 @@ const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySele
 const PROFILE_KEY = 'kata-io-dev-profile';
 
 /* ================= profil et progression ================= */
-interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean; xp: number; towerMax: number; stars: Record<string, number>; tutoDone: boolean; coins: number; owned: string[]; streak: number }
+interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean; xp: number; towerMax: number; stars: Record<string, number>; tutoDone: boolean; coins: number; owned: string[]; streak: number;
+  autoAim: boolean; tries: Record<string, number>; daily: { day: string; best: number; won: boolean; tries: number } }
 function loadProfile(): Profile {
   let p: any = null; try { p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch (e) { /* stockage indisponible */ }
   p = p && typeof p === 'object' ? p : {};
@@ -23,6 +24,8 @@ function loadProfile(): Profile {
     towerMax: Number.isFinite(p.towerMax) && p.towerMax >= 1 ? Math.floor(p.towerMax) : 1, stars: p.stars && typeof p.stars === 'object' ? p.stars : {}, tutoDone: !!p.tutoDone,
     coins: Number.isFinite(p.coins) && p.coins >= 0 ? Math.floor(p.coins) : 0, owned: Array.isArray(p.owned) ? p.owned.filter((x: any) => typeof x === 'string') : [],
     streak: Number.isFinite(p.streak) && p.streak >= 0 ? Math.floor(p.streak) : 0,
+    autoAim: p.autoAim !== false, tries: p.tries && typeof p.tries === 'object' ? p.tries : {},
+    daily: p.daily && typeof p.daily === 'object' && typeof p.daily.day === 'string' ? { day: p.daily.day, best: +p.daily.best || 0, won: !!p.daily.won, tries: +p.daily.tries || 0 } : { day: '', best: 0, won: false, tries: 0 },
   };
 }
 const profile = loadProfile();
@@ -37,7 +40,7 @@ const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
 let host: HostHandle | null = null;
 let current = 'home';
 const SCREENS = ['home', 'floors', 'shop', 'lobby', 'joining', 'result', 'lost', 'quit'];
-let lastMode: { kind: 'tower' | 'practice' | 'duel' | 'tuto'; floor?: number; drill?: string | null } = { kind: 'tower', floor: 1 };
+let lastMode: { kind: 'tower' | 'practice' | 'duel' | 'tuto' | 'daily'; floor?: number; drill?: string | null } = { kind: 'tower', floor: 1 };
 
 function show(id: string | null) {
   current = id || '';
@@ -97,9 +100,13 @@ function renderCoins() { $('#homeCoins').textContent = String(profile.coins); $(
 let shopTab: ShopKind = 'trainee', shopSel = '';
 const ICON_AR: Record<string, number> = { leaf: 7 / 12, chest: 14 / 16 }; // hauteur / largeur des images non carrées
 function iconStyle(icon: [string, number, number]) { return `background-image:url(/assets/fx/${icon[0]}.png);--n:${icon[1]};--f:${icon[2]};--ar:${ICON_AR[icon[0]] || 1}`; }
-function openShop() { show('shop'); viewState.shop = true; shopSel = profile.look[shopTab]; renderShop(); preview(shopSel); }
-function closeShop() { viewState.shop = false; renderHome(); show('home'); }
-function preview(id: string) { viewState.preview = { kind: shopTab, id }; }
+// La vitrine est un vrai combat scripté derrière le panneau : ton combattant frappe le mannequin
+// (traînée) ou l'envoie à l'eau (plouf), du côté du dojo que le panneau ne cache pas.
+function openShop() { wake(); viewState.shop = true; session.startShowcase(mySpec(FULL_ABIL)); show('shop'); shopSel = myLook()[shopTab]; renderShop(); preview(shopSel); }
+function closeShop() { viewState.shop = false; session.leave(true); renderHome(); show('home'); }
+function preview(id: string) {
+  session.showcase(shopTab, { ...myLook(), [shopTab]: id }, [-1, 0]); // éjection vers la gauche : jamais sous le panneau
+}
 function renderShop() {
   renderCoins();
   document.querySelectorAll<HTMLElement>('#shop .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === shopTab));
@@ -140,11 +147,14 @@ function renderHome() {
   $('#rankName').textContent = rp.cur.name;
   ($('#rankXp') as HTMLElement).style.width = Math.round(rp.frac * 100) + '%';
   $('#rankNext').textContent = rp.next ? `${profile.xp} / ${rp.next.xp} XP · prochaine technique : ${rp.next.unlock!.title}` : `${profile.xp} XP · toutes les techniques sont débloquées`;
+  rollDaily(); const dly = profile.daily;
+  $('#dailySub').textContent = dly.won ? `Record du jour : ${dly.best} s · tu peux faire mieux` : `${dailyFloor(dly.day).name} · gagne-le : +${DAILY_COINS} pièces` + (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
   const f = towerFloor(nextFloor());
   $('#towerSub').textContent = !profile.tutoDone ? 'Commence par le tutoriel (1 min)'
     : profile.streak >= 2 ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}` : `Étage ${f.n} · ${f.name}`;
   renderCoins();
   ($('#setSfx') as HTMLInputElement).checked = profile.sfx; ($('#setMusic') as HTMLInputElement).checked = profile.music;
+  ($('#setAutoAim') as HTMLInputElement).checked = profile.autoAim; controls.autoAim = profile.autoAim;
   ($('#devRank') as HTMLSelectElement).value = String(myRank());
   ($('#devFloor') as HTMLSelectElement).value = String(Math.min(profile.towerMax, 20));
   ($('#devLvl') as HTMLSelectElement).value = String(profile.level);
@@ -173,9 +183,30 @@ function startTower(n: number) {
   if (!profile.tutoDone) { startTuto(null); return; }
   lastMode = { kind: 'tower', floor: n };
   const f = towerFloor(n); applyLocks(myAbil());
-  session.startTower(mySpec(), f);
+  session.startTower(mySpec(), f, towerExtra(f, profile.tries[n] || 0));
   if (f.twist) setTimeout(() => toast(f.twist), 400);
 }
+// Gardien : ses techniques, plus la prochaine que tu vas débloquer (avant-goût) ; il nargue si tu reviens après une défaite.
+function towerExtra(f: Floor, tries: number) {
+  const abil = abilFor(f.tier), next = RANKS[myRank() + 1]; let teaser = '';
+  if (next && next.unlock && !f.daily) {
+    const k = next.unlock.key, before = JSON.stringify(abil);
+    if (k === 'chain2') abil.chain = Math.max(abil.chain, 2); else if (k === 'chain3') abil.chain = 3; else (abil as any)[k] = true;
+    if (JSON.stringify(abil) !== before) teaser = next.unlock.title;
+  }
+  return { abil, attempt: tries + 1, taunt: tries >= 1 ? 'n' + Math.min(5, tries) : undefined, teaser };
+}
+function rollDaily() { const k = dayKey(); if (profile.daily.day !== k) { profile.daily = { day: k, best: 0, won: false, tries: 0 }; save(); } }
+function startDaily() {
+  wake(); myName();
+  if (!profile.tutoDone) { startTuto(null); return; }
+  rollDaily(); lastMode = { kind: 'daily' };
+  const f = dailyFloor(profile.daily.day); applyLocks(myAbil());
+  // le défi reste à la portée de la ceinture du joueur : au plus une technique d'avance
+  session.startTower(mySpec(), f, { ...towerExtra(f, profile.daily.tries), abil: abilFor(Math.min(f.tier, myRank() + 1)) });
+  setTimeout(() => toast(f.twist ? 'Défi du jour · ' + f.twist : 'Défi du jour : le même adversaire pour tout le monde'), 400);
+}
+const nth = (n: number) => n === 1 ? '1er' : n + 'e';
 function startTuto(drill: string | null) {
   wake(); myName();
   lastMode = { kind: 'tuto', drill };
@@ -244,7 +275,24 @@ function onEnd(winner: number, score: number[]) {
     const starsEl = $('#resStars'); starsEl.hidden = true; starsEl.querySelectorAll('i').forEach(i => i.classList.remove('on'));
     const xpBefore = profile.xp; let gain = 0, newRank = -1;
     if (!win && op && op.pct >= 70) { $('#resNear').hidden = false; $('#resNear').textContent = `Il était à ${Math.round(op.pct)} % : encore un coup et il tombait.`; }
-    if (session.mode === 'tower' && session.floor) {
+    if (session.mode === 'tower' && session.floor && session.floor.daily) {
+      rollDaily(); const D = profile.daily, f = session.floor, t = session.seconds;
+      $('#resKicker').textContent = `Défi du jour · ${f.name}`;
+      if (win) {
+        const rec = !D.best || t < D.best; if (rec) D.best = t;
+        if (!D.won) { D.won = true; gain = DAILY_XP; coins = DAILY_COINS; } else { gain = 10; coins = 3; }
+        $('#resTitle').textContent = 'Défi réussi';
+        $('#resScore').textContent = `${sMe} – ${sOp} en ${t} s` + (rec ? ' · record du jour !' : ` · record : ${D.best} s`);
+        if (D.tries) $('#resStatus').textContent = `Battu au ${nth(D.tries + 1)} essai.`;
+        D.tries = 0; setResultButtons('Améliorer mon temps', () => startDaily(), null, null);
+      } else {
+        D.tries++; gain = 5; coins = 1;
+        $('#resTitle').textContent = 'Défi raté'; $('#resScore').textContent = `${sMe} – ${sOp}`;
+        $('#resStatus').textContent = `Essai ${D.tries} raté. Demain, ce sera un autre adversaire.`;
+        setResultButtons('Réessayer', () => startDaily(), null, null);
+      }
+      save();
+    } else if (session.mode === 'tower' && session.floor) {
       const f = session.floor, stars = starsFor(win, session.roundsLost, session.seconds, f.par);
       const first = win && profile.towerMax <= f.n;
       gain = towerXp(f.n, win, sMe, stars); coins = towerCoins(f.n, win, stars, first);
@@ -262,9 +310,17 @@ function onEnd(winner: number, score: number[]) {
         profile.stars[f.n] = Math.max(profile.stars[f.n] || 0, stars); profile.towerMax = Math.max(profile.towerMax, f.n + 1); save();
         const gift = firstClear ? PK.find(id => PERSOS[id].floor === f.n) : undefined;
         if (gift) showPerso(gift);
-        if (stars < 3) $('#resStatus').textContent = stars === 1 ? 'Deuxième étoile : gagne sans perdre une manche.' : `Troisième étoile : gagne en moins de ${f.par} s.`;
+        const tries = profile.tries[f.n] || 0; delete profile.tries[f.n]; save();
+        const hint = stars < 3 ? (stars === 1 ? 'Deuxième étoile : gagne sans perdre une manche.' : `Troisième étoile : gagne en moins de ${f.par} s.`) : '';
+        $('#resStatus').textContent = (tries ? `Battu au ${nth(tries + 1)} essai ! ` : '') + hint;
         setResultButtons(`Étage ${f.n + 1}`, () => startTower(f.n + 1), 'Rejouer', () => startTower(f.n));
-      } else setResultButtons('Réessayer', () => startTower(f.n), null, null);
+      } else {
+        const tries = profile.tries[f.n] = (profile.tries[f.n] || 0) + 1; save();
+        const next = RANKS[myRank() + 1];
+        $('#resStatus').textContent = session.teaser && next ? `Il t’a eu avec : ${session.teaser} ? Tu l’apprends à la ${next.name.toLowerCase()} (encore ${next.xp - profile.xp - gain} XP).`
+          : `Essai ${tries} raté. Il t’attend.`;
+        setResultButtons('Réessayer', () => startTower(f.n), null, null);
+      }
     } else if (session.mode === 'practice') {
       gain = win ? XP_PRACTICE_WIN : 5; coins = COINS_PRACTICE[win ? 1 : 0];
       $('#resKicker').textContent = 'Entraînement'; $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
@@ -277,6 +333,9 @@ function onEnd(winner: number, score: number[]) {
       $('#resStatus').textContent = 'Une revanche ? Il faut que vous la demandiez tous les deux.';
       setResultButtons('Revanche', () => session.requestRematch(), null, null);
     }
+    const b = session.bonus, bc = b.saves * 2 + b.perfects * 5;
+    $('#resBonus').hidden = !bc;
+    if (bc) { coins += bc; $('#resBonus').textContent = [b.perfects ? `Parfait ×${b.perfects}` : '', b.saves ? `Sauvé ×${b.saves}` : ''].filter(Boolean).join(' · ') + ` : +${bc} pièces`; }
     newRank = addXp(gain); addCoins(coins);
     showXp(gain, xpBefore, coins);
     if (newRank > 0) showUnlock(newRank);
@@ -354,8 +413,12 @@ export function setupUI() {
   df.addEventListener('change', () => { profile.towerMax = +df.value; profile.tutoDone = true; save(); renderHome(); toast(`Étages 1 à ${df.value} débloqués`); });
   ($('#devLvl') as HTMLSelectElement).addEventListener('change', e => { profile.level = +(e.target as HTMLSelectElement).value; save(); });
   $('#devReset').addEventListener('click', () => { Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false, coins: 0, owned: [], streak: 0 }); save(); renderHome(); toast('Progression réinitialisée'); });
-  $('#devCoins').addEventListener('click', () => { addCoins(500); toast('+500 pièces'); });
+  $('#devCoins').addEventListener('click', () => {
+    const n = Math.max(1, Math.min(999999, Math.floor(+($('#devCoinsN') as HTMLInputElement).value || 0)));
+    addCoins(n); toast(`+${n} pièces (total ${profile.coins})`);
+  });
   $('#shopBtn').addEventListener('click', openShop);
+  $('#dailyBtn').addEventListener('click', startDaily);
   $('#shopClose').addEventListener('click', closeShop);
   $('#shopAct').addEventListener('click', shopAction);
   document.querySelectorAll<HTMLElement>('#shop .tab').forEach(t => t.addEventListener('click', () => { shopTab = t.dataset.tab as ShopKind; shopSel = myLook()[shopTab]; renderShop(); preview(shopSel); sfx('ui'); }));
@@ -375,6 +438,7 @@ export function setupUI() {
   $('#tPrev').addEventListener('click', () => cycle('perso', -1)); $('#tNext').addEventListener('click', () => cycle('perso', 1));
   $('#mPrev').addEventListener('click', () => cycle('arme', -1)); $('#mNext').addEventListener('click', () => cycle('arme', 1));
   $('#rankFace').addEventListener('click', () => { const d = $('#fighterBox') as HTMLDetailsElement; d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+  $('#setAutoAim').addEventListener('change', e => { profile.autoAim = controls.autoAim = (e.target as HTMLInputElement).checked; save(); toast(profile.autoAim ? 'Visée automatique activée' : 'Visée à la souris'); });
   $('#setSfx').addEventListener('change', e => { profile.sfx = audioPrefs.sfx = (e.target as HTMLInputElement).checked; save(); });
   $('#setMusic').addEventListener('change', e => { profile.music = audioPrefs.music = (e.target as HTMLInputElement).checked; save(); wake(); setMusicLevel(0.07); });
   $('#copyBtn').addEventListener('click', async () => {

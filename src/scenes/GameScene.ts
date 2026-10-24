@@ -47,7 +47,8 @@ export class GameScene extends Phaser.Scene {
     // entrées : déplacement et visée
     let aim = session.input.aim;
     if (me) {
-      if (controls.isTouch || !controls.mouseSeen) { if (foe && foe.state !== 'dead') aim = Math.atan2(foe.y - me.y, foe.x - me.x); }
+      // même ciblage pour tous : automatique sur mobile, et sur ordinateur sauf si le joueur choisit la souris
+      if (controls.isTouch || controls.autoAim || !controls.mouseSeen) { if (foe && foe.state !== 'dead' && foe.state !== 'falling') aim = Math.atan2(foe.y - me.y, foe.x - me.x); }
       else { const p = this.input.activePointer; const w = cam.getWorldPoint(p.x, p.y); if (Math.hypot(w.x - me.x, w.y - me.y) > 6) aim = Math.atan2(w.y - me.y, w.x - me.x); }
     }
     updateControls(aim);
@@ -70,8 +71,9 @@ export class GameScene extends Phaser.Scene {
     if (this.cine) { this.cine.t -= delta; if (this.cine.t <= 0 || !st) this.cine = null; }
     const focus = st ? (this.cine ? st.f[this.cine.idx] : me) : null;
     if (focus && focus.state !== 'dead') { tx = focus.x * 0.75; ty = focus.y * 0.75; }
+    if (session.show) { tx = session.show.focus.x; ty = session.show.focus.y; } // vitrine de la boutique
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
-    if (!st && viewState.shop) { const W0 = this.scale.width, H0 = this.scale.height; if (W0 > 720) tx = (Math.min(420, W0 * 0.45) / 2) / cam.zoom; else ty = (H0 * 0.3) / cam.zoom; }
+    if (viewState.shop) { const W0 = this.scale.width, H0 = this.scale.height; if (W0 > 720) tx += (Math.min(420, W0 * 0.45) / 2) / cam.zoom; else ty += (H0 * 0.3) / cam.zoom; }
     const k = 1 - Math.exp(-5 * dt);
     const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k, cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
     const W = this.scale.width, H = this.scale.height;
@@ -88,7 +90,6 @@ export class GameScene extends Phaser.Scene {
     if (mp !== this.mpOn) { this.mpOn = mp; document.body.classList.toggle('mp', mp); this.heartT = 0; }
     if (mp) { this.heartT -= delta; if (this.heartT <= 0) { const hot = st.f.some((e: any) => e.pct >= 100); this.heartT = hot ? 620 : 900; sfx('heart', hot ? 1 : 0.75); document.body.style.setProperty('--beat', hot ? '.62s' : '.9s'); } }
 
-    if (viewState.preview) { const p = viewState.preview; viewState.preview = null; if (p.kind === 'ejection') this.r.previewSplash(p.id); else this.r.previewTrail(p.id); }
     this.r.update(dt, time, st, session.myIdx, this.view, session.marker);
     if (st) updateActionBar(st.f[session.myIdx]);
     musicTick();

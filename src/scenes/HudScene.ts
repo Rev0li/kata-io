@@ -62,7 +62,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    const st = session.state, show = !!st;
+    const st = session.mode === 'showcase' ? null : session.state, show = !!st; // pas de HUD dans la vitrine de la boutique
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
     for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && (o !== this.myMoves || !controls.isTouch));
     this.g.clear();
@@ -76,7 +76,8 @@ export class HudScene extends Phaser.Scene {
     const tuto = session.mode === 'tuto', ab = me.abil || { parry: true, charge: true, dragon: true };
     this.score.setVisible(!tuto).setText(session.mode === 'tower' ? `TOI  ${sMe} — ${sOp}` : `TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
     this.sub.setVisible(!controls.isTouch && !tuto).setText(`Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`);
-    this.ping.setText(tuto ? 'Tutoriel' : session.mode === 'tower' && session.floor ? `Étage ${session.floor.n} · ${session.floor.name}` : session.mode === 'practice' ? `Entraînement · ${LEVELS[session.level].name}` : session.ping >= 0 ? `Ping ${session.ping} ms` : 'Connexion…');
+    const fl = session.floor;
+    this.ping.setText(tuto ? 'Tutoriel' : session.mode === 'tower' && fl ? (fl.daily ? `Défi du jour · ${fl.name}` : `Étage ${fl.n} · ${fl.name}`) + (session.attempt > 1 ? ` · essai ${session.attempt}` : '') : session.mode === 'practice' ? `Entraînement · ${LEVELS[session.level].name}` : session.ping >= 0 ? `Ping ${session.ping} ms` : 'Connexion…');
     this.myName.setText(me.name);
     this.myPct.setText(Math.round(me.pct) + '%').setColor(heatCss(me.pct));
     this.bump = Math.max(0, this.bump - delta / 300);
@@ -93,6 +94,7 @@ export class HudScene extends Phaser.Scene {
     if (session.notice) this.hint.setText(session.notice);
     else if (D.phase === 'fight' && !D.sudden && left <= 10 && left > 0) this.hint.setText(`Mort subite dans ${left} s`).setColor('#ff8a6e');
     else if (D.phase === 'fight' && D.sudden && st.H > 112) this.hint.setText('Mort subite : le dojo rétrécit !').setColor('#ff8a6e');
+    else if (session.teaser && this.matchT < 9000) this.hint.setText(`Il maîtrise ta prochaine technique : ${session.teaser} !`).setColor('#f2c14e');
     else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
     // jauges : souffle (3 segments) et qi
     const touch = controls.isTouch, W = this.scale.width, H = this.scale.height;

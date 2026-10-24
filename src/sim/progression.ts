@@ -1,6 +1,6 @@
 // Progression : ceintures, techniques débloquées, étages de la Tour du temple.
 // Aucune dépendance au DOM : ces règles serviront aussi côté serveur.
-import { Look, Deck, DEFAULT_DECK, randDeck, PERSOS, ARMES } from './data';
+import { Look, Deck, DEFAULT_DECK, randDeck, PERSOS, ARMES, TRAINEES, EJECTIONS } from './data';
 
 /* ---------- techniques ---------- */
 export interface Abil { chain: number; parry: boolean; charge: boolean; elan: boolean; dragon: boolean }
@@ -34,7 +34,7 @@ export function rankProgress(xp: number) {
 }
 
 /* ---------- Tour du temple ---------- */
-export interface Floor { n: number; name: string; skill: number; tier: number; firstTo: number; H: number; damp: number; twist: string; boss: boolean; look: Look; deck: Deck; par: number }
+export interface Floor { n: number; name: string; skill: number; tier: number; firstTo: number; H: number; damp: number; twist: string; boss: boolean; look: Look; deck: Deck; par: number; daily?: string }
 const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
   { name: 'Le gardien de la porte', skill: 0.12, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'bandit', arme: 'massue', trainee: 'aucune', ejection: 'plouf' } },
   { name: 'Le moine distrait', skill: 0.16, tier: 0, firstTo: 2, H: 234, damp: 3.2, twist: '', boss: false, look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'cochon' } },
@@ -50,6 +50,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
   { name: 'Le maître du temple', skill: 0.85, tier: 6, firstTo: 3, H: 260, damp: 3.2, twist: 'Le dernier gardien', boss: true, look: { perso: 'shogun', arme: 'nodachi', trainee: 'or', ejection: 'tresor' } },
 ];
 export const TOWER_LEN = FLOORS.length;
+const TWISTS = [['', 260, 3.2], ['Petit radeau : le bord est tout près', 208, 3.2], ['Tatami mouillé : on glisse plus loin', 260, 2.6]] as const;
 function seeded(n: number) { let h = (n * 2654435761) >>> 0; return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; }; }
 export function towerFloor(n: number): Floor {
   if (n <= FLOORS.length) {
@@ -58,8 +59,7 @@ export function towerFloor(n: number): Floor {
     return { ...f, n, deck: n <= 8 ? DEFAULT_DECK : randDeck(seeded(n)), par: f.firstTo === 3 ? 75 : 50 };
   }
   // Tour infinie : au-delà du dernier gardien, des adversaires générés, de plus en plus coriaces.
-  const rnd = seeded(n), twists = [['', 260, 3.2], ['Petit radeau : le bord est tout près', 208, 3.2], ['Tatami mouillé : on glisse plus loin', 260, 2.6]] as const;
-  const tw = twists[(rnd() * twists.length) | 0];
+  const rnd = seeded(n), tw = TWISTS[(rnd() * TWISTS.length) | 0];
   const persos = Object.keys(PERSOS), armes = Object.keys(ARMES);
   return { n, name: 'Ombre de l’étage ' + n, skill: Math.min(0.95, 0.86 + (n - FLOORS.length) * 0.005), tier: 6, firstTo: 3, H: tw[1], damp: tw[2], twist: tw[0], boss: n % 5 === 0, look: { perso: persos[(rnd() * persos.length) | 0], arme: armes[(rnd() * armes.length) | 0], trainee: 'etoiles', ejection: 'phenix' }, deck: randDeck(rnd), par: 75 };
 }
@@ -72,3 +72,15 @@ export function towerCoins(floor: number, won: boolean, stars: number, first: bo
 export const COINS_PRACTICE = [1, 6], COINS_DUEL = [8, 20], COINS_TUTO = 30;
 // Série : étages gagnés d'affilée. Le multiplicateur s'applique à l'XP et aux pièces.
 export function streakMult(streak: number) { return [1, 1, 1.5, 2, 2.5, 3][Math.min(streak, 5)]; }
+
+/* ---------- défi du jour : le même adversaire pour tout le monde, tiré de la date ---------- */
+export function dayKey(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+const DAILY_NAMES = ['Le vagabond', 'L’inconnu masqué', 'Le duelliste errant', 'Le pèlerin', 'L’ermite de la cascade', 'Le maître itinérant', 'La lame du matin'];
+export function dailyFloor(key: string): Floor {
+  let h = 7; for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const rnd = seeded(h || 1), pick = (o: object) => { const k = Object.keys(o); return k[(rnd() * k.length) | 0]; };
+  const tw = TWISTS[(rnd() * TWISTS.length) | 0];
+  return { n: 0, daily: key, name: DAILY_NAMES[(rnd() * DAILY_NAMES.length) | 0], skill: 0.42 + rnd() * 0.16, tier: 3 + ((rnd() * 3) | 0), firstTo: 2, H: tw[1], damp: tw[2],
+    twist: tw[0], boss: false, look: { perso: pick(PERSOS), arme: pick(ARMES), trainee: pick(TRAINEES), ejection: pick(EJECTIONS) }, deck: randDeck(rnd), par: 50 };
+}
+export const DAILY_COINS = 50, DAILY_XP = 40;

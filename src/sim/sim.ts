@@ -105,6 +105,8 @@ function addQi(e: Fighter, n: number) { if (e.abil.dragon) e.qi = Math.min(100, 
 function duelPoint(v: Fighter) {
   const D = S.duel; if (D.phase !== 'fight') return;
   const other = S.f[1 - v.idx]; D.score[other.idx]++; D.phase = 'point'; D.t = 0;
+  // manche parfaite : gagnée sans avoir été touché une seule fois
+  if (other.pct < 0.5) { fx.float(other.x, other.y - 66, 'PARFAIT !', '#f2c14e', 26); emit({ t: 'perfect', idx: other.idx }); }
   other.state = 'frozen'; other.holding = false; other.atk = null;
   other.kos = D.score[other.idx];
   emit({ t: 'point', to: other.idx, score: D.score.slice() });
@@ -219,7 +221,7 @@ function climb(e: Fighter) { if (e.state !== 'ledge') return; e.state = 'climb';
 function updClimb(e: Fighter) {
   const L = e.ledge, p = clamp(e.stateT / 300, 0, 1); const H = S.H; const d = lerp(8, -30, easeOut(p));
   if (L.nx) e.x = L.nx * (H + d); else e.y = L.ny * (H + d);
-  if (e.stateT >= 300) { e.ledge = null; e.spawnInv = Math.max(e.spawnInv, 220); toIdle(e); }
+  if (e.stateT >= 300) { e.ledge = null; e.spawnInv = Math.max(e.spawnInv, 220); toIdle(e); fx.float(e.x, e.y - 50, 'SAUVÉ !', '#62c2a2', 19); emit({ t: 'saved', idx: e.idx }); }
 }
 function grabLedge(e: Fighter) {
   const H = S.H, ox = Math.abs(e.x) - H, oy = Math.abs(e.y) - H; let nx = 0, ny = 0;

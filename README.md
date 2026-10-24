@@ -18,9 +18,39 @@ On commence ceinture blanche avec seulement **Frapper** et **Esquiver**. Chaque 
 | Marron | 1 000 | Élan (esquive au dernier moment) |
 | Noire | 1 400 | Paume du dragon |
 
-La **Tour du temple** est le mode solo : 12 gardiens, puis une tour sans fin. Chaque étage rapporte 1 à 3 étoiles (victoire, sans perdre de manche, sous le temps de référence). Le tutoriel d'une minute se lance avant le premier étage. Les gardiens n'utilisent que les techniques de leur ceinture. En duel entre amis, les deux joueurs ont toutes les techniques.
+La **Tour du temple** est le mode solo : 12 gardiens, puis une tour sans fin. Chaque étage rapporte 1 à 3 étoiles (victoire, sans perdre de manche, sous le temps de référence). Le tutoriel d'une minute se lance avant le premier étage. Les gardiens utilisent les techniques de leur ceinture. En duel entre amis, les deux joueurs ont toutes les techniques.
 
-Le panneau **Mode test** de l'accueil permet de choisir sa ceinture, les étages débloqués et le niveau du bot d'entraînement, ou de tout réinitialiser.
+Ce qui donne envie de rejouer :
+
+- **Gardiens à collectionner** : battre un gardien pour la première fois débloque son apparence (14 combattants). Les gardiens pas encore battus apparaissent grisés dans la liste des étages.
+- **Armes** : katana, saï, yari, massue, trident, hache, nodachi, gagnées avec les ceintures. Elles sont purement cosmétiques.
+- **Avant-goût** : le gardien connaît la technique que tu vas débloquer à ta prochaine ceinture, et le jeu te le dit.
+- **Essais** : le gardien nargue quand tu reviens après une défaite (« Encore toi ? »). La victoire affiche « Battu au 4e essai ».
+- **Série** : chaque étage gagné d'affilée multiplie l'XP et les pièces (×1,5, ×2… jusqu'à ×3). Une défaite remet la série à zéro.
+- **Défi du jour** : un adversaire tiré de la date, le même pour tout le monde. La première victoire du jour rapporte 50 pièces, puis on peut améliorer son temps.
+- **Mort subite** : après 40 s de manche, le dojo rétrécit et ses planches tombent à l'eau.
+- **Balle de match** : annonce, battement de cœur et vignette rouge ; l'éjection décisive passe au ralenti.
+- **Bonus** : « Parfait » (manche gagnée sans être touché, +5 pièces) et « Sauvé ! » (rattrapé au bord puis remonté, +2 pièces).
+
+## Boutique d'effets
+
+Les **pièces** se gagnent en jouant : Tour (plus avec les étoiles, la première victoire et la série), défi du jour, entraînement et duels. Rien ne s'achète en euros.
+
+| Traînées de coup | Ploufs d'éjection |
+|---|---|
+| Braises, pétales de cerisier, fumée d'ombre, poussière d'étoiles, vague, shurikens, pluie d'or | Encre, tempête de pétales, cochon volant, fantôme, feu d'artifice, trésor englouti, phénix |
+
+La traînée suit le bout de l'arme pendant le coup, au premier plan et en transparence. Le plouf est celui du joueur qui éjecte, donc l'adversaire le voit aussi. Dans la boutique, chaque effet se joue en situation derrière le panneau : ton combattant frappe un mannequin pour une traînée, ou l'envoie à l'eau pour un plouf.
+
+## Mode test
+
+Le panneau **Mode test** de l'accueil permet de :
+
+- choisir sa ceinture ;
+- choisir les étages débloqués (ce qui débloque aussi les combattants) ;
+- choisir le niveau du bot d'entraînement ;
+- ajouter un nombre de pièces au choix ;
+- tout réinitialiser.
 
 `npx tsx scripts/towercheck.ts 0.45` simule un joueur moyen qui monte la Tour (pourcentage de victoires par étage).
 
@@ -35,7 +65,7 @@ Le panneau **Mode test** de l'accueil permet de choisir sa ceinture, les étages
 | Action | Clavier et souris | Tactile |
 |---|---|---|
 | Se déplacer | ZQSD, WASD ou flèches | Joystick à gauche |
-| Viser | Souris | Automatique vers l'adversaire |
+| Viser | Automatique vers l'adversaire (comme sur mobile) ; souris si on désactive la visée automatique dans les réglages | Automatique vers l'adversaire |
 | Frapper (coup blanc) | Clic gauche ou J, appui court | Frapper |
 | Coup chargé rouge | Maintenir clic gauche ou J | Maintenir Frapper |
 | Parer | Clic droit ou K | Parer |
@@ -68,16 +98,19 @@ src/
   sim/sim.ts         simulation du duel, bot d'entraînement, instantanés réseau
   net/transport.ts   connexion PeerJS (production) ou BroadcastChannel (?net=local)
   net/session.ts     modes entraînement / hôte / invité, revanche, ping
-  game/render.ts     rendu Phaser du dojo et des combattants (Graphics, aucun sprite)
+  game/assets.ts     chargement des sprites (personnages, armes, effets, sol)
+  game/render.ts     rendu Phaser : dojo, combattants en sprites, cônes, traînées, ploufs, particules
   game/audio.ts      sons et musique synthétisés en WebAudio (aucun fichier audio)
   game/tutorial.ts   étapes du tutoriel et exercices par technique
   ui/actionbar.ts    barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
   scenes/GameScene   boucle de jeu, caméra, souris
   scenes/HudScene    interface en jeu (pourcentages, souffle, qi, score)
-  ui/ui.ts           écrans HTML : accueil, salon, résultat
+  ui/ui.ts           écrans HTML : accueil, Tour, boutique, salon, résultat
+  ui/viewstate.ts    état partagé entre l'interface et la scène (boutique ouverte)
   ui/controls.ts     clavier et commandes tactiles
 scripts/simcheck.ts  test de la simulation hors navigateur
 scripts/towercheck.ts équilibrage de la Tour
+scripts/build-assets.py assemble les sprites du pack Ninja Adventure dans public/assets
 ```
 
 **Modèle réseau** : le joueur qui crée la salle est l'**hôte**. Son navigateur fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. L'**invité** envoie ses entrées (déplacement, visée, boutons) et reçoit 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : c'est le module qui passera tel quel sur un serveur dédié.
@@ -116,5 +149,14 @@ Aucune variable d'environnement n'est nécessaire.
 
 1. Serveur de salle autoritaire (Node.js, par exemple Colyseus) qui réutilise `src/sim` tel quel, hébergé hors de Vercel (Fly.io, Railway ou un VPS), car Vercel ne garde pas de connexion WebSocket ouverte.
 2. Prédiction des déplacements et du départ des coups chez le client, avec un rembobinage de 150 ms côté serveur pour juger parades et esquives.
-3. Sprites dessinés et animations, en remplacement du rendu en code.
-4. Arène à plusieurs, classement, comptes et boutique cosmétique, repris du prototype.
+3. Comptes et sauvegarde en ligne (aujourd'hui la progression est dans le navigateur), classement du défi du jour.
+4. Arène à plusieurs, repris du prototype.
+
+## Crédits graphiques
+
+Les personnages, armes, effets, objets et le sol du dojo viennent du pack **Ninja Adventure** de [Pixel-boy](https://pixel-boy.itch.io/ninja-adventure-asset-pack) et AAA, publié sous licence **CC0 1.0** (domaine public, usage commercial autorisé, attribution appréciée mais non obligatoire). Sources utilisées :
+
+- [pixel-boy/NinjaAdventure](https://github.com/pixel-boy/NinjaAdventure) : ninja bleu, armes (massue, hache, nodachi), sol du temple, particules ;
+- [sparklinlabs/superpowers-asset-packs](https://github.com/sparklinlabs/superpowers-asset-packs/tree/master/ninja-adventure) (CC0) : autres personnages et portraits, effets, objets, monstres (fantôme, phénix, flamme).
+
+`python3 scripts/build-assets.py <dossier NinjaAdventure> <dossier superpowers-asset-packs>` régénère `public/assets` ; les commandes de clonage sont en tête du script. La version complète du pack (50 personnages, 30 monstres, sons et musiques) se télécharge sur itch.io et peut enrichir la liste.

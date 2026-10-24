@@ -131,7 +131,9 @@ export const EJECTIONS: Record<string, { name: string; price: number; icon: [str
   tresor: { name: 'Trésor englouti', price: 380, icon: ['chest', 2, 1] },
   phenix: { name: 'Phénix', price: 500, icon: ['bird', 4, 0] },
 };
-export const EMOTES: Record<string, string> = { salut: 'Salut !', rire: 'Ha ha !', gg: 'GG', viens: 'Viens !', lent: 'Trop lent', mouille: "L'eau est bonne ?" };
+export const EMOTES: Record<string, string> = { salut: 'Salut !', rire: 'Ha ha !', gg: 'GG', viens: 'Viens !', lent: 'Trop lent', mouille: "L'eau est bonne ?",
+  // le gardien nargue quand on revient après une défaite
+  n1: 'Encore toi ?', n2: 'Tu reviens déjà ?', n3: 'Ce n’est pas ton jour…', n4: 'Je commence à m’ennuyer', n5: 'Allez, encore un essai !' };
 export const DEFAULT_LOOK: Look = { perso: 'ninja-bleu', arme: 'katana', trainee: 'aucune', ejection: 'plouf' };
 export function randLook(rnd: () => number = Math.random): Look {
   const p = (o: object) => { const k = Object.keys(o); return k[(rnd() * k.length) | 0]; };

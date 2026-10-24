@@ -42,7 +42,6 @@ export class Renderer {
   sparts: SP[] = []; spPool: Phaser.GameObjects.Sprite[] = [];
   later: { t: number; fn: () => void }[] = [];
   trailG: Phaser.GameObjects.Graphics;
-  demo: { id: string; t: number; pts: { x: number; y: number; t: number }[]; partT: number } | null = null;
   lastSt: any = null; sudden = false; shrinkAcc = 0;
   H = 260; rippleT = 0;
 
@@ -191,10 +190,6 @@ export class Renderer {
     }
   }
 
-  // Aperçus de la boutique, joués au centre du dojo derrière l'écran.
-  previewSplash(id: string) { this.splash(0, 30, id, 1); sfxAt('splash', 0, 30, 0.8); }
-  previewTrail(id: string) { this.demo = { id, t: 0, pts: [], partT: 0 }; }
-
   /* ---------- image par image ---------- */
   update(dt: number, time: number, st: any, myIdx: number, view: Phaser.Geom.Rectangle, marker: { x: number; y: number; r: number } | null = null) {
     const ms = dt * 1000;
@@ -223,7 +218,6 @@ export class Renderer {
     const t = this.topG; t.clear();
     for (const r of this.rings) { const p = r.t / r.life; t.lineStyle(r.w * (1 - p) + 1, r.col, 1 - p); t.strokeCircle(r.x, r.y, Math.max(1, lerp(r.r, r.max, easeOut(p)))); }
     this.drawParts(t);
-    if (this.demo) this.stepDemo(dt, time);
     if (!st) { this.hideLabels(0); this.hideViews(0); return; }
     if (marker) { const p = 0.5 + 0.5 * Math.sin(time * 0.006); g.fillStyle(C.jade, 0.14 + 0.1 * p); g.fillCircle(marker.x, marker.y, marker.r); g.lineStyle(3, C.jade, 0.7 + 0.3 * p); g.strokeCircle(marker.x, marker.y, marker.r + p * 4); g.lineStyle(2, C.jade, 0.35 * (1 - p)); g.strokeCircle(marker.x, marker.y, marker.r + 10 + p * 14); }
     const fs = st.f.slice().sort((a: any, b: any) => a.y - b.y);
@@ -235,19 +229,6 @@ export class Renderer {
     this.drawLabels(st, myIdx);
   }
 
-  // Démonstration d'une traînée (boutique) : deux coups balayés autour du centre.
-  stepDemo(dt: number, time: number) {
-    const d = this.demo!; d.t += dt * 1000;
-    const swing = (t0: number, a0: number, a1: number) => { const p = (d.t - t0) / 380; return p >= 0 && p <= 1 ? lerp(a0, a1, easeOut(p)) : null; };
-    const a = swing(0, -2.2, 0.6) ?? swing(650, 0.9, -1.9);
-    if (a !== null) {
-      const x = Math.cos(a) * 92, y = Math.sin(a) * 74 + 20; d.pts.push({ x, y, t: time });
-      d.partT -= dt * 1000; if (d.partT <= 0) { d.partT = 26; this.trailPart(d.id, x, y, a + Math.PI / 2); }
-    }
-    d.pts = d.pts.filter(p => time - p.t < 160);
-    this.drawTrail(this.trailG, d.pts, d.id, time);
-    if (d.t > 1500) this.demo = null;
-  }
   plank(H: number) {
     const side = (Math.random() * 4) | 0, u = rand(-H, H), nx = side === 0 ? -1 : side === 1 ? 1 : 0, ny = side === 2 ? -1 : side === 3 ? 1 : 0;
     const x = nx ? nx * H : u, y = ny ? ny * H : u;
