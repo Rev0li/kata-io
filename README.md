@@ -96,25 +96,53 @@ npm test           # tests Vitest (non-régression de la simulation)
 
 ```
 src/
-  sim/data.ts        réglages, gardes, coups, apparences (aucune dépendance)
-  sim/progression.ts ceintures, techniques débloquées, étages de la Tour, étoiles, XP
-  sim/sim.ts         simulation du duel, bot d'entraînement, instantanés réseau
-  net/transport.ts   connexion PeerJS (production) ou BroadcastChannel (?net=local)
-  net/session.ts     modes entraînement / hôte / invité, revanche, ping
-  game/assets.ts     chargement des sprites (personnages, armes, effets, sol)
-  game/render.ts     rendu Phaser en vue isométrique 2:1 : dojo (losange dessiné en code), thèmes d'ambiance, combattants en sprites, cônes, traînées, ploufs, particules
-  game/audio.ts      sons et musique synthétisés en WebAudio (aucun fichier audio)
-  game/tutorial.ts   étapes du tutoriel et exercices par technique
-  ui/actionbar.ts    barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
-  scenes/GameScene   boucle de jeu, caméra, souris
-  scenes/HudScene    interface en jeu (pourcentages, souffle, qi, score)
-  ui/ui.ts           écrans HTML : accueil, Tour, boutique, salon, résultat
-  ui/viewstate.ts    état partagé entre l'interface et la scène (boutique ouverte)
-  ui/controls.ts     clavier et commandes tactiles
-scripts/simcheck.ts  test de la simulation hors navigateur
-scripts/towercheck.ts équilibrage de la Tour
+  sim/                 simulation du duel, sans Phaser ni DOM (passera telle quelle sur un serveur)
+    sim.ts             point d'entrée : createSim, stepSim, API publique
+    data.ts            réglages (RULES), gardes, coups, apparences (aucune dépendance)
+    progression.ts     ceintures, techniques débloquées, étages de la Tour, étoiles, XP
+    core.ts            types, outils, hasard à graine, événements
+    fighter.ts         création et remise en place d'un combattant
+    duel.ts            manches, mort subite, points
+    actions.ts         entrées et actions (coups, charge, parade, esquive)
+    hits.ts            résolution des coups, bord du dojo, chute, éjection
+    update.ts          avancée d'un combattant d'un pas, collisions
+    bot.ts             bot d'entraînement et mannequin
+    snapshot.ts        instantanés réseau et miroir de l'invité
+  net/transport.ts     connexion PeerJS (production) ou BroadcastChannel (?net=local)
+  net/session.ts       modes entraînement / Tour / tutoriel / hôte / invité, revanche, ping
+  game/assets.ts       chargement des sprites et du décor SVG
+  game/render/         rendu Phaser en vue isométrique 2:1 (index.ts : le Renderer)
+    iso.ts             projection et formes posées au sol
+    palette.ts         couleurs, polices
+    themes.ts          ambiances des dojos et vie de chaque dojo
+    arena.ts           plateforme du dojo (dessinée en code) et lanternes
+    lake.ts            poissons, objets flottants, ronds dans l'eau, reflets, particules d'ambiance
+    effects.ts         étincelles, anneaux, lignes de vitesse, sprites d'impact, ploufs, textes flottants
+    fighters.ts        combattants, armes, annonce du coup chargé, traînées, emotes
+  game/audio.ts        sons et musique synthétisés en WebAudio (aucun fichier audio)
+  game/tutorial.ts     étapes du tutoriel et exercices par technique
+  game/hints.ts        indices affichés les premières fois
+  scenes/GameScene     boucle de jeu, caméra, souris
+  scenes/HudScene      interface en jeu (pourcentages, souffle, qi, score)
+  ui/                  écrans HTML (ui.ts : branchement des boutons et des événements de la partie)
+    dom.ts, nav.ts     utilitaires, écran affiché
+    profile.ts         profil et progression sauvegardés dans le navigateur (sans DOM)
+    home.ts            accueil, combattant, réglages, panneau de test
+    launch.ts          lancement des parties locales
+    floors.ts          liste des étages
+    shop.ts            boutique d'effets
+    lobby.ts           duel privé et retour à l'accueil
+    result.ts          écran de fin de partie
+    tutobar.ts         barre du tutoriel
+    actionbar.ts       barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
+    controls.ts        clavier et commandes tactiles
+    viewstate.ts       état partagé entre l'interface et la scène
+tests/                 tests Vitest (non-régression de la simulation)
+scripts/simcheck.ts    duels bot contre bot dans le terminal
+scripts/towercheck.ts  équilibrage de la Tour
 scripts/build-assets.py assemble les sprites du pack Ninja Adventure dans public/assets
 scripts/build-decor-svg.py génère le décor vectoriel (horizons, poissons, flottants) dans public/assets/decor
+archive/               assets retirés du jeu, gardés pour plus tard (non déployés)
 ```
 
 **Modèle réseau** : le joueur qui crée la salle est l'**hôte**. Son navigateur fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. L'**invité** envoie ses entrées (déplacement, visée, boutons) et reçoit 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : c'est le module qui passera tel quel sur un serveur dédié.
