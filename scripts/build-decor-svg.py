@@ -392,18 +392,27 @@ SPECIES = {
     'carpe_jade': dict(body='#5f9a6a', patch='#477a52', patch2='#477a52', fin='#8fc08a', belly='#a6c89a', pat='stripe'),
     'braise': dict(body='#7a2418', patch='#ff9a3c', patch2='#ffd36a', fin='#ff6a2a', belly='#4a140e', pat='ember'),
 }
-BW, BH = 120, 64  # corps ; l'articulation de la queue est à gauche du corps (x=6, y=32)
-TW, TH_ = 70, 64  # queue ; l'articulation est à droite (x=70, y=32)
+FWID, FHEI = 184, 64  # poisson d'un seul tenant : queue à gauche (x de 0 à 70), corps à droite (x de 64 à 184), tête vers la droite
+BODY_X = 64
 
 
 def fish_svgs(name, sp):
-    d = Doc(BW, BH)
+    """Un seul SVG par espèce. Le jeu le déforme en tranches (Rope) : l'onde de nage parcourt le poisson de la tête à la queue."""
+    d = Doc(FWID, FHEI)
     body, ol = sp['body'], darker(sp['body'], 0.5)
     g = d.lin([(0, lighter(body, 0.25), None), (0.55, body, None), (1, mix(body, sp['belly'], 0.8), None)])
-    d.defs.append('<clipPath id="bc"><path id="bp" d="M6,32 C20,12 52,8 84,13 C102,16 112,24 117,32 C112,41 102,48 84,51 C52,56 20,52 6,32 Z"/></clipPath>')
-    d.add(f'<path d="M30,19 C42,2 66,2 78,14 Z" fill="{sp["fin"]}" stroke="{ol}" stroke-width="2" stroke-linejoin="round" opacity="0.95"/>')  # dorsale
-    d.add(f'<path d="M6,32 C20,12 52,8 84,13 C102,16 112,24 117,32 C112,41 102,48 84,51 C52,56 20,52 6,32 Z" fill="{g}"/>')
-    pat = ''
+    bp = 'M6,32 C20,12 52,8 84,13 C102,16 112,24 117,32 C112,41 102,48 84,51 C52,56 20,52 6,32 Z'
+    d.defs.append(f'<clipPath id="bc"><path d="{bp}"/></clipPath>')
+    # queue
+    tg = d.lin([(0, sp['fin'], None), (1, mix(sp['fin'], body, 0.6), None)], 1, 0, 0, 0)
+    tail = 'M70,32 C58,26 40,6 8,2 C16,16 18,26 14,32 C18,38 16,48 8,62 C40,58 58,38 70,32 Z'
+    d.add(f'<path d="{tail}" fill="{tg}" stroke="{ol}" stroke-width="2.5" stroke-linejoin="round" opacity="0.96"/>')
+    for yy in (14, 24, 40, 50):
+        d.add(f'<path d="M68,32 Q40,{yy} 14,{yy}" fill="none" stroke="{ol}" stroke-width="1.2" opacity="0.4"/>')
+    # corps décalé de BODY_X pour que sa pointe arrière (x=6) tombe sur l'articulation de la queue (x=70)
+    d.add(f'<g transform="translate({BODY_X},0)">')
+    d.add(f'<path d="M30,19 C42,2 66,2 78,14 Z" fill="{sp["fin"]}" stroke="{ol}" stroke-width="2" stroke-linejoin="round" opacity="0.95"/>')
+    d.add(f'<path d="{bp}" fill="{g}"/>')
     if sp['pat'] == 'koi':
         pat = (f'<ellipse cx="46" cy="22" rx="20" ry="11" fill="{sp["patch"]}"/><ellipse cx="78" cy="34" rx="14" ry="9" fill="{sp["patch"]}"/>'
                f'<ellipse cx="24" cy="30" rx="9" ry="7" fill="{sp["patch"]}"/><ellipse cx="62" cy="40" rx="8" ry="5" fill="{sp["patch2"]}"/><ellipse cx="96" cy="22" rx="9" ry="6" fill="{sp["patch"]}"/>')
@@ -415,21 +424,14 @@ def fish_svgs(name, sp):
     else:
         pat = ''.join(f'<path d="M{x},14 L{x + 8},32 L{x},52" fill="none" stroke="{sp["patch"]}" stroke-width="5" stroke-linejoin="round" opacity="0.9"/>' for x in (34, 54, 74))
     d.add(f'<g clip-path="url(#bc)">{pat}</g>')
-    d.add(f'<path d="M6,32 C20,12 52,8 84,13 C102,16 112,24 117,32 C112,41 102,48 84,51 C52,56 20,52 6,32 Z" fill="none" stroke="{ol}" stroke-width="3" stroke-linejoin="round"/>')
-    d.add(f'<path d="M62,44 C58,56 70,60 80,56 C76,52 72,48 70,43 Z" fill="{sp["fin"]}" stroke="{ol}" stroke-width="2" stroke-linejoin="round"/>')  # pectorale
-    d.add(f'<circle cx="100" cy="27" r="6" fill="#fff"/><circle cx="102" cy="27" r="3.6" fill="#15121a"/><circle cx="103" cy="25.5" r="1.2" fill="#fff"/>')
+    d.add(f'<path d="{bp}" fill="none" stroke="{ol}" stroke-width="3" stroke-linejoin="round"/>')
+    d.add(f'<path d="M62,44 C58,56 70,60 80,56 C76,52 72,48 70,43 Z" fill="{sp["fin"]}" stroke="{ol}" stroke-width="2" stroke-linejoin="round"/>')
+    d.add('<circle cx="100" cy="27" r="6" fill="#fff"/><circle cx="102" cy="27" r="3.6" fill="#15121a"/><circle cx="103" cy="25.5" r="1.2" fill="#fff"/>')
     if sp['pat'] == 'glow':
         d.add(f'<ellipse cx="62" cy="32" rx="58" ry="26" fill="{d.rad([(0, sp["patch"], 0.35), (1, sp["patch"], 0)])}"/>')
-    with open(os.path.join(OUT, f'fish-{name}-body.svg'), 'w') as fh:
+    d.add('</g>')
+    with open(os.path.join(OUT, f'fish-{name}.svg'), 'w') as fh:
         fh.write(d.svg())
-    t = Doc(TW, TH_)
-    tg = t.lin([(0, sp['fin'], None), (1, mix(sp['fin'], body, 0.6), None)], 1, 0, 0, 0)
-    tail = 'M70,32 C58,26 40,6 8,2 C16,16 18,26 14,32 C18,38 16,48 8,62 C40,58 58,38 70,32 Z'
-    t.add(f'<path d="{tail}" fill="{tg}" stroke="{ol}" stroke-width="2.5" stroke-linejoin="round" opacity="0.96"/>')
-    for yy in (14, 24, 40, 50):
-        t.add(f'<path d="M68,32 Q40,{yy} 14,{yy}" fill="none" stroke="{ol}" stroke-width="1.2" opacity="0.4"/>')
-    with open(os.path.join(OUT, f'fish-{name}-tail.svg'), 'w') as fh:
-        fh.write(t.svg())
 
 
 # ------------------------------------------------------------------ objets flottants (96x64)

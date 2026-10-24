@@ -72,18 +72,18 @@ export class HudScene extends Phaser.Scene {
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
     if (touch) {
       // tactile : peu de texte. Score au centre, étage dessous, un pourcentage dans chaque coin, indice en bas au centre
-      this.score.setPosition(W / 2, 8 + S.t).setFontSize('20px'); this.sub.setVisible(false);
-      this.ping.setOrigin(0.5, 0).setPosition(W / 2, 34 + S.t).setFontSize('11px');
+      this.score.setPosition(W / 2, 18 + S.t).setFontSize('16px'); this.sub.setVisible(false);
+      this.ping.setOrigin(0.5, 0).setPosition(W / 2, 38 + S.t).setFontSize('10px');
       this.myName.setVisible(false); this.opName.setVisible(false); this.myMoves.setVisible(false);
       this.myPct.setPosition(m + S.l, 48 + S.t).setFontSize('38px');
       this.opPct.setPosition(W - m - S.r, 48 + S.t).setFontSize('30px');
       this.hint.setOrigin(0.5, 1).setPosition(W / 2, H - 8 - S.b).setFontSize('12px');
     } else {
-      this.score.setPosition(W / 2, 12).setFontSize('30px'); this.sub.setPosition(W / 2, 46);
+      this.score.setPosition(W / 2, 20).setFontSize('20px'); this.sub.setPosition(W / 2, 46).setFontSize('11px');
       this.ping.setOrigin(1, 0).setPosition(W - m, 14).setFontSize('12px');
       this.myName.setPosition(m + 4, H - 128); this.myPct.setPosition(m, H - 112).setFontSize('58px'); this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
       this.opName.setPosition(W - m - 4, 40); this.opPct.setPosition(W - m, 56).setFontSize('40px');
-      this.hint.setOrigin(0.5, 0).setPosition(W / 2, 68).setFontSize('14px');
+      this.hint.setOrigin(0.5, 0).setPosition(W / 2, 84).setFontSize('14px');
     }
   }
 
@@ -130,6 +130,10 @@ export class HudScene extends Phaser.Scene {
     else if (D.phase === 'fight' && D.sudden && st.H > 112) this.hint.setText('Mort subite : le dojo rétrécit !').setColor('#ff8a6e');
     else if (session.teaser && this.matchT < 9000) this.hint.setText(`Il maîtrise ta prochaine technique : ${session.teaser} !`).setColor('#f2c14e');
     else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
+    // titre discret : petit, translucide, sur une pastille sombre à distance du bord de l'écran
+    { const touch2 = controls.isTouch, pw = Math.max(this.score.width, touch2 ? this.ping.width : this.sub.visible ? this.sub.width : 0) + 30, ph = touch2 ? 50 : 56, py = touch2 ? 9 + this.safe.t : 10;
+      if (this.score.visible && !tuto) this.g.fillStyle(0x0a1012, 0.34).fillRoundedRect(this.scale.width / 2 - pw / 2, py, pw, ph, 12);
+      for (const o of [this.score, this.sub, this.ping]) o.setAlpha(0.82); }
     // jauges : souffle (3 segments) et qi
     const touch = controls.isTouch, W = this.scale.width, H = this.scale.height;
     const x0 = touch ? 16 + this.safe.l : 20, y0 = touch ? 94 + this.safe.t : H - 46, w = touch ? 104 : 168;

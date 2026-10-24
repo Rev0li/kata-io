@@ -36,15 +36,15 @@ export const THEMES: Record<string, Theme> = {
 };
 // Vie de chaque dojo : espèces de poissons (lignes de fauna.png), objets flottants (colonnes de floats.png), particules d'ambiance.
 const LIFE: Record<string, { fish: string[]; floats: string[]; amb: string; glint: number; nFish: number }> = {
-  coucher: { fish: ['koi_orange', 'koi_blanc', 'koi_or'], floats: ['nenuphar', 'fleur'], amb: 'petal', glint: 0xfbe2b4, nFish: 8 },
-  brume: { fish: ['koi_blanc', 'argente', 'carpe_jade'], floats: ['nenuphar', 'feuille'], amb: 'leaf', glint: 0xdfe2d6, nFish: 6 },
-  neon: { fish: ['lanterne'], floats: ['lanterne'], amb: 'firefly', glint: 0x2de6ea, nFish: 8 },
-  neige: { fish: ['argente', 'koi_blanc'], floats: ['glace'], amb: 'snow', glint: 0xf6fafc, nFish: 6 },
-  bambou: { fish: ['carpe_jade', 'koi_or', 'koi_orange'], floats: ['nenuphar', 'fleur', 'feuille'], amb: 'firefly', glint: 0xe9f0c2, nFish: 8 },
-  volcan: { fish: ['braise'], floats: ['lave'], amb: 'ember', glint: 0xff9a3c, nFish: 7 },
+  coucher: { fish: ['koi_orange', 'koi_blanc', 'koi_or'], floats: ['nenuphar', 'fleur'], amb: 'petal', glint: 0xfbe2b4, nFish: 5 },
+  brume: { fish: ['koi_blanc', 'argente', 'carpe_jade'], floats: ['nenuphar', 'feuille'], amb: 'leaf', glint: 0xdfe2d6, nFish: 4 },
+  neon: { fish: ['lanterne'], floats: ['lanterne'], amb: 'firefly', glint: 0x2de6ea, nFish: 5 },
+  neige: { fish: ['argente', 'koi_blanc'], floats: ['glace'], amb: 'snow', glint: 0xf6fafc, nFish: 4 },
+  bambou: { fish: ['carpe_jade', 'koi_or', 'koi_orange'], floats: ['nenuphar', 'fleur', 'feuille'], amb: 'firefly', glint: 0xe9f0c2, nFish: 5 },
+  volcan: { fish: ['braise'], floats: ['lave'], amb: 'ember', glint: 0xff9a3c, nFish: 4 },
 };
 const LAKE = 720; // rayon du lac où nagent les poissons (unités du monde)
-interface Fish { x: number; y: number; h: number; tx: number; ty: number; sp: number; boost: number; ph: number; kind: string; body: Phaser.GameObjects.Image; tail: Phaser.GameObjects.Image }
+interface Fish { x: number; y: number; h: number; tx: number; ty: number; sp: number; boost: number; ph: number; phase: number; turn: number; prevAng: number; len: number; rip: number; kind: string; rope: Phaser.GameObjects.Rope }
 interface Floater { x: number; y: number; vx: number; vy: number; ph: number; rot: number; vr: number; spr: Phaser.GameObjects.Image; kind: string }
 interface Mote { x: number; y: number; vx: number; vy: number; ph: number; sz: number }
 const cache = new Map<string, number>();
@@ -357,23 +357,29 @@ export class Renderer {
 
   /* ---------- vie du lac : poissons, objets flottants, particules d'ambiance ---------- */
   // Point d'eau visible : devant l'horizon, dans le lac.
-  lakePoint(): { x: number; y: number } {
-    for (let i = 0; i < 12; i++) {
-      const a = rand(0, TAU), r = rand(120, LAKE), x = Math.cos(a) * r, y = Math.sin(a) * r;
-      if (x + y > -380) return { x, y };
+  lakePoint(near?: { x: number; y: number }): { x: number; y: number } {
+    // toujours à l'extérieur du dojo ; si `near` est donné, un point proche de lui sur le pourtour, pour que les poissons contournent le dojo
+    const R0 = 284; // demi-côté du dojo avec son cadre (taille de départ)
+    for (let i = 0; i < 14; i++) {
+      const a = (near ? Math.atan2(near.y, near.x) + rand(-1, 1) : rand(0, TAU)), ca = Math.cos(a), sa = Math.sin(a);
+      const r = (R0 + 70) / Math.max(Math.abs(ca), Math.abs(sa)) + rand(10, 200), x = ca * r, y = sa * r;
+      if (x + y > -380 && Math.hypot(x, y) < 900) return { x, y };
     }
-    return { x: 200, y: 200 };
+    return { x: 420, y: 300 };
   }
   buildLife(name: string) {
     const L = LIFE[name] || LIFE.brume; this.life = L;
-    for (const f of this.fish) { f.body.destroy(); f.tail.destroy(); } for (const f of this.floaters) f.spr.destroy();
+    for (const f of this.fish) f.rope.destroy(); for (const f of this.floaters) f.spr.destroy();
     this.fish = []; this.floaters = []; this.motes = [];
+    const water = hex(THEMES[name].water);
     for (let i = 0; i < L.nFish; i++) {
-      const p = this.lakePoint(), q = this.lakePoint(), kind = L.fish[i % L.fish.length];
-      const body = this.scene.add.image(0, 0, 'fb-' + kind).setDisplaySize(88, 47).setDepth(0.5).setAlpha(0.92);
-      const tail = this.scene.add.image(0, 0, 'ft-' + kind).setOrigin(1, 0.5).setDisplaySize(52, 47).setDepth(0.49).setAlpha(0.9);
-      if (kind === 'lanterne' || kind === 'braise') { body.setBlendMode(Phaser.BlendModes.ADD); tail.setBlendMode(Phaser.BlendModes.ADD); } // poissons lumineux
-      this.fish.push({ x: p.x, y: p.y, h: rand(0, TAU), tx: q.x, ty: q.y, sp: rand(24, 42), boost: 0, ph: rand(0, TAU), kind, body, tail });
+      const p = this.lakePoint(), q = this.lakePoint(), kind = L.fish[i % L.fish.length], len = rand(46, 62);
+      // un seul poisson déformé en tranches : l'onde de nage le parcourt de la tête à la queue
+      const rope = (this.scene.add as any).rope(0, 0, 'fish-' + kind, undefined, 12).setDepth(0.5) as Phaser.GameObjects.Rope;
+      const glow = kind === 'lanterne' || kind === 'braise';
+      if (glow) rope.setBlendMode(Phaser.BlendModes.ADD); else rope.setColors(mix(0xffffff, water, 0.45)); // le poisson se fond dans l'eau
+      rope.setAlpha(glow ? 0.75 : 0.62).setScale(len / 276);
+      this.fish.push({ x: p.x, y: p.y, h: rand(0, TAU), tx: q.x, ty: q.y, sp: rand(18, 30), boost: 0, ph: rand(0, TAU), phase: rand(0, TAU), turn: 0, prevAng: 0, len, rip: rand(2, 8), kind, rope });
     }
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * TAU + rand(-0.3, 0.3), r = rand(this.H + 150, 620), x = Math.cos(a) * r, y = Math.sin(a) * r;
@@ -411,17 +417,24 @@ export class Renderer {
     for (const f of this.fish) {
       f.boost *= Math.exp(-1.3 * dt);
       const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy);
-      if (d < 50 || (f.x + f.y < -420)) { const q = this.lakePoint(); f.tx = q.x; f.ty = q.y; }
-      const want = Math.atan2(dy, dx), turn = 1.3 + f.boost * 0.02;
+      if (d < 60 || (f.x + f.y < -420)) { const q = this.lakePoint(f); f.tx = q.x; f.ty = q.y; }
+      // virages larges et lents ; un coup de queue pousse, puis le poisson glisse
+      const want = Math.atan2(dy, dx), turn = 0.7 + f.boost * 0.012;
       f.h += clamp(angDiff(f.h, want), -turn * dt, turn * dt);
-      const sp = f.sp * (1 + 0.25 * Math.sin(time * 0.0017 + f.ph)) + f.boost;
-      const vx = Math.cos(f.h), vy = Math.sin(f.h); f.x += vx * sp * dt; f.y += vy * sp * dt;
+      const base = f.sp * (0.8 + 0.3 * Math.sin(f.phase - 0.6)) + f.boost;
+      f.phase += dt * (3.4 + base * 0.1);
+      const vx = Math.cos(f.h), vy = Math.sin(f.h); f.x += vx * base * dt; f.y += vy * base * dt;
       const S = this.iso(f.x, f.y), sx = (vx - vy) * ISO, sy = (vx + vy) * ISO * 0.5, ang = Math.atan2(sy, sx), flip = sx < 0;
-      // le corps ondule, la queue bat plus fort et un peu en retard
-      const ph = time * (0.008 + sp * 0.00022) + f.ph, wob = Math.sin(ph), vis = S.y > horizon;
-      const ca = Math.cos(ang), sa = Math.sin(ang), side = flip ? -1 : 1, lat = wob * 2.4;
-      f.body.setPosition(S.x - sa * lat * side, S.y + ca * lat * side).setRotation(ang + wob * 0.06 * side).setFlipY(flip).setVisible(vis);
-      f.tail.setPosition(S.x + ca * -40 - sa * wob * 3.4 * side, S.y + sa * -40 + ca * wob * 3.4 * side).setRotation(ang + Math.sin(ph - 0.9) * (0.5 + f.boost * 0.004) * side).setFlipY(flip).setVisible(vis);
+      f.turn += (angDiff(f.prevAng, ang) / Math.max(dt, 1e-3) - f.turn) * Math.min(1, dt * 6); f.prevAng = ang;
+      const bend = clamp(f.turn * 0.35, -1, 1) * 16 * (flip ? 1 : -1); // en virage, la queue se déporte vers l'extérieur
+      const pts = f.rope.points, n = pts.length, amp = 15 + f.boost * 0.08;
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1), tail = 1 - t; // t=0 : bout de la queue, t=1 : tête
+        pts[i].y = amp * (0.1 + 0.9 * Math.pow(tail, 1.5)) * Math.sin(f.phase + 2.9 * t) + bend * tail * tail;
+      }
+      f.rope.setDirty();
+      f.rope.setPosition(S.x, S.y).setRotation(ang).setFlipY(flip).setVisible(S.y > horizon);
+      f.rip -= dt; if (f.rip <= 0) { f.rip = rand(5, 11); this.ripples.push({ x: S.x, y: S.y, t: 0, life: 1800 }); } // le poisson effleure la surface
     }
     for (const o of this.floaters) {
       o.vx *= Math.exp(-1.4 * dt); o.vy *= Math.exp(-1.4 * dt); o.vr *= Math.exp(-1.2 * dt);
@@ -494,7 +507,8 @@ export class Renderer {
     }
     if (e.state !== 'attack' || !e.atk) return;
     const a = e.atk, d = a.def; if (a.t >= a.su + a.ac) return;
-    const act = a.t >= a.su, red = a.kind === 'red', col = red ? (a.dragon ? C.gold : C.red) : 0xfffaf0;
+    if (a.kind !== 'red') return; // pas de cône pâle pour les petits coups : il brouille le combat. Seul le coup chargé est annoncé.
+    const act = a.t >= a.su, red = true, col = a.dragon ? C.gold : C.red;
     const rr = d.rg + 10 + (red && !act ? d.lunge * (1 - a.t / a.su) * 0.8 : 0);
     g.fillStyle(col, red ? (act ? 0.42 : 0.22 + 0.14 * a.t / a.su) : (act ? 0.3 : 0.07 + 0.15 * a.t / a.su));
     g.lineStyle(red ? 3 : 2, col, act ? 0.9 : 0.45);

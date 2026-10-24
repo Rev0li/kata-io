@@ -134,11 +134,13 @@ Six ambiances en **SVG vectoriel** : `coucher`, `bambou`, `brume`, `neige`, `neo
 
 Les éléments importants de chaque horizon sont groupés au centre (entre x=500 et x=1900 sur 2400) : c'est la zone visible sur téléphone en paysage comme sur ordinateur.
 
-Chaque dojo a ses poissons (koï, carpes, poissons-lanternes, poissons de braise), ses objets flottants (nénuphars, glace, roches de lave, lanternes) et ses particules (pétales, feuilles, neige, lucioles, braises). Les poissons sont articulés : le corps et la queue sont deux images SVG, la queue bat et le corps ondule par le code. Ils nagent sous le dojo, s'enfuient après un plouf ou un gros coup, et les nénuphars sont repoussés par les remous. L'eau scintille.
+Chaque dojo a ses poissons (koï, carpes, poissons-lanternes, poissons de braise), ses objets flottants (nénuphars, glace, roches de lave, lanternes) et ses particules (pétales, feuilles, neige, lucioles, braises). Chaque poisson est un seul SVG déformé en tranches (Rope Phaser) : une onde de nage le parcourt de la tête à la queue, la queue se déporte dans les virages, et il avance par à-coups puis glisse. Ils sont petits, translucides et teintés par l'eau pour se fondre dans le décor, et ils effleurent la surface de temps en temps. Ils nagent sous le dojo, s'enfuient après un plouf ou un gros coup, et les nénuphars sont repoussés par les remous. L'eau scintille.
 
-Tout est généré par `python3 scripts/build-decor-svg.py` (aucun asset externe) dans `public/assets/decor/` : `bg-<dojo>.svg`, `fish-<espèce>-body.svg` et `-tail.svg`, `float-<nom>.svg`. Ce sont des SVG propres, retouchables dans Inkscape ou Penpot ; pour changer un décor, modifier le script ou le fichier.
+Tout est généré par `python3 scripts/build-decor-svg.py` (aucun asset externe) dans `public/assets/decor/` : `bg-<dojo>.svg`, `fish-<espèce>.svg`, `float-<nom>.svg`. Ce sont des SVG propres, retouchables dans Inkscape ou Penpot ; pour changer un décor, modifier le script ou le fichier.
 
 ## Sensation de combat
+
+Le cône pâle des petits coups est supprimé (il brouillait le combat) : seul le coup chargé est annoncé au sol.
 
 Arrêt sur image et tremblement d'écran à l'impact, lignes de vitesse (éclat radial et traînées dans le sens du recul, plus fortes pour le coup chargé et la paume du dragon), flashs de couleur plein écran (blanc, rouge, doré), petit coup de zoom à l'impact et zoom marqué avec trois éclats de lignes sur l'éjection décisive.
 

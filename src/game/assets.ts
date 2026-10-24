@@ -20,7 +20,7 @@ export function preloadAssets(scene: Phaser.Scene) {
   scene.load.image('dojo-mousse', BASE + 'dojo-mousse.png');
   // Rastérisés à la taille demandée (4096 px de large au plus : limite des GPU mobiles) puis affichés à 2400 × 420.
   for (const t of THEME_BG) scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', { width: 4096, height: 717 });
-  for (const s of SPECIES) { scene.load.svg('fb-' + s, BASE + 'decor/fish-' + s + '-body.svg', { width: 240, height: 128 }); scene.load.svg('ft-' + s, BASE + 'decor/fish-' + s + '-tail.svg', { width: 140, height: 128 }); }
+  for (const s of SPECIES) scene.load.svg('fish-' + s, BASE + 'decor/fish-' + s + '.svg', { width: 276, height: 96 }); // un seul tenant : déformé en tranches par le jeu
   for (const n of FLOATS) scene.load.svg('fl-' + n, BASE + 'decor/float-' + n + '.svg', { width: 192, height: 128 });
   for (const k of FX_KEYS) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS)) scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: w, frameHeight: h });
