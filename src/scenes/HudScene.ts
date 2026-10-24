@@ -71,9 +71,10 @@ export class HudScene extends Phaser.Scene {
     this.matchT += delta;
     const me = st.f[session.myIdx], op = st.f[1 - session.myIdx], D = st.duel;
     const sMe = D.score[session.myIdx], sOp = D.score[1 - session.myIdx];
-    this.score.setText(`TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
-    this.sub.setVisible(!controls.isTouch).setText(`Manche ${D.round} · premier à ${FIRST_TO}`);
-    this.ping.setText(session.mode === 'practice' ? `Entraînement · ${LEVELS[session.level].name}` : session.ping >= 0 ? `Ping ${session.ping} ms` : 'Connexion…');
+    const tuto = session.mode === 'tuto', ab = me.abil || { parry: true, charge: true, dragon: true };
+    this.score.setVisible(!tuto).setText(session.mode === 'tower' ? `TOI  ${sMe} — ${sOp}` : `TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
+    this.sub.setVisible(!controls.isTouch && !tuto).setText(`Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`);
+    this.ping.setText(tuto ? 'Tutoriel' : session.mode === 'tower' && session.floor ? `Étage ${session.floor.n} · ${session.floor.name}` : session.mode === 'practice' ? `Entraînement · ${LEVELS[session.level].name}` : session.ping >= 0 ? `Ping ${session.ping} ms` : 'Connexion…');
     this.myName.setText(me.name);
     this.myPct.setText(Math.round(me.pct) + '%').setColor(heatCss(me.pct));
     this.bump = Math.max(0, this.bump - delta / 300);
@@ -82,8 +83,10 @@ export class HudScene extends Phaser.Scene {
     this.opPct.setText(Math.round(op.pct) + '%').setColor(heatCss(op.pct));
     const nw = me.deck ? nextWhite(me) : ATTACK_BY_ID[me.nextId];
     const hv = me.deck ? ATTACK_BY_ID[me.deck.heavy[me.stance]] : ATTACK_BY_ID[me.heavyId];
-    this.myMoves.setText(`Prochain coup : ${nw ? nw.name : '—'}   ·   Chargé : ${hv ? hv.name : '—'}`);
-    if (session.notice) { this.hint.setText(session.notice); } else this.hint.setText(this.matchT < 9000 ? (controls.isTouch ? 'Blanc : Parer · Rouge : Esquive · Envoie-le à l’eau' : 'Blanc : pare (clic droit) · Rouge : esquive (Espace) · Envoie-le à l’eau') : '');
+    this.myMoves.setText(`Prochain coup : ${nw ? nw.name : '—'}` + (ab.charge ? `   ·   Chargé : ${hv ? hv.name : '—'}` : ''));
+    const tip = !ab.parry ? (controls.isTouch ? 'Frappe · Esquive ses coups · Envoie-le à l’eau' : 'Frappe (clic) · Esquive ses coups (Espace) · Envoie-le à l’eau')
+      : (controls.isTouch ? 'Blanc : Parer · Rouge : Esquive · Envoie-le à l’eau' : 'Blanc : pare (clic droit) · Rouge : esquive (Espace) · Envoie-le à l’eau');
+    if (session.notice) this.hint.setText(session.notice); else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
     // jauges : souffle (3 segments) et qi
     const touch = controls.isTouch, W = this.scale.width, H = this.scale.height;
     const x0 = touch ? 16 : 20, y0 = touch ? 138 : H - 46, w = touch ? 120 : 168;
@@ -93,9 +96,11 @@ export class HudScene extends Phaser.Scene {
       this.g.fillStyle(0x0a1012, 0.9).fillRect(x0 + i * (seg + 4), y0, seg, 9);
       this.g.fillStyle(0xecdfc6, 1).fillRect(x0 + i * (seg + 4), y0, seg * v, 9);
     }
-    const ready = me.qi >= 100;
-    this.g.fillStyle(0x0a1012, 0.9).fillRect(x0, y0 + 13, w, 6);
-    this.g.fillStyle(ready ? 0xf2c14e : 0x62c2a2, 1).fillRect(x0, y0 + 13, w * Math.min(1, me.qi / 100), 6);
+    if (ab.dragon) {
+      const ready = me.qi >= 100;
+      this.g.fillStyle(0x0a1012, 0.9).fillRect(x0, y0 + 13, w, 6);
+      this.g.fillStyle(ready ? 0xf2c14e : 0x62c2a2, 1).fillRect(x0, y0 + 13, w * Math.min(1, me.qi / 100), 6);
+    }
     void W;
   }
 }

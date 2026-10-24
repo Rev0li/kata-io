@@ -6,6 +6,7 @@ import {
   DODGE_T, DODGE_IF0, DODGE_IF1, DODGE_DIST, CHARGE_START, CHARGE_FULL, CHARGE_MAX, SOUFFLE_REGEN, MOVE_SPEED, FIRST_TO,
   TF, WA, HA, ATTACK_BY_ID, DEFAULT_DECK, cloneDeck, sanitizeLook, Deck, Look, AttackDef,
 } from './data';
+import { Abil, FULL_ABIL } from './progression';
 
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -16,7 +17,8 @@ const pick = <T>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
 
 export interface Input { mx: number; my: number; aim: number; atk: boolean; parryN: number; dodgeN: number; emoteN: number; emote: string | null }
 export const emptyInput = (): Input => ({ mx: 0, my: 0, aim: 0, atk: false, parryN: 0, dodgeN: 0, emoteN: 0, emote: null });
-export interface Spec { name: string; look: Look; deck?: Deck; bot?: number | null }
+export interface Spec { name: string; look: Look; deck?: Deck; bot?: number | null; abil?: Abil; belt?: string; dummy?: boolean; atkSlow?: number }
+export interface SimOpts { firstTo?: number; H?: number; damp?: number; free?: boolean; pos?: [number, number][] }
 export type Ev = { t: string; [k: string]: any };
 
 export type Fighter = any;
@@ -36,18 +38,23 @@ const fx = {
 };
 
 /* ================= création ================= */
-export function createSim(specs: Spec[]): Sim {
-  const st: Sim = { H: DUEL_H, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null };
+export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
+  const st: Sim = { H: opts.H || DUEL_H, damp: opts.damp || KB_DAMP, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null };
   S = st;
   specs.forEach((sp, i) => {
-    const e = makeFighter({ idx: i, name: String(sp.name || 'Combattant').slice(0, 16), look: sanitizeLook(sp.look), deck: sp.deck ? cloneDeck(sp.deck) : cloneDeck(DEFAULT_DECK) });
+    const e = makeFighter({ idx: i, name: String(sp.name || 'Combattant').slice(0, 24), look: sanitizeLook(sp.look), deck: sp.deck ? cloneDeck(sp.deck) : cloneDeck(DEFAULT_DECK), abil: { ...(sp.abil || FULL_ABIL) }, belt: sp.belt || null, atkSlow: sp.atkSlow || 1 });
     if (sp.bot != null) e.bot = newBrain(sp.bot);
+    if (sp.dummy) e.bot = newBrain(0, true);
     st.f.push(e);
   });
-  st.duel = { score: [0, 0], round: 0, phase: 'intro', t: 0, winner: -1 };
-  duelRound();
+  st.duel = { score: [0, 0], round: 0, phase: 'intro', t: 0, winner: -1, firstTo: opts.firstTo || FIRST_TO, start: 0 };
+  if (opts.free) {
+    st.duel.phase = 'free';
+    st.f.forEach((e: Fighter, i: number) => { const p = (opts.pos && opts.pos[i]) || [i ? 110 : -110, 0]; resetFighter(e, p[0], p[1]); e.dropT = 0; });
+  } else duelRound();
   return st;
 }
+export function respawn(st: Sim, e: Fighter, x: number, y: number) { S = st; resetFighter(e, x, y); }
 function makeFighter(o: any): Fighter {
   return Object.assign({
     id: ++S.uid, idx: 0, name: '', bot: null, look: null, deck: null,
@@ -57,7 +64,7 @@ function makeFighter(o: any): Fighter {
     dropT: 0, lastAvoid: -1, splashFx: 'plouf', koWord: 'PLOUF !', inPrev: { atk: false, parryN: 0, dodgeN: 0, emoteN: 0 },
   }, o);
 }
-function resetFighter(e: Fighter, x: number, y: number) {
+export function resetFighter(e: Fighter, x: number, y: number) {
   Object.assign(e, { x, y, vx: 0, vy: 0, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, atk: null, buffer: null, comboT: 0, holding: false, holdT: 0, ledge: null, dodge: null, fallT: 0, elanT: 0, spawnInv: 0, lastHitBy: null, lastHitT: -1e9, emote: null, dropT: 500, stance: 0, chargeT: 0, chargeDef: null });
   e.facing = e.wantFacing = x < 0 ? 0 : Math.PI;
 }
@@ -71,17 +78,18 @@ function duelRound() {
   fx.big('MANCHE ' + D.round, '#ecdfc6', 850);
 }
 function duelUpdate(dt: number) {
-  const D = S.duel; const prev = D.t; D.t += dt * 1000;
+  const D = S.duel; if (D.phase === 'free') return; const prev = D.t; D.t += dt * 1000;
   if (D.phase === 'intro') {
     for (const [m, txt] of [[900, '3'], [1500, '2'], [2100, '1']] as [number, string][]) if (D.t >= m && prev < m) { fx.big(txt, '#ecdfc6', 560); fx.sfx('ui', 0, 0, 1); }
-    if (D.t >= 2700) { fx.big('COMBAT !', '#e0a243', 700); fx.sfx('gong', 0, 0, 0.6); for (const e of S.f) if (e.state === 'frozen') toIdle(e); D.phase = 'fight'; }
+    if (D.t >= 2700) { fx.big('COMBAT !', '#e0a243', 700); fx.sfx('gong', 0, 0, 0.6); for (const e of S.f) if (e.state === 'frozen') toIdle(e); D.phase = 'fight'; if (D.round === 1) D.start = S.time; }
   } else if (D.phase === 'point') {
     if (D.t >= 1900) {
-      if (D.score[0] >= FIRST_TO || D.score[1] >= FIRST_TO) { D.phase = 'end'; D.winner = D.score[0] > D.score[1] ? 0 : 1; emit({ t: 'end', winner: D.winner, score: D.score.slice() }); }
+      if (D.score[0] >= D.firstTo || D.score[1] >= D.firstTo) { D.phase = 'end'; D.winner = D.score[0] > D.score[1] ? 0 : 1; emit({ t: 'end', winner: D.winner, score: D.score.slice() }); }
       else duelRound();
     }
   }
 }
+function addQi(e: Fighter, n: number) { if (e.abil.dragon) e.qi = Math.min(100, e.qi + n); }
 function duelPoint(v: Fighter) {
   const D = S.duel; if (D.phase !== 'fight') return;
   const other = S.f[1 - v.idx]; D.score[other.idx]++; D.phase = 'point'; D.t = 0;
@@ -127,14 +135,15 @@ function startAttack(e: Fighter, d: AttackDef, o: any) {
   e.state = 'attack'; e.stateT = 0; e.chargeT = 0;
   e.atk = { def: d, kind: o.kind, t: 0, su: d.su, ac: d.ac, rc: d.rc, seg: -1, hit: new Set(), startStance: e.stance, endStance: TF[d.tf](e.stance), applied: false, uid: ++S.atkUid, idx: o.idx || 0, finisher: !!o.finisher, power: o.power || 1, dragon: !!o.dragon };
   if (o.kind === 'red') fx.sfx('heavy', e.x, e.y, 0.8);
+  if (o.kind === 'white' && e.atkSlow > 1) e.atk.su = d.su * e.atkSlow;
 }
 function startWhite(e: Fighter) {
   const ch = e.deck.chain;
-  if (e.comboT <= 0 || e.combo.idx >= 3 || !ch[e.combo.stance][e.combo.idx]) e.combo = { stance: e.stance, idx: 0 };
+  if (e.comboT <= 0 || e.combo.idx >= Math.min(3, e.abil.chain) || !ch[e.combo.stance][e.combo.idx]) e.combo = { stance: e.stance, idx: 0 };
   const idx = e.combo.idx, d = WA[ch[e.combo.stance][idx]]; e.combo.idx++;
   startAttack(e, d, { kind: 'white', idx, finisher: idx === 2 });
 }
-export function nextWhite(e: Fighter) { const ch = e.deck.chain; if (e.comboT > 0 && e.combo.idx < 3 && ch[e.combo.stance][e.combo.idx]) return WA[ch[e.combo.stance][e.combo.idx]]; return WA[ch[e.stance][0]]; }
+export function nextWhite(e: Fighter) { const ch = e.deck.chain; if (e.comboT > 0 && e.combo.idx < Math.min(3, e.abil.chain) && ch[e.combo.stance][e.combo.idx]) return WA[ch[e.combo.stance][e.combo.idx]]; return WA[ch[e.stance][0]]; }
 function startCharge(e: Fighter) { e.state = 'charge'; e.stateT = 0; e.chargeT = 0; e.chargeDef = HA[e.deck.heavy[e.stance]]; e.atk = null; e.combo = { stance: e.stance, idx: 0 }; e.comboT = 0; fx.sfx('charge', e.x, e.y, 0.6); }
 function releaseCharge(e: Fighter) {
   const d = e.chargeDef || HA[e.deck.heavy[e.stance]];
@@ -168,6 +177,7 @@ export function doAction(e: Fighter, type: string, arg?: any) {
       if (st === 'charge') releaseCharge(e);
       return;
     case 'parry':
+      if (!e.abil.parry) return;
       if (st === 'idle' || st === 'charge') { e.state = 'parry'; e.stateT = 0; e.atk = null; e.holding = false; return; }
       if (st === 'attack' || st === 'stun' || st === 'dodge') { e.buffer = { type: 'parry' }; e.bufferT = 0; }
       return;
@@ -258,20 +268,20 @@ function applyHit(att: Fighter, tgt: Fighter, guardBreak: boolean) {
   tgt.vx = Math.cos(ang) * v; tgt.vy = Math.sin(ang) * v;
   tgt.atk = null; tgt.buffer = null; tgt.comboT = 0; tgt.chargeT = 0; tgt.dodge = null;
   if (v > TUMBLE_V) { tgt.state = 'tumble'; tgt.stateT = 0; } else { tgt.state = 'stun'; tgt.stateT = 0; tgt.stunDur = Math.min(520, 200 + 1.5 * tgt.pct); }
-  att.qi = Math.min(100, att.qi + (red ? 8 : 4)); tgt.qi = Math.min(100, tgt.qi + 2);
+  addQi(att, red ? 8 : 4); addQi(tgt, 2);
   const col = a.dragon ? '#f2c14e' : red ? '#e5483a' : '#ecdfc6';
   fx.sparks(tgt.x - Math.cos(ang) * 10, tgt.y - Math.sin(ang) * 10, col, red ? 16 : 9);
   if (red || v > 700) fx.ring(tgt.x, tgt.y, 8, red ? 52 : 36, 240, col, red ? 5 : 3);
   fx.sfx(v > 650 ? 'bighit' : 'hit', tgt.x, tgt.y, clamp(0.6 + v / 1500, 0.6, 1.2));
   S.hitstop = Math.max(S.hitstop, Math.min(150, 40 + v / 22));
   fx.shake(Math.min(10, 2 + v / 170));
-  emit({ t: 'hit', by: att.idx, to: tgt.idx, v, red });
+  emit({ t: 'hit', by: att.idx, to: tgt.idx, v, red, idx: a.idx, dragon: a.dragon });
 }
 function parried(def: Fighter, att: Fighter, perfect: boolean) {
   att.state = 'stun'; att.stateT = 0; att.stunDur = perfect ? 900 : 650; att.atk = null; att.buffer = null; att.comboT = 0; att.holding = false;
   const an = Math.atan2(att.y - def.y, att.x - def.x);
   if (perfect) { att.vx = Math.cos(an) * 260; att.vy = Math.sin(an) * 260; }
-  toIdle(def); def.qi = Math.min(100, def.qi + (perfect ? 25 : 15));
+  toIdle(def); addQi(def, perfect ? 25 : 15);
   const mx = (att.x + def.x) / 2, my = (att.y + def.y) / 2, col = perfect ? '#f2c14e' : '#e0a243';
   fx.ring(mx, my, 6, perfect ? 60 : 44, 280, col, perfect ? 5 : 4);
   fx.sparks(mx, my, col, perfect ? 20 : 12);
@@ -283,16 +293,16 @@ function parried(def: Fighter, att: Fighter, perfect: boolean) {
 }
 function perfectDodge(tgt: Fighter, att: Fighter) {
   if (tgt.lastAvoid === att.atk.uid) return; tgt.lastAvoid = att.atk.uid;
-  tgt.souffle = Math.min(3, tgt.souffle + 1); tgt.elanT = 1500; tgt.qi = Math.min(100, tgt.qi + 15);
+  if (tgt.abil.elan) { tgt.souffle = Math.min(3, tgt.souffle + 1); tgt.elanT = 1500; S.slow = Math.max(S.slow, 200); }
+  addQi(tgt, 15);
   fx.float(tgt.x, tgt.y - 52, 'ESQUIVE !', '#62c2a2', 17); fx.sfx('avoid', tgt.x, tgt.y, 1);
-  S.slow = Math.max(S.slow, 200);
   emit({ t: 'dodge', by: tgt.idx });
 }
 function koFighter(v: Fighter, killer: Fighter) {
   const pct = Math.round(v.pct);
   v.splashFx = killer ? (killer.look.ejection || 'plouf') : 'plouf';
   v.koWord = pct >= 180 || v.lastHitDragon ? 'DÉCOLLAGE !' : pct >= 120 ? 'GRAND PLOUF !' : 'PLOUF !';
-  if (killer) killer.qi = Math.min(100, killer.qi + 15);
+  if (killer) addQi(killer, 15);
   if (pct >= 120 || v.lastHitDragon) { S.slow = Math.max(S.slow, 700); emit({ t: 'cine', id: v.idx, ms: 900 }); }
   emit({ t: 'ko', to: v.idx, by: killer ? killer.idx : -1, pct });
   duelPoint(v);
@@ -309,7 +319,7 @@ function updAttack(e: Fighter, ms: number) {
   const a = e.atk, d = a.def, prev = a.t; a.t += ms;
   // Le coup blanc se transforme en charge si le bouton est encore tenu. La marge évite de rater
   // la fenêtre quand le démarrage du coup est à peine plus long que le seuil (pas de 16,7 ms).
-  if (a.kind === 'white' && e.holding && e.holdT >= CHARGE_START && a.t < Math.max(a.su, CHARGE_START + 30) && a.hit.size === 0 && e.souffle >= 1) { startCharge(e); return; }
+  if (a.kind === 'white' && e.abil.charge && e.holding && e.holdT >= CHARGE_START && a.t < Math.max(a.su, CHARGE_START + 30) && a.hit.size === 0 && e.souffle >= 1) { startCharge(e); return; }
   const l0 = a.su * 0.3, l1 = a.su + a.ac;
   if (d.lunge && a.t > l0 && prev < l1) { const dd = d.lunge * (Math.min(a.t, l1) - Math.max(prev, l0)) / (l1 - l0); moveSafe(e, Math.cos(e.facing) * dd, Math.sin(e.facing) * dd); }
   checkHits(e);
@@ -346,11 +356,11 @@ function updEnt(e: Fighter, dt: number) {
   if (e.state === 'attack') mm = e.atk && e.atk.kind === 'white' && e.atk.t > e.atk.su + e.atk.ac ? 0.5 : 0.15;
   mm = mm || 0;
   if (mm > 0) moveSafe(e, e.move.x * MOVE_SPEED * mm * dt, e.move.y * MOVE_SPEED * mm * dt);
-  e.x += e.vx * dt; e.y += e.vy * dt; const k = Math.exp(-KB_DAMP * dt); e.vx *= k; e.vy *= k;
+  e.x += e.vx * dt; e.y += e.vy * dt; const k = Math.exp(-S.damp * dt); e.vx *= k; e.vy *= k;
   const H = S.H;
   if (Math.abs(e.x) > H || Math.abs(e.y) > H) {
     const sp = Math.hypot(e.vx, e.vy);
-    if (sp > 30) { if (sp / KB_DAMP < LEDGE_MAX) grabLedge(e); else startFall(e); }
+    if (sp > 30) { if (sp / S.damp < LEDGE_MAX) grabLedge(e); else startFall(e); }
     else { e.x = clamp(e.x, -H + 2, H - 2); e.y = clamp(e.y, -H + 2, H - 2); }
   }
 }
@@ -367,12 +377,13 @@ function collide() {
 }
 
 /* ================= bot d'entraînement ================= */
-function newBrain(skill: number) { return { skill, atkCd: 900, strafe: 1, strafeT: 0, pref: 58, plan: null, holdFor: 0, chain: 0, seen: new Map(), climbAt: null, respect: 0, waited: false }; }
+function newBrain(skill: number, dummy = false) { return { dummy, mode: 'idle', cd: 1200, ax: 0, ay: 0, skill, atkCd: 900, strafe: 1, strafeT: 0, pref: 58, plan: null, holdFor: 0, chain: 0, seen: new Map(), climbAt: null, respect: 0, waited: false }; }
 function edgeInward(e: Fighter) { const H = S.H, m = 110; let x = 0, y = 0; if (e.x > H - m) x = -(e.x - (H - m)) / m; if (e.x < -H + m) x = (-H + m - e.x) / m; if (e.y > H - m) y = -(e.y - (H - m)) / m; if (e.y < -H + m) y = (-H + m - e.y) / m; return { x, y }; }
 function botPress(e: Fighter, hold: number) { doAction(e, 'pressAtk'); e.bot.holdFor = hold; }
 function botUpdate(e: Fighter, dt: number) {
   if (!alive(e) || e.state === 'frozen') { e.move = { x: 0, y: 0 }; return; }
   const b = e.bot, ms = dt * 1000, s = b.skill;
+  if (b.dummy) { dummyUpdate(e, dt); return; }
   b.atkCd -= ms; b.strafeT -= ms; b.respect -= ms;
   if (e.holding) { b.holdFor -= ms; if (b.holdFor <= 0) doAction(e, 'releaseAtk'); }
   if (e.state === 'ledge') { if (b.climbAt == null) b.climbAt = rand(150, 900) * (1.25 - s); b.climbAt -= ms; if (b.climbAt <= 0) { b.climbAt = null; climb(e); } e.move = { x: 0, y: 0 }; return; }
@@ -389,8 +400,8 @@ function botUpdate(e: Fighter, dt: number) {
         if (a.kind === 'red') { if (Math.random() < s * 0.95) { const react = rand(80, 230) * (1.3 - s); if (react < left + a.ac * 0.6) b.plan = { act: 'dodge', at: Math.max(0, Math.min(react, left - 50)) }; } }
         else {
           const r = Math.random();
-          if (r < s * 0.78) { const react = rand(70, 210) * (1.3 - s); const lead = s > 0.8 ? rand(40, 120) : rand(100, 200); let at = left - lead; if (at < react) at = Math.random() < s ? react : 1e9; if (at < left + a.ac) b.plan = { act: 'parry', at }; }
-          else if (r < s * 0.92) b.plan = { act: 'dodge', at: rand(50, 150) * (1.3 - s) };
+          if (r < s * 0.78 && e.abil.parry) { const react = rand(70, 210) * (1.3 - s); const lead = s > 0.8 ? rand(40, 120) : rand(100, 200); let at = left - lead; if (at < react) at = Math.random() < s ? react : 1e9; if (at < left + a.ac) b.plan = { act: 'parry', at }; }
+          else if (r < s * 0.92 || (!e.abil.parry && r < s * 0.85)) b.plan = { act: 'dodge', at: Math.max(rand(50, 150) * (1.3 - s), left - 120) };
         }
       }
     }
@@ -428,6 +439,24 @@ function botUpdate(e: Fighter, dt: number) {
   const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; } e.move = { x: mx, y: my };
 }
 
+/* ================= mannequin d'entraînement ================= */
+// Modes pilotés par le tutoriel : 'idle' (reste à sa place), 'white' (attaque lentement en blanc).
+function dummyUpdate(e: Fighter, dt: number) {
+  const b = e.bot, ms = dt * 1000; b.cd -= ms;
+  e.souffle = 3;
+  const T = S.f.find((o: Fighter) => o !== e && alive(o));
+  e.move = { x: 0, y: 0 };
+  if (!T || e.state === 'frozen') return;
+  const dx = T.x - e.x, dy = T.y - e.y, dist = Math.hypot(dx, dy);
+  if (e.state !== 'attack' || e.atk.t < e.atk.su) e.wantFacing = Math.atan2(dy, dx);
+  if (b.mode === 'idle') { const hx = b.ax - e.x, hy = b.ay - e.y, hl = Math.hypot(hx, hy); if (e.state === 'idle' && hl > 30) e.move = { x: hx / hl * 0.4, y: hy / hl * 0.4 }; return; }
+  if (b.mode === 'white' && e.state === 'idle') {
+    if (dist > 64) e.move = { x: dx / dist * 0.55, y: dy / dist * 0.55 };
+    else if (b.cd <= 0) { startWhite(e); b.cd = 1700; }
+  }
+}
+export function setDummy(st: Sim, idx: number, mode: string, ax = 0, ay = 0) { const e = st.f[idx]; if (e && e.bot) { e.bot.mode = mode; e.bot.ax = ax; e.bot.ay = ay; e.bot.cd = 900; } }
+
 /* ================= instantanés réseau ================= */
 const r1 = (v: number) => Math.round(v * 10) / 10, r2 = (v: number) => Math.round(v * 100) / 100;
 export function snapshot(st: Sim) {
@@ -447,7 +476,7 @@ export function snapshot(st: Sim) {
 export function createMirror(specs: Spec[]) {
   return {
     H: DUEL_H, time: 0, duel: { score: [0, 0], round: 1, phase: 'intro' },
-    f: specs.map((sp, i) => ({ idx: i, name: sp.name, look: sanitizeLook(sp.look), x: i ? 110 : -110, y: 0, tx: i ? 110 : -110, ty: 0, facing: i ? Math.PI : 0, state: 'frozen', stateT: 0, stance: 0, pct: 0, souffle: 3, qi: 0, elanT: 0, spawnInv: 0, fallT: 0, dropT: 0, kos: 0, chargeT: 0, chargeDef: null, atk: null, emote: null, ledge: null, trail: [], heavyId: 'retourne', nextId: 'direct', fresh: true })),
+    f: specs.map((sp, i) => ({ idx: i, name: sp.name, look: sanitizeLook(sp.look), belt: sp.belt || null, abil: { ...(sp.abil || FULL_ABIL) }, x: i ? 110 : -110, y: 0, tx: i ? 110 : -110, ty: 0, facing: i ? Math.PI : 0, state: 'frozen', stateT: 0, stance: 0, pct: 0, souffle: 3, qi: 0, elanT: 0, spawnInv: 0, fallT: 0, dropT: 0, kos: 0, chargeT: 0, chargeDef: null, atk: null, emote: null, ledge: null, trail: [], heavyId: 'retourne', nextId: 'direct', fresh: true })),
   };
 }
 export function applySnapshot(m: any, s: any) {

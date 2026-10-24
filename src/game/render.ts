@@ -87,7 +87,7 @@ export class Renderer {
   }
 
   /* ---------- image par image ---------- */
-  update(dt: number, time: number, st: any, myIdx: number, view: Phaser.Geom.Rectangle) {
+  update(dt: number, time: number, st: any, myIdx: number, view: Phaser.Geom.Rectangle, marker: { x: number; y: number; r: number } | null = null) {
     if (st && st.H !== this.H) this.drawArena(st.H);
     const ms = dt * 1000;
     for (const k of this.koi) k.a += k.sp * dt;
@@ -101,6 +101,7 @@ export class Renderer {
     this.drawWater(time);
     const g = this.dynG; g.clear();
     if (!st) { this.hideLabels(0); return; }
+    if (marker) { const p = 0.5 + 0.5 * Math.sin(time * 0.006); g.fillStyle(C.jade, 0.14 + 0.1 * p); g.fillCircle(marker.x, marker.y, marker.r); g.lineStyle(3, C.jade, 0.7 + 0.3 * p); g.strokeCircle(marker.x, marker.y, marker.r + p * 4); g.lineStyle(2, C.jade, 0.35 * (1 - p)); g.strokeCircle(marker.x, marker.y, marker.r + 10 + p * 14); }
     const fs = st.f.slice().sort((a: any, b: any) => a.y - b.y);
     const me = st.f[myIdx];
     if (me && me.state !== 'dead' && me.state !== 'falling' && me.state !== 'ledge') { g.lineStyle(2, C.ochre, 0.7); g.strokeCircle(me.x, me.y, 26); }
@@ -235,7 +236,7 @@ export class Renderer {
     if (T.fx === 'plates') { g.lineStyle(1.2, trim, ga); for (let r = 6; r < 15; r += 4) { g.beginPath(); g.arc(0, 0, r, 0.6, TAU - 0.6); g.strokePath(); } }
     if (T.fx === 'stars') { for (let i = 0; i < 7; i++) { const a = i * 2.4 + time * 0.0004, r = 4 + (i * 5) % 10; g.fillStyle(trim, ga * (0.5 + 0.5 * Math.sin(time * 0.006 + i))); g.fillRect(Math.cos(a) * r - 0.8, Math.sin(a) * r - 0.8, 1.6, 1.6); } }
     if (T.fx === 'shine') { const a = time * 0.003; g.lineStyle(2.5, 0xfff1c4, 0.8 * ga); g.beginPath(); g.arc(0, 0, 12, a, a + 0.9); g.strokePath(); }
-    const belt = hex(beltOf(e.kos)[2]);
+    const belt = hex(e.belt || beltOf(e.kos)[2]);
     g.lineStyle(3, belt, ga); g.strokeCircle(0, 0, 11); g.lineStyle(2.4, belt, ga); g.lineBetween(-11, 1, -19, 4); g.lineBetween(-11, -1, -18, -5);
     const rot2 = (p: any, a: number) => ({ x: p.x * Math.cos(a) - p.y * Math.sin(a), y: p.x * Math.sin(a) + p.y * Math.cos(a) });
     const SL = rot2({ x: 0, y: -14 }, tw), SR = rot2({ x: 0, y: 14 }, tw);

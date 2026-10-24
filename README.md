@@ -4,6 +4,26 @@ Duel de kung-fu en 1 contre 1, sur invitation. On frappe, on pare, on esquive, e
 
 Version de développement : Phaser 4, TypeScript et Vite, avec une connexion pair à pair (WebRTC via PeerJS). Le site est entièrement statique et se déploie tel quel sur Vercel.
 
+## Progression
+
+On commence ceinture blanche avec seulement **Frapper** et **Esquiver**. Chaque ceinture, gagnée avec l'XP, débloque une technique, avec un exercice de 20 secondes contre le mannequin :
+
+| Ceinture | XP | Technique |
+|---|---|---|
+| Blanche | 0 | Frapper et Esquiver |
+| Jaune | 100 | Enchaînement de 2 coups |
+| Orange | 250 | Parade |
+| Verte | 450 | Coup chargé |
+| Bleue | 700 | Finisseur (3e coup, +35 % de recul) |
+| Marron | 1 000 | Élan (esquive au dernier moment) |
+| Noire | 1 400 | Paume du dragon |
+
+La **Tour du temple** est le mode solo : 12 gardiens, puis une tour sans fin. Chaque étage rapporte 1 à 3 étoiles (victoire, sans perdre de manche, sous le temps de référence). Le tutoriel d'une minute se lance avant le premier étage. Les gardiens n'utilisent que les techniques de leur ceinture. En duel entre amis, les deux joueurs ont toutes les techniques.
+
+Le panneau **Mode test** de l'accueil permet de choisir sa ceinture, les étages débloqués et le niveau du bot d'entraînement, ou de tout réinitialiser.
+
+`npx tsx scripts/towercheck.ts 0.45` simule un joueur moyen qui monte la Tour (pourcentage de victoires par étage).
+
 ## Jouer
 
 1. **Créer un duel privé** : la page affiche un code de salle et un lien d'invitation.
@@ -44,16 +64,20 @@ npm run sim        # duels bot contre bot dans le terminal, pour vérifier l'éq
 ```
 src/
   sim/data.ts        réglages, gardes, coups, apparences (aucune dépendance)
+  sim/progression.ts ceintures, techniques débloquées, étages de la Tour, étoiles, XP
   sim/sim.ts         simulation du duel, bot d'entraînement, instantanés réseau
   net/transport.ts   connexion PeerJS (production) ou BroadcastChannel (?net=local)
   net/session.ts     modes entraînement / hôte / invité, revanche, ping
   game/render.ts     rendu Phaser du dojo et des combattants (Graphics, aucun sprite)
   game/audio.ts      sons et musique synthétisés en WebAudio (aucun fichier audio)
+  game/tutorial.ts   étapes du tutoriel et exercices par technique
+  ui/actionbar.ts    barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
   scenes/GameScene   boucle de jeu, caméra, souris
   scenes/HudScene    interface en jeu (pourcentages, souffle, qi, score)
   ui/ui.ts           écrans HTML : accueil, salon, résultat
   ui/controls.ts     clavier et commandes tactiles
 scripts/simcheck.ts  test de la simulation hors navigateur
+scripts/towercheck.ts équilibrage de la Tour
 ```
 
 **Modèle réseau** : le joueur qui crée la salle est l'**hôte**. Son navigateur fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. L'**invité** envoie ses entrées (déplacement, visée, boutons) et reçoit 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : c'est le module qui passera tel quel sur un serveur dédié.

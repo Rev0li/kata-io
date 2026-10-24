@@ -30,6 +30,7 @@ function moveVec() {
 }
 export function updateControls(aim: number) {
   const inp = session.input;
+  if ((window as any).__autopilot) return; // tests automatisés (avec ?debug)
   if (!session.active || controls.blocked()) { inp.mx = 0; inp.my = 0; inp.atk = false; return; }
   const m = moveVec(); inp.mx = m.x; inp.my = m.y; inp.aim = aim;
 }

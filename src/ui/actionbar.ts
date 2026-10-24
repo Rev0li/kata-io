@@ -3,6 +3,7 @@
 import { controls } from './controls';
 import { Ev } from '../sim/sim';
 import { CHARGE_FULL, CHARGE_START } from '../sim/data';
+import { Abil } from '../sim/progression';
 
 const EMOTE_IDS = ['salut', 'rire', 'gg', 'viens'];
 let emoteCycle = 0;
@@ -42,6 +43,15 @@ export function setupActionBar() {
   controls.onPress = (t, down) => press(t, down);
 }
 
+// Techniques pas encore débloquées : bouton grisé avec cadenas (masqué sur mobile).
+export function setLocks(a: Abil) {
+  if (!els.atk) return;
+  els.parry.classList.toggle('locked', !a.parry);
+  els.parry.title = a.parry ? '' : 'Débloqué à la ceinture orange';
+  els.atk.classList.toggle('nocharge', !a.charge);
+  els.atk.querySelector('.key')!.textContent = a.charge ? 'Clic · maintenir' : 'Clic gauche · J';
+}
+
 // Appelé à chaque image avec le combattant du joueur.
 export function updateActionBar(me: any) {
   if (!me || !els.atk) return;
@@ -53,7 +63,7 @@ export function updateActionBar(me: any) {
   if (prog) prog.style.strokeDashoffset = `${ringLen * (1 - p)}`;
   atk.classList.toggle('charging', charging);
   atk.classList.toggle('full', charging && p >= 1);
-  atk.classList.toggle('dragon', me.qi >= 100);
+  atk.classList.toggle('dragon', me.qi >= 100 && !!(me.abil && me.abil.dragon));
   // souffle : trois segments sous Esquive
   const pips = dod.querySelectorAll('.pips i');
   pips.forEach((el, i) => (el as HTMLElement).style.setProperty('--f', String(Math.max(0, Math.min(1, me.souffle - i)))));

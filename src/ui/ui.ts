@@ -1,109 +1,237 @@
-// Écrans HTML posés au-dessus du jeu : accueil, salon d'invitation, connexion, résultat.
-import { session } from '../net/session';
+// Écrans HTML posés au-dessus du jeu : accueil, Tour du temple, salon d'invitation, résultat, tutoriel.
+import { session, MeSpec } from '../net/session';
 import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
-import { TENUES, MASQUES, LEVELS, sanitizeLook, Look } from '../sim/data';
+import { TENUES, MASQUES, sanitizeLook, Look } from '../sim/data';
+import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil } from '../sim/progression';
+import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { controls, clearKeys } from './controls';
+import { setLocks } from './actionbar';
 import { initAudio, startMusic, sfx, audioPrefs, setMusicLevel } from '../game/audio';
-import { Spec } from '../sim/sim';
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector(s) as T;
 const PROFILE_KEY = 'kata-io-dev-profile';
-interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean }
+
+/* ================= profil et progression ================= */
+interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean; xp: number; towerMax: number; stars: Record<string, number>; tutoDone: boolean }
 function loadProfile(): Profile {
   let p: any = null; try { p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch (e) { /* stockage indisponible */ }
   p = p && typeof p === 'object' ? p : {};
-  return { name: typeof p.name === 'string' ? p.name.slice(0, 16) : '', look: sanitizeLook(p.look), level: [0, 1, 2].includes(p.level) ? p.level : 1, sfx: p.sfx !== false, music: p.music !== false };
+  return {
+    name: typeof p.name === 'string' ? p.name.slice(0, 16) : '', look: sanitizeLook(p.look), level: [0, 1, 2].includes(p.level) ? p.level : 1,
+    sfx: p.sfx !== false, music: p.music !== false, xp: Number.isFinite(p.xp) && p.xp >= 0 ? p.xp : 0,
+    towerMax: Number.isFinite(p.towerMax) && p.towerMax >= 1 ? Math.floor(p.towerMax) : 1, stars: p.stars && typeof p.stars === 'object' ? p.stars : {}, tutoDone: !!p.tutoDone,
+  };
 }
 const profile = loadProfile();
 function save() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) { /* rien */ } }
+const myRank = () => rankIndex(profile.xp);
+const myAbil = (): Abil => abilFor(myRank());
+// Ajoute de l'XP et renvoie la ceinture gagnée, s'il y en a une.
+function addXp(n: number) { const before = myRank(); profile.xp += n; save(); const after = myRank(); return after > before ? after : -1; }
 
 const params = new URLSearchParams(location.search);
 const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
 let host: HostHandle | null = null;
 let current = 'home';
-const SCREENS = ['home', 'lobby', 'joining', 'result', 'lost', 'quit'];
+const SCREENS = ['home', 'floors', 'lobby', 'joining', 'result', 'lost', 'quit'];
+let lastMode: { kind: 'tower' | 'practice' | 'duel' | 'tuto'; floor?: number; drill?: string | null } = { kind: 'tower', floor: 1 };
 
 function show(id: string | null) {
   current = id || '';
   for (const s of SCREENS) $('#' + s).hidden = s !== id;
-  $('#quitBtn').hidden = !!id || !session.active;
-  $('#touch').hidden = !!id || !session.active || !controls.isTouch;
-  $('#actions').hidden = !!id || !session.active;
+  const inGame = !id && session.active;
+  $('#quitBtn').hidden = !inGame;
+  $('#touch').hidden = !inGame || !controls.isTouch;
+  $('#actions').hidden = !inGame;
+  $('#tutoBar').hidden = !inGame || session.mode !== 'tuto';
   if (id === 'joining') $('#joinSpin').hidden = false;
   if (id) clearKeys();
 }
 controls.blockedFn = () => current !== '';
-function toast(msg: string) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout((toast as any)._t); (toast as any)._t = setTimeout(() => t.classList.remove('on'), 2200); }
+function toast(msg: string) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout((toast as any)._t); (toast as any)._t = setTimeout(() => t.classList.remove('on'), 2400); }
 function myName() { const v = ($('#nameIn') as HTMLInputElement).value.trim().slice(0, 16); profile.name = v || profile.name || 'Disciple ' + ((Math.random() * 900 + 100) | 0); ($('#nameIn') as HTMLInputElement).value = profile.name; save(); return profile.name; }
-function mySpec(): Spec { return { name: myName(), look: profile.look }; }
+function mySpec(abil: Abil = myAbil()): MeSpec { return { name: myName(), look: profile.look, abil, belt: RANKS[myRank()].belt }; }
 function inviteLink(code: string) { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('salle', code); if (net === 'local') u.searchParams.set('net', 'local'); return u.toString(); }
 function cleanUrl() { const u = new URL(location.href); u.searchParams.delete('salle'); history.replaceState(null, '', u.toString()); }
 function wake() { initAudio(); startMusic(); }
 
-/* ---------- apparence ---------- */
+/* ================= apparence ================= */
 const TK = Object.keys(TENUES), MK = Object.keys(MASQUES);
 function renderLook() {
   $('#tenueName').textContent = TENUES[profile.look.tenue].name;
   $('#masqueName').textContent = MASQUES[profile.look.masque];
-  ($('#tenueSw') as HTMLElement).style.background = `linear-gradient(90deg,${TENUES[profile.look.tenue].body} 0 70%,${TENUES[profile.look.tenue].trim} 70%)`;
+  $('#tenueSw').style.background = `linear-gradient(90deg,${TENUES[profile.look.tenue].body} 0 70%,${TENUES[profile.look.tenue].trim} 70%)`;
 }
 function cycle(kind: 'tenue' | 'masque', d: number) {
   const list = kind === 'tenue' ? TK : MK; const i = list.indexOf(profile.look[kind]);
   profile.look = { ...profile.look, [kind]: list[(i + d + list.length) % list.length] }; save(); renderLook(); sfx('ui');
 }
 
-/* ---------- actions ---------- */
+/* ================= accueil ================= */
+const starStr = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
+function nextFloor() { return Math.max(1, profile.towerMax); }
+function renderHome() {
+  ($('#nameIn') as HTMLInputElement).value = profile.name; renderLook();
+  const rp = rankProgress(profile.xp);
+  $('#rankBelt').style.background = rp.cur.belt;
+  $('#rankName').textContent = rp.cur.name;
+  ($('#rankXp') as HTMLElement).style.width = Math.round(rp.frac * 100) + '%';
+  $('#rankNext').textContent = rp.next ? `${profile.xp} / ${rp.next.xp} XP · prochaine technique : ${rp.next.unlock!.title}` : `${profile.xp} XP · toutes les techniques sont débloquées`;
+  const f = towerFloor(nextFloor());
+  $('#towerSub').textContent = profile.tutoDone ? `Étage ${f.n} · ${f.name}` : 'Commence par le tutoriel (1 min)';
+  ($('#setSfx') as HTMLInputElement).checked = profile.sfx; ($('#setMusic') as HTMLInputElement).checked = profile.music;
+  ($('#devRank') as HTMLSelectElement).value = String(myRank());
+  ($('#devFloor') as HTMLSelectElement).value = String(Math.min(profile.towerMax, 20));
+  ($('#devLvl') as HTMLSelectElement).value = String(profile.level);
+}
+function renderFloors() {
+  const max = profile.towerMax, top = Math.max(TOWER_LEN, max + 1);
+  const ol = $('#floorList'); ol.innerHTML = '';
+  for (let n = 1; n <= top; n++) {
+    const f = towerFloor(n), locked = n > max, st = profile.stars[n] || 0;
+    const li = document.createElement('li'); li.className = (f.boss ? 'boss ' : '') + (locked ? 'locked ' : '') + (n === max ? 'cur' : '');
+    li.innerHTML = `<span class="fn">${n}</span><span class="fi"><b>${f.name}${f.boss ? ' · gardien' : ''}</b><small>${f.twist || (f.firstTo === 3 ? 'Premier à 3' : 'Premier à 2')}</small></span>`;
+    const right = document.createElement('span');
+    if (locked) right.innerHTML = '<span class="fs">Verrouillé</span>';
+    else { const b = document.createElement('button'); b.className = 'btn2'; b.type = 'button'; b.textContent = st ? starStr(st) : 'Combattre'; b.addEventListener('click', () => startTower(n)); right.append(b); }
+    li.append(right); ol.append(li);
+  }
+  const cur = ol.querySelector('.cur'); if (cur) setTimeout(() => cur.scrollIntoView({ block: 'center' }), 50);
+}
+
+/* ================= lancements ================= */
+function applyLocks(a: Abil) { setLocks(a); }
+function startTower(n: number) {
+  wake(); myName();
+  if (!profile.tutoDone) { startTuto(null); return; }
+  lastMode = { kind: 'tower', floor: n };
+  const f = towerFloor(n); applyLocks(myAbil());
+  session.startTower(mySpec(), f);
+  if (f.twist) setTimeout(() => toast(f.twist), 400);
+}
+function startTuto(drill: string | null) {
+  wake(); myName();
+  lastMode = { kind: 'tuto', drill };
+  const steps: TutoStep[] = drill ? DRILLS[drill] : MINI_TUTO;
+  applyLocks(drill ? myAbil() : abilFor(0));
+  session.startTuto(mySpec(drill ? myAbil() : abilFor(0)), steps);
+}
+function practice() { wake(); lastMode = { kind: 'practice' }; applyLocks(myAbil()); session.startPractice(mySpec(), profile.level); }
 async function createRoom() {
   wake(); myName(); show('lobby');
   $('#lobbyCode').textContent = '······'; ($('#lobbyLink') as HTMLInputElement).value = ''; $('#lobbyStatus').textContent = 'Création de la salle…'; $('#lobbyWait').hidden = true;
   try {
-    host = await hostRoom(net, conn => { session.startHost(conn, mySpec()); }, err => toast(err));
+    host = await hostRoom(net, conn => { lastMode = { kind: 'duel' }; applyLocks(FULL_ABIL); session.startHost(conn, mySpec(FULL_ABIL)); }, err => toast(err));
     revealCode(host.code); ($('#lobbyLink') as HTMLInputElement).value = inviteLink(host.code);
     $('#lobbyStatus').textContent = 'En attente de ton adversaire. Envoie-lui le lien.'; $('#lobbyWait').hidden = false;
-    ($('#shareBtn') as HTMLButtonElement).hidden = !navigator.share;
+    $('#shareBtn').hidden = !navigator.share;
   } catch (e: any) { $('#lobbyStatus').textContent = e.message || 'Impossible de créer la salle.'; $('#lobbyWait').hidden = true; }
 }
 async function join(codeRaw: string) {
   const code = cleanCode(codeRaw); if (code.length < 4) { toast('Code de salle invalide'); return; }
   wake(); myName(); show('joining');
   $('#joinTitle').textContent = 'Salle ' + code; $('#joinStatus').textContent = 'Connexion à la salle…';
-  try { const conn = await joinRoom(net, code); session.startGuest(conn, mySpec()); }
+  try { const conn = await joinRoom(net, code); lastMode = { kind: 'duel' }; applyLocks(FULL_ABIL); session.startGuest(conn, mySpec(FULL_ABIL)); }
   catch (e: any) { $('#joinStatus').textContent = e.message || 'Connexion impossible.'; $('#joinSpin').hidden = true; }
 }
-function practice() { wake(); session.startPractice(mySpec(), profile.level); }
-function leave() {
-  session.leave(true); if (host) { host.close(); host = null; } cleanUrl(); renderHome(); show('home');
+function leave() { session.leave(true); if (host) { host.close(); host = null; } cleanUrl(); renderHome(); show('home'); }
+
+/* ================= résultats ================= */
+let mainAction: () => void = () => {}, altAction: (() => void) | null = null;
+function setResultButtons(main: string, onMain: () => void, alt: string | null, onAlt: (() => void) | null) {
+  $('#resMainLbl').textContent = main; mainAction = onMain; ($('#resMain') as HTMLButtonElement).disabled = false;
+  const a = $('#resAlt'); a.hidden = !alt; if (alt) a.textContent = alt; altAction = onAlt;
+  $('#resRow').style.gridTemplateColumns = alt ? '1fr 1fr' : '1fr';
+  $('#resHint').textContent = `Espace : ${main.toLowerCase()}`;
 }
-function renderHome() {
-  ($('#nameIn') as HTMLInputElement).value = profile.name; renderLook();
-  document.querySelectorAll<HTMLButtonElement>('#lvls button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.l! === profile.level)));
-  ($('#setSfx') as HTMLInputElement).checked = profile.sfx; ($('#setMusic') as HTMLInputElement).checked = profile.music;
+function showUnlock(rank: number) {
+  const r = RANKS[rank], u = r.unlock; const box = $('#resUnlock');
+  if (!u) { box.hidden = true; return; }
+  box.hidden = false; $('#unlockBelt').textContent = r.name; $('#unlockTitle').textContent = u.title + ' :'; $('#unlockText').textContent = u.text + ' ' + u.how;
+  $('#unlockTry').onclick = () => startTuto(u.key === 'chain2' ? 'chain2' : u.key === 'chain3' ? 'chain3' : String(u.key));
+  sfx('gong', 0.7);
+}
+function showXp(gain: number, before: number) {
+  $('#resXp').hidden = gain <= 0; if (gain <= 0) return;
+  $('#resXpTxt').textContent = `+${gain} XP`;
+  const bar = $('#resXpBar') as HTMLElement; const rp0 = rankProgress(before), rp1 = rankProgress(profile.xp);
+  bar.style.transition = 'none'; bar.style.width = Math.round((rp1.i > rp0.i ? 0 : rp0.frac) * 100) + '%'; void bar.offsetWidth;
+  bar.style.transition = ''; setTimeout(() => { bar.style.width = Math.round(rp1.frac * 100) + '%'; }, 250);
+}
+let endTimer = 0;
+function onEnd(winner: number, score: number[]) {
+  endTimer = window.setTimeout(() => {
+    const win = winner === session.myIdx, st = session.state, me = st ? st.f[session.myIdx] : null, op = st ? st.f[1 - session.myIdx] : null;
+    const sMe = score[session.myIdx], sOp = score[1 - session.myIdx];
+    $('#resTitle').className = win ? 'win' : 'lose';
+    $('#resStatus').textContent = ''; $('#resNear').hidden = true; $('#resUnlock').hidden = true;
+    const starsEl = $('#resStars'); starsEl.hidden = true; starsEl.querySelectorAll('i').forEach(i => i.classList.remove('on'));
+    const xpBefore = profile.xp; let gain = 0, newRank = -1;
+    if (!win && op && op.pct >= 70) { $('#resNear').hidden = false; $('#resNear').textContent = `Il était à ${Math.round(op.pct)} % : encore un coup et il tombait.`; }
+    if (session.mode === 'tower' && session.floor) {
+      const f = session.floor, stars = starsFor(win, session.roundsLost, session.seconds, f.par);
+      gain = towerXp(f.n, win, sMe, stars);
+      $('#resKicker').textContent = `Étage ${f.n} · ${f.name}`;
+      $('#resTitle').textContent = win ? 'Étage réussi' : 'Défaite';
+      $('#resScore').textContent = `${sMe} – ${sOp}` + (win ? ` en ${session.seconds} s` : '');
+      if (win) {
+        starsEl.hidden = false; starsEl.querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < stars));
+        profile.stars[f.n] = Math.max(profile.stars[f.n] || 0, stars); profile.towerMax = Math.max(profile.towerMax, f.n + 1); save();
+        if (stars < 3) $('#resStatus').textContent = stars === 1 ? 'Deuxième étoile : gagne sans perdre une manche.' : `Troisième étoile : gagne en moins de ${f.par} s.`;
+        setResultButtons(`Étage ${f.n + 1}`, () => startTower(f.n + 1), 'Rejouer', () => startTower(f.n));
+      } else setResultButtons('Réessayer', () => startTower(f.n), null, null);
+    } else if (session.mode === 'practice') {
+      gain = win ? XP_PRACTICE_WIN : 5;
+      $('#resKicker').textContent = 'Entraînement'; $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
+      $('#resScore').textContent = `${sMe} – ${sOp} contre ${op ? op.name : 'le bot'}`;
+      setResultButtons('Revanche', () => practice(), null, null);
+    } else {
+      gain = win ? XP_DUEL_WIN : XP_DUEL_LOSS;
+      $('#resKicker').textContent = 'Duel'; $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
+      $('#resScore').textContent = `${sMe} – ${sOp} contre ${op ? op.name : 'ton adversaire'}`;
+      $('#resStatus').textContent = 'Une revanche ? Il faut que vous la demandiez tous les deux.';
+      setResultButtons('Revanche', () => session.requestRematch(), null, null);
+    }
+    newRank = addXp(gain);
+    showXp(gain, xpBefore);
+    if (newRank > 0) showUnlock(newRank);
+    sfx(win ? 'win' : 'lose'); show('result'); restartAnim($('#resTitle')); if (win) confetti();
+    void me;
+  }, 1300);
 }
 
-/* ---------- liaison avec la partie ---------- */
-let endTimer = 0;
+/* ================= tutoriel ================= */
+function onTuto(step: TutoStep | null, i: number, n: number, count: number) {
+  const bar = $('#tutoBar'); bar.classList.toggle('done', !step);
+  if (!step) { $('#tutoStep').textContent = 'Terminé'; $('#tutoTxt').textContent = lastMode.drill ? 'Technique maîtrisée !' : 'Bravo ! Direction la Tour du temple.'; $('#tutoDots').innerHTML = ''; return; }
+  $('#tutoStep').textContent = lastMode.drill ? 'Nouvelle technique' : `Tutoriel · étape ${i + 1} sur ${n}`;
+  $('#tutoTxt').textContent = controls.isTouch && step.touch ? step.touch : step.text;
+  $('#tutoDots').innerHTML = step.goal > 1 ? Array.from({ length: step.goal }, (_, k) => `<i class="${k < count ? 'on' : ''}"></i>`).join('') : '';
+  if (count === 0) restartAnim(bar);
+}
+function onTutoDone() {
+  if (lastMode.drill) { toast('Technique maîtrisée'); leave(); return; }
+  const first = !profile.tutoDone; profile.tutoDone = true;
+  if (first) addXp(XP_TUTO);
+  save(); toast(first ? `+${XP_TUTO} XP · la Tour du temple t'attend` : 'Tutoriel terminé');
+  startTower(nextFloor());
+}
+
+/* ================= liaison avec la partie ================= */
 session.hooks = {
   onStart() { clearTimeout(endTimer); if (host) { host.close(); host = null; } show(null); },
-  onEnd(winner, score) {
-    endTimer = window.setTimeout(() => {
-      const win = winner === session.myIdx; const st = session.state; const op = st ? st.f[1 - session.myIdx] : null;
-      $('#resTitle').textContent = win ? 'Victoire' : 'Défaite'; $('#resTitle').className = win ? 'win' : 'lose';
-      $('#resScore').textContent = `${score[session.myIdx]} – ${score[1 - session.myIdx]} contre ${op ? op.name : 'ton adversaire'}`;
-      $('#resStatus').textContent = session.mode === 'practice' ? '' : 'Une revanche ? Il faut que vous la demandiez tous les deux.';
-      ($('#rematchBtn') as HTMLButtonElement).disabled = false; $('#rematchLbl').textContent = 'Revanche';
-      sfx(win ? 'win' : 'lose'); show('result'); restartAnim($('#resTitle')); if (win) confetti();
-    }, 1400);
-  },
+  onEnd,
   onRematch(me, them) {
     const st = session.state; const op = st ? st.f[1 - session.myIdx].name : 'Ton adversaire';
     $('#resStatus').textContent = me && them ? 'C’est reparti !' : me ? `En attente de ${op}…` : `${op} veut une revanche.`;
-    if (me) { ($('#rematchBtn') as HTMLButtonElement).disabled = true; $('#rematchLbl').textContent = 'Revanche demandée'; }
+    if (me) { ($('#resMain') as HTMLButtonElement).disabled = true; $('#resMainLbl').textContent = 'Revanche demandée'; }
   },
   onDisconnect() { if (current === 'home') return; $('#lostMsg').textContent = 'Ton adversaire s’est déconnecté.'; show('lost'); },
   onStatus(msg) { if (msg) { $('#lobbyStatus').textContent = msg; $('#joinStatus').textContent = msg; } },
+  onTuto, onTutoDone,
 };
 
-// Petits effets d'interface : onde sous le doigt, survol sonore, lettres du code, confettis.
+/* ================= petits effets d'interface ================= */
 function restartAnim(el: HTMLElement) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
 function revealCode(code: string) { $('#lobbyCode').innerHTML = [...code].map((c, i) => `<span style="animation-delay:${i * 70}ms">${c}</span>`).join(''); }
 function confetti() {
@@ -131,42 +259,58 @@ function setupButtonFx() {
   });
 }
 
+/* ================= mise en place ================= */
 export function setupUI() {
   setupButtonFx();
+  // panneau de test : ceinture, étages débloqués, niveau du bot
+  const dr = $('#devRank') as HTMLSelectElement; dr.innerHTML = RANKS.map((r, i) => `<option value="${i}">${i + 1}. ${r.name}${r.unlock ? ' · ' + r.unlock.title : ' · Frapper + Esquive'}</option>`).join('');
+  const df = $('#devFloor') as HTMLSelectElement; df.innerHTML = Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">Jusqu'à l'étage ${i + 1}</option>`).join('');
+  dr.addEventListener('change', () => { profile.xp = RANKS[+dr.value].xp; profile.tutoDone = true; save(); renderHome(); toast(RANKS[+dr.value].name); });
+  df.addEventListener('change', () => { profile.towerMax = +df.value; profile.tutoDone = true; save(); renderHome(); toast(`Étages 1 à ${df.value} débloqués`); });
+  ($('#devLvl') as HTMLSelectElement).addEventListener('change', e => { profile.level = +(e.target as HTMLSelectElement).value; save(); });
+  $('#devReset').addEventListener('click', () => { Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false }); save(); renderHome(); toast('Progression réinitialisée'); });
+
   renderHome();
   audioPrefs.sfx = profile.sfx; audioPrefs.music = profile.music;
-  $('#createBtn').addEventListener('click', createRoom);
+  $('#towerBtn').addEventListener('click', () => startTower(nextFloor()));
+  $('#floorsBtn').addEventListener('click', () => { renderFloors(); show('floors'); });
+  $('#floorsClose').addEventListener('click', () => show('home'));
   $('#practiceBtn').addEventListener('click', practice);
+  $('#tutoBtn').addEventListener('click', () => startTuto(null));
+  $('#tutoSkip').addEventListener('click', () => { if (!lastMode.drill) { profile.tutoDone = true; save(); startTower(nextFloor()); } else leave(); });
+  $('#createBtn').addEventListener('click', createRoom);
   $('#joinForm').addEventListener('submit', e => { e.preventDefault(); join(($('#codeIn') as HTMLInputElement).value); });
   $('#codeIn').addEventListener('input', e => { const i = e.target as HTMLInputElement; i.value = cleanCode(i.value); });
   $('#nameIn').addEventListener('change', () => myName());
   $('#tPrev').addEventListener('click', () => cycle('tenue', -1)); $('#tNext').addEventListener('click', () => cycle('tenue', 1));
   $('#mPrev').addEventListener('click', () => cycle('masque', -1)); $('#mNext').addEventListener('click', () => cycle('masque', 1));
-  document.querySelectorAll<HTMLButtonElement>('#lvls button').forEach(b => b.addEventListener('click', () => { profile.level = +b.dataset.l!; save(); renderHome(); sfx('ui'); }));
   $('#setSfx').addEventListener('change', e => { profile.sfx = audioPrefs.sfx = (e.target as HTMLInputElement).checked; save(); });
   $('#setMusic').addEventListener('change', e => { profile.music = audioPrefs.music = (e.target as HTMLInputElement).checked; save(); wake(); setMusicLevel(0.07); });
   $('#copyBtn').addEventListener('click', async () => {
-    const v = ($('#lobbyLink') as HTMLInputElement).value; if (!v) return;
-    const b = $('#copyBtn');
-    try { await navigator.clipboard.writeText(v); b.textContent = 'Copié ✓'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Copier'; b.classList.remove('ok'); }, 1600); } catch (e) { ($('#lobbyLink') as HTMLInputElement).select(); toast('Sélectionne le lien et copie-le'); }
+    const v = ($('#lobbyLink') as HTMLInputElement).value; if (!v) return; const b = $('#copyBtn');
+    try { await navigator.clipboard.writeText(v); b.textContent = 'Copié ✓'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Copier'; b.classList.remove('ok'); }, 1600); }
+    catch (e) { ($('#lobbyLink') as HTMLInputElement).select(); toast('Sélectionne le lien et copie-le'); }
   });
   $('#shareBtn').addEventListener('click', () => { const v = ($('#lobbyLink') as HTMLInputElement).value; if (v && navigator.share) navigator.share({ title: 'Kata.io', text: 'Je te défie en duel sur Kata.io', url: v }).catch(() => { /* annulé */ }); });
   $('#lobbyCancel').addEventListener('click', leave);
   $('#joinCancel').addEventListener('click', leave);
-  $('#rematchBtn').addEventListener('click', () => { session.requestRematch(); });
+  $('#resMain').addEventListener('click', () => mainAction());
+  $('#resAlt').addEventListener('click', () => altAction && altAction());
   $('#resHome').addEventListener('click', leave);
   $('#lostHome').addEventListener('click', leave);
   $('#quitBtn').addEventListener('click', () => show('quit'));
   $('#quitYes').addEventListener('click', leave);
   $('#quitNo').addEventListener('click', () => show(null));
   window.addEventListener('keydown', e => {
-    if (e.code !== 'Escape') return;
-    if (current === '' && session.active) show('quit'); else if (current === 'quit') show(null);
+    if (e.code === 'Escape') { if (current === '' && session.active) show('quit'); else if (current === 'quit') show(null); else if (current === 'floors') show('home'); return; }
+    // relance instantanée depuis l'écran de résultat
+    if (current === 'result' && (e.code === 'Space' || e.code === 'Enter') && !($('#resMain') as HTMLButtonElement).disabled) { e.preventDefault(); mainAction(); }
   });
   const code = cleanCode(params.get('salle') || '');
   if (code) {
     $('#homeJoinNote').hidden = false; $('#homeJoinNote').textContent = `Tu es invité dans la salle ${code}. Choisis ton nom puis rejoins le duel.`;
-    ($('#codeIn') as HTMLInputElement).value = code; ($('#joinBtn') as HTMLButtonElement).classList.add('btn-play'); $('#joinBtn').textContent = 'Rejoindre le duel';
+    ($('#codeIn') as HTMLInputElement).value = code; $('#joinBtn').classList.add('btn-play'); $('#joinBtn').textContent = 'Rejoindre le duel';
+    ($('#fighterBox') as HTMLDetailsElement).open = true;
   }
   show('home');
   if (net === 'local') toast('Mode réseau local (deux onglets du même navigateur)');

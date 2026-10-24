@@ -72,7 +72,7 @@ export class GameScene extends Phaser.Scene {
     setListener(cx, cy);
     this.view.setTo(cam.worldView.x, cam.worldView.y, cam.worldView.width, cam.worldView.height);
 
-    this.r.update(dt, time, st, session.myIdx, this.view);
+    this.r.update(dt, time, st, session.myIdx, this.view, session.marker);
     if (st) updateActionBar(st.f[session.myIdx]);
     musicTick();
   }

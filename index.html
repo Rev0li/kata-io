@@ -49,43 +49,75 @@
       <div class="logo">
         <svg class="enso" viewBox="0 0 200 200" aria-hidden="true"><path pathLength="100" d="M146 45 A72 72 0 1 0 168 125" fill="none" stroke="#c8463b" stroke-width="15" stroke-linecap="round" opacity=".88"/></svg>
         <h1>KATA<span>.io</span></h1>
-        <p>Duel de kung-fu en 1 contre 1. Envoie ton adversaire à l'eau.</p>
+        <p>Frappe, esquive, et envoie ton adversaire à l'eau.</p>
       </div>
       <p id="homeJoinNote" class="note" hidden></p>
-      <div class="box">
-        <label for="nameIn" class="lbl">Nom de combattant</label>
-        <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier">
-        <div class="look">
-          <div class="cyc"><button id="tPrev" type="button" aria-label="Tenue précédente">‹</button><span><i id="tenueSw"></i><b id="tenueName"></b></span><button id="tNext" type="button" aria-label="Tenue suivante">›</button></div>
-          <div class="cyc"><button id="mPrev" type="button" aria-label="Masque précédent">‹</button><span><b id="masqueName"></b></span><button id="mNext" type="button" aria-label="Masque suivant">›</button></div>
+      <div class="rank" id="rankCard">
+        <span class="beltsw" id="rankBelt"></span>
+        <div class="rk">
+          <b id="rankName">Ceinture blanche</b>
+          <div class="xpbar"><i id="rankXp"></i></div>
+          <small id="rankNext"></small>
         </div>
       </div>
-      <button id="createBtn" class="btn-play" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z"/></svg>Créer un duel privé</button>
-      <form id="joinForm" class="joinrow">
-        <label for="codeIn" class="sr">Code de la salle</label>
-        <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE">
-        <button id="joinBtn" class="btn2" type="submit">Rejoindre</button>
-      </form>
-      <div class="box">
-        <div class="row-between"><span class="lbl">S'entraîner contre un bot</span>
-          <div class="lvls" id="lvls" role="radiogroup" aria-label="Niveau du bot"><button type="button" role="radio" data-l="0">Disciple</button><button type="button" role="radio" data-l="1">Adepte</button><button type="button" role="radio" data-l="2">Maître</button></div>
-        </div>
-        <button id="practiceBtn" class="btn2 wide" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Lancer l'entraînement</button>
+      <button id="towerBtn" class="btn-play tower" type="button"><span class="t1">Tour du temple</span><span class="t2" id="towerSub">Étage 1</span></button>
+      <div class="row2">
+        <button id="floorsBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5"/></svg>Étages</button>
+        <button id="practiceBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Entraînement</button>
       </div>
+      <div class="box">
+        <span class="lbl">Duel avec un ami</span>
+        <button id="createBtn" class="btn2 wide" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z"/></svg>Créer un duel privé</button>
+        <form id="joinForm" class="joinrow">
+          <label for="codeIn" class="sr">Code de la salle</label>
+          <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE">
+          <button id="joinBtn" class="btn2" type="submit">Rejoindre</button>
+        </form>
+      </div>
+      <details class="help" id="fighterBox">
+        <summary>Ton combattant</summary>
+        <div class="inner">
+          <label for="nameIn" class="lbl">Nom</label>
+          <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier">
+          <div class="look">
+            <div class="cyc"><button id="tPrev" type="button" aria-label="Tenue précédente">‹</button><span><i id="tenueSw"></i><b id="tenueName"></b></span><button id="tNext" type="button" aria-label="Tenue suivante">›</button></div>
+            <div class="cyc"><button id="mPrev" type="button" aria-label="Masque précédent">‹</button><span><b id="masqueName"></b></span><button id="mNext" type="button" aria-label="Masque suivant">›</button></div>
+          </div>
+        </div>
+      </details>
       <details class="help">
         <summary>Commandes et réglages</summary>
         <div class="keys">
           <span><kbd>ZQSD</kbd> <kbd>flèches</kbd></span><span>Se déplacer</span>
-          <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span><span>Frapper. Maintenu : coup chargé rouge</span>
-          <span><kbd>Clic droit</kbd> <kbd>K</kbd></span><span>Parer un coup blanc juste avant l'impact</span>
+          <span><kbd>Clic gauche</kbd> <kbd>J</kbd></span><span>Frapper. Maintenu : coup chargé (ceinture verte)</span>
+          <span><kbd>Clic droit</kbd> <kbd>K</kbd></span><span>Parer (ceinture orange)</span>
           <span><kbd>Espace</kbd> <kbd>Shift</kbd></span><span>Esquiver (coûte un souffle)</span>
           <span><kbd>1</kbd>–<kbd>4</kbd></span><span>Emotes</span>
-          <span><kbd>Échap</kbd></span><span>Quitter le duel</span>
+          <span><kbd>Échap</kbd></span><span>Quitter le combat</span>
         </div>
         <label class="tgl"><span>Effets sonores</span><input type="checkbox" id="setSfx"></label>
         <label class="tgl"><span>Musique</span><input type="checkbox" id="setMusic"></label>
+        <button id="tutoBtn" class="ghost wide" type="button">Refaire le tutoriel</button>
       </details>
-      <p class="ver">Version de développement · duel sur invitation</p>
+      <details class="help dev" open>
+        <summary>Mode test <small>(version de dev)</small></summary>
+        <div class="inner">
+          <label class="drow"><span>Ceinture</span><select id="devRank"></select></label>
+          <label class="drow"><span>Étages débloqués</span><select id="devFloor"></select></label>
+          <label class="drow"><span>Niveau du bot d'entraînement</span><select id="devLvl"><option value="0">Disciple</option><option value="1">Adepte</option><option value="2">Maître</option></select></label>
+          <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
+        </div>
+      </details>
+      <p class="ver">Version de développement</p>
+    </div>
+  </section>
+
+  <section id="floors" class="screen dim" hidden>
+    <div class="col card floors">
+      <h2>La Tour</h2>
+      <p class="sub">Bats chaque gardien pour monter. Trois étoiles : sans perdre de manche, et vite.</p>
+      <ol id="floorList"></ol>
+      <button id="floorsClose" class="ghost" type="button">Fermer</button>
     </div>
   </section>
 
@@ -112,11 +144,23 @@
 
   <section id="result" class="screen dim" hidden>
     <div class="col card">
-      <div id="confetti" aria-hidden="true"></div><h2 id="resTitle">Victoire</h2>
+      <div id="confetti" aria-hidden="true"></div>
+      <span class="lbl" id="resKicker"></span>
+      <h2 id="resTitle">Victoire</h2>
+      <div class="stars" id="resStars" aria-label="Étoiles"><i></i><i></i><i></i></div>
       <p class="sub" id="resScore"></p>
-      <button id="rematchBtn" class="btn-play" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15"/><path d="M4 20v-5h5"/></svg><span id="rematchLbl">Revanche</span></button>
+      <p class="near" id="resNear" hidden></p>
+      <div class="xpgain" id="resXp" hidden><span id="resXpTxt"></span><div class="xpbar"><i id="resXpBar"></i></div></div>
+      <div class="unlock" id="resUnlock" hidden>
+        <span class="lbl">Nouvelle ceinture</span>
+        <b id="unlockBelt"></b>
+        <p><strong id="unlockTitle"></strong> <span id="unlockText"></span></p>
+        <button id="unlockTry" class="btn2 wide" type="button">Essayer la technique</button>
+      </div>
+      <button id="resMain" class="btn-play" type="button"><span id="resMainLbl">Revanche</span></button>
       <p class="status" id="resStatus"></p>
-      <button id="resHome" class="ghost" type="button">Accueil</button>
+      <div class="row2" id="resRow"><button id="resAlt" class="btn2" type="button">Rejouer</button><button id="resHome" class="btn2" type="button">Accueil</button></div>
+      <p class="hint" id="resHint">Espace pour continuer</p>
     </div>
   </section>
 
@@ -136,6 +180,13 @@
       <button id="quitYes" class="ghost" type="button">Quitter le duel</button>
     </div>
   </section>
+
+  <div id="tutoBar" hidden>
+    <span class="tstep" id="tutoStep"></span>
+    <b id="tutoTxt"></b>
+    <span class="tdots" id="tutoDots"></span>
+    <button id="tutoSkip" class="ghost" type="button">Passer</button>
+  </div>
 
   <div id="toast" role="status"></div>
   <script type="module" src="/src/main.ts"></script>
