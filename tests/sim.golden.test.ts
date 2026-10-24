@@ -144,6 +144,19 @@ describe('déterminisme', () => {
     const specs = () => [bot('A', LEVELS[1].skill, 1), bot('B', LEVELS[2].skill, 2)];
     expect(run(specs(), { seed: 1 }).summary.eventHash).not.toBe(run(specs(), { seed: 2 }).summary.eventHash);
   });
+  test('deux parties entrelacées donnent les mêmes résultats que jouées séparément (aucun état global)', () => {
+    const specs = (k: number) => [bot('A', LEVELS[k].skill, 30 + k), bot('B', LEVELS[2 - k].skill, 40 + k)];
+    const alone = [0, 1].map(k => run(specs(k), { seed: 6000 + k }).summary);
+    const sims = [0, 1].map(k => createSim(specs(k), { seed: 6000 + k }));
+    const ends: any[] = [null, null];
+    for (let k = 0; k < MAX_STEPS && !(ends[0] && ends[1]); k++)
+      sims.forEach((st, i) => {
+        if (ends[i]) return;
+        stepSim(st, STEP, [emptyInput(), emptyInput()]);
+        for (const e of drainEvents(st)) if (e.t === 'end') ends[i] = { winner: e.winner, score: e.score };
+      });
+    expect(ends).toEqual(alone.map(s => s.end));
+  });
 });
 
 describe('bot contre bot', () => {
