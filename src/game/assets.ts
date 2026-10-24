@@ -1,6 +1,8 @@
 // Chargement des sprites du pack Ninja Adventure (Pixel-boy, CC0) : personnages, armes et effets.
 // Les planches sont assemblées par scripts/build-assets.py dans public/assets.
 import Phaser from 'phaser';
+import { worldImages } from './render/worlds';
+import { LIFE } from './render/themes';
 
 export const PX = 3; // un pixel du pack = 3 unités du monde
 export const FX_KEYS = [
@@ -48,9 +50,15 @@ export function preloadAssets(scene: Phaser.Scene) {
     scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS))
     scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: w, frameHeight: h });
+  // Mondes : éléments provisoires découpés dans les planches (art/decoupe -> public/assets/mondes).
+  for (const k of worldImages(Object.values(LIFE).flatMap(l => l.floats)))
+    scene.load.image('m:' + k, BASE + 'mondes/' + k + '.png');
 }
 
 export function setupAssets(scene: Phaser.Scene) {
+  // Mondes : images dessinées (pas du pixel art), lissées quand on les agrandit.
+  for (const k of scene.textures.getTextureKeys())
+    if (k.startsWith('m:')) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.LINEAR);
   // Pixel art : pas de lissage quand on agrandit.
   for (const k of ['persos', 'armes', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)])
     scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);

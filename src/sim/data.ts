@@ -26,8 +26,16 @@ export const CHARGE_START = 120,
 export const SOUFFLE_REGEN = 1.3,
   MOVE_SPEED = 210;
 export const FIRST_TO = 3;
-// Les six dojos (ambiances de décor), dans l'ordre de la Tour. Liste blanche pour ce qui vient du réseau.
+// Les quatre mondes (docs/DIRECTION-ARTISTIQUE.md, section 5), dans l'ordre de la Tour ; ils remplaceront les dojos.
+export const MONDES: [string, string][] = [
+  ['cerisiers', 'Le Jardin des cerisiers'],
+  ['bambous', 'Le Jardin aux bambous'],
+  ['enneige', 'Le Temple enneigé'],
+  ['forge', 'La Forge des forteresses'],
+];
+// Les mondes puis les six dojos provisoires. Liste blanche pour ce qui vient du réseau.
 export const DOJOS: [string, string][] = [
+  ...MONDES,
   ['coucher', 'Coucher de soleil'],
   ['bambou', 'Bambous'],
   ['brume', 'Brume'],

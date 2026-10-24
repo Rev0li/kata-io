@@ -89,6 +89,52 @@ export const THEMES: Record<string, Theme> = {
     lamp: 0x2de6ea,
     glow: 0xff9a3c,
   },
+  // les quatre mondes (voir worlds.ts) : water = l'étang, sky inutilisé (pas d'horizon)
+  cerisiers: {
+    water: '#4fb3c2',
+    sky: '#7ea35a',
+    top: 0xc9945e,
+    top2: 0xd4a06a,
+    seam: 0x7a4f2c,
+    rim: 0xa86f3e,
+    side: 0x7a4a26,
+    out: 0x3a2314,
+    line: 0x6fbf9a,
+  },
+  bambous: {
+    water: '#3f9c94',
+    sky: '#5f7f44',
+    top: 0xb08a55,
+    top2: 0xbb9660,
+    seam: 0x6a4a2a,
+    rim: 0x9a6a3a,
+    side: 0x6b4526,
+    out: 0x2a1a10,
+    line: 0x5fae6e,
+  },
+  enneige: {
+    water: '#9ed6dc',
+    sky: '#e9f1f5',
+    top: 0xb4b9bd,
+    top2: 0xc2c7ca,
+    seam: 0x7a8187,
+    rim: 0xeef4f8,
+    side: 0x8a939a,
+    out: 0x3a4650,
+    line: 0x9fd8e8,
+  },
+  forge: {
+    water: '#e2561f',
+    sky: '#2b1713',
+    top: 0x3a2a26,
+    top2: 0x44302b,
+    seam: 0x1a0f0d,
+    rim: 0x55524f,
+    side: 0x2a1c18,
+    out: 0x0c0606,
+    line: 0xff7a2a,
+    edge: 0xff9a3c,
+  },
 };
 
 // Vie de chaque dojo : espèces de poissons (decor/fish-*.svg), objets flottants (decor/float-*.svg), particules d'ambiance.
@@ -98,6 +144,7 @@ export interface Life {
   amb: string;
   glint: number;
   nFish: number;
+  fishA?: number; // opacité des poissons (sous la glace : à peine visibles)
 }
 export const LIFE: Record<string, Life> = {
   coucher: {
@@ -124,4 +171,27 @@ export const LIFE: Record<string, Life> = {
     nFish: 5,
   },
   volcan: { fish: ['braise'], floats: ['lave'], amb: 'ember', glint: 0xff9a3c, nFish: 4 },
+  // mondes : objets flottants découpés dans les planches (« monde/nom »), poissons vectoriels
+  cerisiers: {
+    fish: ['koi_orange', 'koi_blanc', 'koi_or'],
+    floats: [
+      'cerisiers/nenuphar-a',
+      'cerisiers/lotus-rose-a',
+      'cerisiers/nenuphar-b',
+      'cerisiers/lotus-blanc',
+      'cerisiers/nenuphar-c',
+    ],
+    amb: 'petal',
+    glint: 0xe8fbff,
+    nFish: 6,
+  },
+  bambous: {
+    fish: ['carpe_jade', 'koi_or', 'koi_orange'],
+    floats: ['bambous/nenuphars', 'bambous/nenuphars-lotus', 'bambous/lotus', 'bambous/nenuphars-sombres'],
+    amb: 'firefly',
+    glint: 0xe9f0c2,
+    nFish: 5,
+  },
+  enneige: { fish: ['argente', 'koi_blanc'], floats: [], amb: 'snow', glint: 0xffffff, nFish: 4, fishA: 0.3 },
+  forge: { fish: ['braise'], floats: [], amb: 'ember', glint: 0xffd36a, nFish: 4 },
 };

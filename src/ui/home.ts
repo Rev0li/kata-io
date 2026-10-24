@@ -1,11 +1,94 @@
-// Écran d'accueil : ceinture et XP, combattant et arme, pièces, défi du jour, réglages, panneau de test.
-import { PERSOS, ARMES } from '../sim/data';
+// Écran d'accueil (maquette art/reference/mondes/accueil-v2.png) : onglets, ceinture et XP, recommandations,
+// entraînement dans un monde, duel, combattant et arme, pièces, réglages, panneau de test.
+import { PERSOS, ARMES, MONDES, LEVELS } from '../sim/data';
 import { RANKS, rankProgress, towerFloor, streakMult, dailyFloor, DAILY_COINS, Abil } from '../sim/progression';
 import { MeSpec } from '../net/session';
 import { controls } from './controls';
 import { sfx } from '../game/audio';
 import { $, toast } from './dom';
 import { profile, save, myRank, myAbil, myLook, persoOpen, armeOpen, PK, AK, nextFloor, rollDaily } from './profile';
+import { viewState } from './viewstate';
+
+// Parchemin de chaque technique (pack Ninja Adventure, public/assets/items).
+export const SCROLLS: Record<string, string> = {
+  chain2: 'scroll-plant',
+  parry: 'scroll-ice',
+  charge: 'scroll-rock',
+  chain3: 'scroll-empty',
+  elan: 'scroll-thunder',
+  dragon: 'scroll-fire',
+};
+// Vignette de chaque monde dans le choix de l'entraînement : un élément du décor sur les couleurs du monde.
+const WORLD_TILE: Record<string, [string, string, string]> = {
+  cerisiers: ['cerisiers/cerisier-rose', '#7ea35a', '#4fb3c2'],
+  bambous: ['bambous/pagode-3-etages', '#5f7f44', '#3f9c94'],
+  enneige: ['neige/torii-enneige-a', '#e9f1f5', '#9ed6dc'],
+  forge: ['forge/tour-a', '#2b1713', '#e2561f'],
+};
+
+/* ---------- onglets : Accueil et Combattants sont des panneaux, Temple et Boutique ouvrent leur écran ---------- */
+export function homeTab(tab: 'accueil' | 'combattants') {
+  $('#panelAccueil').hidden = tab !== 'accueil';
+  $('#panelCombattants').hidden = tab !== 'combattants';
+  document.querySelectorAll<HTMLElement>('#home .htab[data-tab]').forEach(b => {
+    b.classList.toggle('on', b.dataset.tab === tab);
+    b.setAttribute('aria-current', String(b.dataset.tab === tab));
+  });
+  if (tab === 'accueil') renderHome();
+  $('#home').scrollTop = 0;
+}
+
+/* ---------- entraînement : monde et niveau du bot ---------- */
+export function setupTraining() {
+  const wp = $('#worldPick');
+  wp.innerHTML = '';
+  for (const [id, name] of MONDES) {
+    const [img, ground, pond] = WORLD_TILE[id];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'wtile';
+    b.dataset.world = id;
+    b.setAttribute('role', 'radio');
+    b.style.setProperty('--g', ground);
+    b.style.setProperty('--p', pond);
+    b.innerHTML = `<img src="/assets/mondes/${img}.png" alt="" /><span>${name}</span>`;
+    b.addEventListener('click', () => {
+      viewState.world = id; // le décor derrière l'accueil change aussitôt
+      renderTraining();
+      sfx('ui');
+    });
+    wp.append(b);
+  }
+  const lp = $('#lvlPick');
+  lp.innerHTML = '';
+  LEVELS.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.dataset.lvl = String(i);
+    b.setAttribute('role', 'radio');
+    b.textContent = l.name;
+    b.addEventListener('click', () => {
+      profile.level = i;
+      save();
+      renderTraining();
+      ($('#devLvl') as HTMLSelectElement).value = String(i);
+    });
+    lp.append(b);
+  });
+}
+export function renderTraining() {
+  document.querySelectorAll<HTMLElement>('#worldPick .wtile').forEach(b => {
+    const on = b.dataset.world === viewState.world;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+  });
+  document.querySelectorAll<HTMLElement>('#lvlPick .chip').forEach(b => {
+    const on = Number(b.dataset.lvl) === profile.level;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+  });
+}
 
 /* ---------- nom et combattant du joueur ---------- */
 export function myName() {
@@ -54,6 +137,9 @@ export function renderLook() {
     na = AK.filter(armeOpen).length;
   $('#lookCount').textContent = `${np} combattants sur ${PK.length} · ${na} armes sur ${AK.length}`;
   setFace($('#rankFaceImg'), l.perso);
+  setFace($('#meFace'), l.perso);
+  setWico($('#meWico'), l.arme);
+  $('#meName').textContent = profile.name || 'Choisis ton nom';
 }
 export function cycle(kind: 'perso' | 'arme', d: number) {
   if (kind === 'perso') {
@@ -81,9 +167,11 @@ export function renderHome() {
   $('#rankBelt').style.background = rp.cur.belt;
   $('#rankName').textContent = rp.cur.name;
   ($('#rankXp') as HTMLElement).style.width = Math.round(rp.frac * 100) + '%';
-  $('#rankNext').textContent = rp.next
-    ? `${profile.xp} / ${rp.next.xp} XP · prochaine technique : ${rp.next.unlock!.title}`
-    : `${profile.xp} XP · toutes les techniques sont débloquées`;
+  $('#rankXpTxt').textContent = rp.next ? `${profile.xp} / ${rp.next.xp} XP` : `${profile.xp} XP`;
+  $('#rankNextLbl').textContent = rp.next ? 'Prochaine technique :' : 'Toutes les techniques';
+  $('#rankNext').textContent = rp.next ? rp.next.unlock!.title : 'sont débloquées';
+  ($('#rankNextIco') as HTMLImageElement).src =
+    `/assets/items/${(rp.next && SCROLLS[rp.next.unlock!.key]) || 'scroll-fire'}.png`;
   rollDaily();
   const dly = profile.daily;
   $('#dailySub').textContent = dly.won
@@ -91,6 +179,7 @@ export function renderHome() {
     : `${dailyFloor(dly.day).name} · gagne-le : +${DAILY_COINS} pièces` +
       (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
   const f = towerFloor(nextFloor());
+  renderTraining();
   $('#towerSub').textContent = !profile.tutoDone
     ? 'Commence par le tutoriel (1 min)'
     : profile.streak >= 2
@@ -135,6 +224,7 @@ export function setupDevPanel() {
   ($('#devLvl') as HTMLSelectElement).addEventListener('change', e => {
     profile.level = +(e.target as HTMLSelectElement).value;
     save();
+    renderTraining();
   });
   $('#devReset').addEventListener('click', () => {
     Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false, coins: 0, owned: [], streak: 0 });

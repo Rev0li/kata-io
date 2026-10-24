@@ -81,102 +81,135 @@
       </button>
     </div>
 
-    <section id="home" class="screen">
+    <section id="home" class="screen home2">
       <div class="col">
-        <div class="hcol">
-          <div class="logo">
-            <svg class="enso" viewBox="0 0 200 200" aria-hidden="true">
-              <path
-                pathLength="100"
-                d="M146 45 A72 72 0 1 0 168 125"
-                fill="none"
-                stroke="#c8463b"
-                stroke-width="15"
-                stroke-linecap="round"
-                opacity=".88"
-              />
-            </svg>
-            <h1>KATA<span>.io</span></h1>
-            <p>Frappe, esquive, et envoie ton adversaire à l'eau.</p>
-          </div>
-          <p id="homeJoinNote" class="note" hidden></p>
-          <div class="rank" id="rankCard">
-            <button class="me-face" id="rankFace" type="button" aria-label="Changer de combattant">
-              <i class="face" id="rankFaceImg"></i><span class="beltsw" id="rankBelt"></span>
-            </button>
-            <div class="rk">
-              <b id="rankName">Ceinture blanche</b>
-              <div class="xpbar"><i id="rankXp"></i></div>
-              <small id="rankNext"></small>
-            </div>
-          </div>
-          <button id="towerBtn" class="btn-play tower" type="button">
-            <span class="t1">Tour du temple</span><span class="t2" id="towerSub">Étage 1</span>
-          </button>
-          <div class="row2">
-            <button id="floorsBtn" class="btn2" type="button">
-              <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5" /></svg
-              >Étages
-            </button>
-            <button id="practiceBtn" class="btn2" type="button">
-              <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="8" />
-                <circle cx="12" cy="12" r="3.5" /></svg
-              >Entraînement
-            </button>
-          </div>
+        <div class="logo">
+          <svg class="enso" viewBox="0 0 200 200" aria-hidden="true">
+            <path
+              pathLength="100"
+              d="M146 45 A72 72 0 1 0 168 125"
+              fill="none"
+              stroke="#c8463b"
+              stroke-width="15"
+              stroke-linecap="round"
+              opacity=".88"
+            />
+          </svg>
+          <h1>KATA<span>.io</span></h1>
+          <p>Frappe, esquive, et envoie ton adversaire à l'eau.</p>
         </div>
-        <div class="hcol">
-          <button id="dailyBtn" class="btn2 wide dailybtn" type="button">
-            <img class="px" src="/assets/items/scroll-thunder.png" alt="" /><span class="dl"
-              ><b>Défi du jour</b><small id="dailySub"></small
-            ></span>
+        <nav class="htabs" aria-label="Menu">
+          <button class="htab on" data-tab="accueil" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M6 9.5V20h4v-5h4v5h4V9.5" /></svg
+            ><span>Accueil</span>
           </button>
-          <button id="shopBtn" class="btn2 wide shopbtn" type="button">
-            <i class="sico chest" style="background-image: url(/assets/fx/chest.png); --n: 2; --f: 1; --ar: 0.875"></i
-            ><span>Boutique d'effets</span
+          <button class="htab" data-tab="combattants" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4l9 9M4 5l2-1M14 13l-2 4 2 2 2-2 4-2M19 4l-9 9M20 5l-2-1M10 13l2 4-2 2-2-2-4-2" /></svg
+            ><span>Combattants</span>
+          </button>
+          <button class="htab" id="floorsBtn" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 8l9-4 9 4M5 8v10M19 8v10M9 8v10M15 8v10M3 20h18M2 8h20" /></svg
+            ><span>Temple</span>
+          </button>
+          <button class="htab" id="shopBtn" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 4h2l2.4 11h10.2L20 7H6.2" />
+              <circle cx="9" cy="19" r="1.5" />
+              <circle cx="17" cy="19" r="1.5" /></svg
+            ><span>Boutique</span
             ><span class="coins"
               ><img class="px" src="/assets/items/gold-coin.png" alt="" /><b id="homeCoins">0</b></span
             >
           </button>
-          <div class="box">
-            <span class="lbl">Duel avec un ami</span>
-            <button id="createBtn" class="btn2 wide" type="button">
-              <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
-              >Créer un duel privé
+          <button class="htab" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3" />
+              <circle cx="17" cy="9" r="2.5" />
+              <path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6M15 13.5c3 0 6 2 6 5" /></svg
+            ><span>Communauté</span><small>bientôt</small>
+          </button>
+        </nav>
+
+        <div class="hpanel" id="panelAccueil">
+          <p id="homeJoinNote" class="note invite" hidden></p>
+
+          <div class="hcard rank" id="rankCard">
+            <button class="me-face" id="rankFace" type="button" aria-label="Changer de combattant">
+              <i class="face" id="rankFaceImg"></i><span class="beltsw" id="rankBelt"></span>
             </button>
-            <form id="joinForm" class="joinrow">
-              <label for="codeIn" class="sr">Code de la salle</label>
-              <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE" />
-              <button id="joinBtn" class="btn2" type="submit">Rejoindre</button>
-            </form>
+            <div class="rk">
+              <div class="rkline"><b id="rankName">Ceinture blanche</b><small id="rankXpTxt"></small></div>
+              <div class="xpbar"><i id="rankXp"></i></div>
+            </div>
+            <div class="rknext">
+              <img class="px" id="rankNextIco" src="/assets/items/scroll-plant.png" alt="" /><span
+                ><small id="rankNextLbl">Prochaine technique :</small><b id="rankNext"></b
+              ></span>
+            </div>
           </div>
-          <details class="help" id="fighterBox">
-            <summary>Ton combattant</summary>
-            <div class="inner">
-              <label for="nameIn" class="lbl">Nom</label>
-              <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier" />
-              <div class="look">
-                <div class="cyc" id="persoCyc">
-                  <button id="tPrev" type="button" aria-label="Personnage précédent">‹</button
-                  ><span
-                    ><i class="face sm" id="persoFace"></i
-                    ><span class="cn"><b id="persoName"></b><small id="persoReq"></small></span></span
-                  ><button id="tNext" type="button" aria-label="Personnage suivant">›</button>
-                </div>
-                <div class="cyc" id="armeCyc">
-                  <button id="mPrev" type="button" aria-label="Arme précédente">‹</button
-                  ><span
-                    ><i class="wico" id="armeIco"></i
-                    ><span class="cn"><b id="armeName"></b><small id="armeReq"></small></span></span
-                  ><button id="mNext" type="button" aria-label="Arme suivante">›</button>
+
+          <div class="hcard">
+            <h2 class="hlbl">Recommandations</h2>
+            <div class="reco">
+              <div class="rcard">
+                <img class="rimg" src="/assets/mondes/bambous/pagode-4-etages.png" alt="" />
+                <div class="rtx">
+                  <b>Tour du temple</b><small id="towerSub">Étage 1</small>
+                  <button id="towerBtn" class="btn-gold" type="button">Jouer</button>
                 </div>
               </div>
-              <p class="lookhint" id="lookCount"></p>
+              <div class="rcard">
+                <img class="rimg px" src="/assets/items/scroll-thunder.png" alt="" />
+                <div class="rtx">
+                  <b>Défi du jour</b><small id="dailySub"></small>
+                  <button id="dailyBtn" class="btn-gold" type="button">Défier</button>
+                </div>
+              </div>
             </div>
-          </details>
+          </div>
+
+          <div class="hcard">
+            <h2 class="hlbl">Entraînement <small>choisis ton monde</small></h2>
+            <div class="worlds" id="worldPick" role="radiogroup" aria-label="Monde"></div>
+            <div class="trainrow">
+              <div class="lvls" id="lvlPick" role="radiogroup" aria-label="Niveau du bot"></div>
+              <button id="practiceBtn" class="btn-gold" type="button">S’entraîner</button>
+            </div>
+          </div>
+
+          <div class="duo">
+            <div class="hcard">
+              <h2 class="hlbl">
+                <svg class="bi" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
+                >Créer un duel privé
+              </h2>
+              <button id="createBtn" class="btn-gold wide" type="button">Créer la salle</button>
+            </div>
+            <form id="joinForm" class="hcard">
+              <h2 class="hlbl"><label for="codeIn">Rejoindre par code</label></h2>
+              <div class="joinrow">
+                <input id="codeIn" maxlength="8" autocomplete="off" spellcheck="false" placeholder="CODE" /><button
+                  id="joinBtn"
+                  class="btn-gold"
+                  type="submit"
+                >
+                  Rejoindre
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="hcard me">
+            <h2 class="hlbl">Mon combattant</h2>
+            <div class="merow">
+              <b id="meName"></b><i class="face big" id="meFace"></i><i class="wico big" id="meWico"></i
+              ><button id="meEdit" class="btn-gold" type="button">Modifier</button>
+            </div>
+          </div>
+
           <details class="help">
             <summary>Commandes et réglages</summary>
             <div class="keys">
@@ -235,6 +268,32 @@
               <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
             </div>
           </details>
+        </div>
+
+        <div class="hpanel" id="panelCombattants" hidden>
+          <div class="hcard" id="fighterBox">
+            <h2 class="hlbl">Ton combattant</h2>
+            <label for="nameIn" class="lbl">Nom</label>
+            <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier" />
+            <div class="look">
+              <div class="cyc" id="persoCyc">
+                <button id="tPrev" type="button" aria-label="Personnage précédent">‹</button
+                ><span
+                  ><i class="face sm" id="persoFace"></i
+                  ><span class="cn"><b id="persoName"></b><small id="persoReq"></small></span></span
+                ><button id="tNext" type="button" aria-label="Personnage suivant">›</button>
+              </div>
+              <div class="cyc" id="armeCyc">
+                <button id="mPrev" type="button" aria-label="Arme précédente">‹</button
+                ><span
+                  ><i class="wico" id="armeIco"></i
+                  ><span class="cn"><b id="armeName"></b><small id="armeReq"></small></span></span
+                ><button id="mNext" type="button" aria-label="Arme suivante">›</button>
+              </div>
+            </div>
+            <p class="lookhint" id="lookCount"></p>
+            <button id="meBack" class="btn-gold wide" type="button">Retour à l’accueil</button>
+          </div>
         </div>
         <p class="ver">Version de développement</p>
       </div>

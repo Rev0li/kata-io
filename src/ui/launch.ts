@@ -8,6 +8,7 @@ import { toast, wake } from './dom';
 import { nav } from './nav';
 import { profile, myRank, myAbil, rollDaily } from './profile';
 import { myName, mySpec } from './home';
+import { viewState } from './viewstate';
 
 export function startTower(n: number) {
   track('play_clicked', { kind: 'tower', floor: n });
@@ -70,10 +71,12 @@ export function startTuto(drill: string | null) {
   setLocks(drill ? myAbil() : abilFor(0));
   session.startTuto(mySpec(drill ? myAbil() : abilFor(0)), steps);
 }
-export function practice() {
-  track('play_clicked', { kind: 'practice', level: profile.level });
+// Entraînement contre le bot, dans le monde choisi à l'accueil.
+export function practice(world = viewState.world) {
+  track('play_clicked', { kind: 'practice', level: profile.level, world });
   wake();
-  nav.lastMode = { kind: 'practice' };
+  viewState.world = world;
+  nav.lastMode = { kind: 'practice', world };
   setLocks(myAbil());
   session.startPractice(mySpec(), profile.level);
 }

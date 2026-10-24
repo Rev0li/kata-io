@@ -56,6 +56,7 @@ export class Lake {
 
   // Point d'eau visible : devant l'horizon, dans le lac.
   lakePoint(near?: { x: number; y: number }): { x: number; y: number } {
+    if (this.r.world.active) return this.r.world.pondPoint(this.r.H, Math.random, near); // monde : n'importe où dans l'étang
     // toujours à l'extérieur du dojo ; si `near` est donné, un point proche de lui sur le pourtour, pour que les poissons contournent le dojo
     const R0 = 284; // demi-côté du dojo avec son cadre (taille de départ)
     for (let i = 0; i < 14; i++) {
@@ -91,7 +92,7 @@ export class Lake {
       const glow = kind === 'lanterne' || kind === 'braise';
       if (glow) rope.setBlendMode(Phaser.BlendModes.ADD);
       else rope.setColors(mix(0xffffff, water, 0.45)); // le poisson se fond dans l'eau
-      rope.setAlpha(glow ? 0.75 : 0.62).setScale(len / 276);
+      rope.setAlpha(L.fishA ?? (glow ? 0.75 : 0.62)).setScale(len / 276);
       this.fish.push({
         x: p.x,
         y: p.y,
@@ -113,15 +114,22 @@ export class Lake {
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * TAU + rand(-0.3, 0.3),
         r = rand(this.r.H + 150, 620),
-        x = Math.cos(a) * r,
-        y = Math.sin(a) * r;
-      if (x + y < -300) continue;
+        q = this.r.world.active ? this.lakePoint() : { x: Math.cos(a) * r, y: Math.sin(a) * r },
+        x = q.x,
+        y = q.y;
+      if (!L.floats.length || (x + y < -300 && !this.r.world.active) || !this.r.world.inPond(x, y, 70)) continue;
       const kind = L.floats[i % L.floats.length],
         big = kind === 'glace' || kind === 'lave';
-      const spr = scene.add
-        .image(0, 0, 'fl-' + kind)
-        .setDisplaySize(big ? 84 : 76, big ? 56 : 51)
-        .setDepth(0.6);
+      // « monde/nom » : image découpée dans une planche, gardée à sa taille ; sinon objet vectoriel
+      const spr = kind.includes('/')
+        ? scene.add
+            .image(0, 0, 'm:' + kind)
+            .setScale(rand(1, 1.3))
+            .setDepth(0.6)
+        : scene.add
+            .image(0, 0, 'fl-' + kind)
+            .setDisplaySize(big ? 84 : 76, big ? 56 : 51)
+            .setDepth(0.6);
       this.floaters.push({
         x,
         y,
@@ -182,7 +190,11 @@ export class Lake {
       const x = rand(view.x, view.right),
         y = rand(view.y, view.bottom);
       const w = unIso(x, y);
-      if (y > this.r.bg.y - 100 && (Math.abs(w.x) > this.r.H + 40 || Math.abs(w.y) > this.r.H + 40))
+      if (
+        y > this.r.bg.y - 100 &&
+        this.r.world.inPond(w.x, w.y, 40) &&
+        (Math.abs(w.x) > this.r.H + 40 || Math.abs(w.y) > this.r.H + 40)
+      )
         this.ripples.push({ x, y, t: 0, life: 2400 });
     }
     for (let i = this.ripples.length - 1; i >= 0; i--) {
@@ -248,6 +260,12 @@ export class Lake {
       o.x += (o.vx + Math.cos(o.ph + time * 0.0003) * 2) * dt;
       o.y += (o.vy + Math.sin(o.ph + time * 0.00027) * 2) * dt;
       o.rot += (o.vr + 0.01) * dt * 0.3;
+      if (!this.r.world.inPond(o.x, o.y, 60)) {
+        // monde : la berge renvoie les objets vers le large
+        const a = Math.atan2(o.y, o.x);
+        o.vx -= Math.cos(a) * 30 * dt * 10;
+        o.vy -= Math.sin(a) * 30 * dt * 10;
+      }
       if (Math.hypot(o.x, o.y) < this.r.H + 60) {
         const a = Math.atan2(o.y, o.x);
         o.vx += Math.cos(a) * 30 * dt * 10;
@@ -284,7 +302,7 @@ export class Lake {
         if (h < 0.4) continue;
         const x = (cx + ((h * 7) % 1)) * cell,
           y = (cy + ((h * 13) % 1)) * cell;
-        if (y < top) continue;
+        if (y < top || !this.r.world.inPondScreen(x, y, 30)) continue;
         const a = Math.sin(time * 0.0018 * (0.6 + h) + h * 30);
         if (a < 0.55) continue;
         g.fillStyle(col, 0.55 * (a - 0.4));

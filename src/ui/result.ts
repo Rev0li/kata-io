@@ -20,17 +20,9 @@ import { sfx } from '../game/audio';
 import { $, confetti, restartAnim } from './dom';
 import { show } from './nav';
 import { profile, save, addXp, addCoins, myRank, rollDaily, PK, AK } from './profile';
-import { setFace, setWico, renderLook, renderCoins, resetLookView } from './home';
+import { setFace, setWico, renderLook, renderCoins, resetLookView, SCROLLS } from './home';
 import { startTower, startDaily, startTuto, practice } from './launch';
 
-const SCROLLS: Record<string, string> = {
-  chain2: 'scroll-plant',
-  parry: 'scroll-ice',
-  charge: 'scroll-rock',
-  chain3: 'scroll-empty',
-  elan: 'scroll-thunder',
-  dragon: 'scroll-fire',
-};
 const nth = (n: number) => (n === 1 ? '1er' : n + 'e');
 
 /* ---------- boutons ---------- */

@@ -9,6 +9,8 @@
 //   lake.ts      poissons, objets flottants, ronds dans l'eau, reflets, particules d'ambiance
 //   effects.ts   étincelles, anneaux, lignes de vitesse, sprites d'impact, ploufs, textes flottants
 //   fighters.ts  combattants, armes, annonce du coup chargé, traînées, emotes
+//   worlds.ts    les quatre mondes : disposition du décor, premier plan
+//   world.ts     sol, étang (eau, glace, lave), décor posé et premier plan en parallaxe
 import Phaser from 'phaser';
 import { lerp, Ev } from '../../sim/sim';
 import { sfxAt } from '../audio';
@@ -19,11 +21,14 @@ import { Arena } from './arena';
 import { Lake } from './lake';
 import { Effects } from './effects';
 import { Fighters } from './fighters';
+import { World } from './world';
+import { WORLDS } from './worlds';
 
 export { THEMES } from './themes';
 export type { Theme } from './themes';
 export { ISO, isoX, isoY, iso2, unIso, screenDirToWorld, worldAngleToScreen } from './iso';
 export { hex, heatCss } from './palette';
+export { WORLDS, WORLD_IDS } from './worlds';
 
 export class Renderer {
   scene: Phaser.Scene;
@@ -48,6 +53,7 @@ export class Renderer {
   lake = new Lake(this);
   fx = new Effects(this);
   fighters = new Fighters(this);
+  world!: World;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -63,18 +69,32 @@ export class Renderer {
     this.dynG = scene.add.graphics().setDepth(2);
     this.topG = scene.add.graphics().setDepth(4);
     this.trailG = scene.add.graphics().setDepth(3.6); // traînées : au-dessus des combattants, en transparence
+    this.world = new World(this);
     this.setTheme('brume');
   }
 
   setTheme(name: string) {
     if (!THEMES[name]) name = 'brume';
-    if (name === this.theme && this.bg.texture.key === 'bg-' + name) return;
+    if (name === this.theme && (WORLDS[name] || this.bg.texture.key === 'bg-' + name)) return;
     this.theme = name;
     const T = THEMES[name];
-    this.scene.cameras.main.setBackgroundColor(T.water);
-    this.bg.setTexture('bg-' + name);
-    this.bg.setDisplaySize(2400, 420).setPosition(0, -ISO * 260 * 0.3);
-    this.sky.setTint(hex(T.sky)).setPosition(0, this.bg.y - this.bg.displayHeight + 3); // le haut de l'horizon a la couleur du ciel : il se prolonge derrière
+    const W = WORLDS[name];
+    if (W) {
+      // monde : décor tout autour de la plateforme, pas d'horizon (le lac le prend pour un horizon très haut)
+      this.world.build(name);
+      this.scene.cameras.main.setBackgroundColor(W.ground);
+      this.bg.setVisible(false).setPosition(0, -1e6);
+      this.sky.setVisible(false);
+    } else {
+      this.world.clear();
+      this.scene.cameras.main.setBackgroundColor(T.water);
+      this.bg.setVisible(true).setTexture('bg-' + name);
+      this.bg.setDisplaySize(2400, 420).setPosition(0, -ISO * 260 * 0.3);
+      this.sky
+        .setVisible(true)
+        .setTint(hex(T.sky))
+        .setPosition(0, this.bg.y - this.bg.displayHeight + 3); // le haut de l'horizon a la couleur du ciel : il se prolonge derrière
+    }
     this.lake.build(name);
     this.arena.draw(this.H, this.wet, this.sudden);
   }
@@ -194,7 +214,9 @@ export class Renderer {
     // eau : ronds, reflets, lanternes du fond
     const w = this.waterG;
     w.clear();
+    this.world.drawLive(w, time);
     this.lake.drawWater(w, time);
+    this.world.update(this.scene.cameras.main);
     this.arena.drawLamp(w, 0, time);
 
     const g = this.dynG;

@@ -8,6 +8,7 @@ export type LastMode = {
   kind: 'tower' | 'practice' | 'duel' | 'tuto' | 'daily';
   floor?: number;
   drill?: string | null;
+  world?: string;
 };
 export const nav = {
   current: 'home', // écran affiché ; '' = en jeu, aucun écran

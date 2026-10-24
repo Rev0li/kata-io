@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Renderer, THEMES, iso2, unIso } from '../game/render';
+import { Renderer, THEMES, WORLDS, iso2, unIso } from '../game/render';
 import { session } from '../net/session';
 import { controls, updateControls } from '../ui/controls';
 import { updateActionBar, actionEvent } from '../ui/actionbar';
@@ -50,7 +50,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('hud');
   }
 
-  // Ambiance d'arène : l'accueil est de nuit. La Tour change de dojo tous les deux étages : coucher, bambous, brume, neige, néon, volcan.
+  // Ambiance d'arène : l'accueil et l'entraînement montrent le monde choisi. La Tour change de dojo tous les deux étages : coucher, bambous, brume, neige, néon, volcan.
   themeFor() {
     const m = session.mode,
       fl = session.floor;
@@ -65,7 +65,8 @@ export class GameScene extends Phaser.Scene {
     }
     if ((m === 'host' || m === 'guest') && isDojo(session.theme)) return session.theme;
     if (m === 'showcase' || m === 'tuto') return 'coucher';
-    if (m === 'idle') return viewState.dojo && isDojo(viewState.dojo) ? viewState.dojo : 'neon';
+    if (m === 'idle') return viewState.dojo && isDojo(viewState.dojo) ? viewState.dojo : viewState.world;
+    if (m === 'practice') return viewState.world;
     return 'brume';
   }
 
@@ -145,6 +146,7 @@ export class GameScene extends Phaser.Scene {
       H = this.scale.height;
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
+    if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
