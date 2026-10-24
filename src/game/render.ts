@@ -546,9 +546,8 @@ export class Renderer {
     st.f.forEach((e: any, i: number) => {
       const L = this.labels[i], G = this.iso(e.x, e.y); const vis = e.state !== 'dead';
       const a = e.state === 'falling' ? clamp(1 - e.fallT / 400, 0, 1) : 1;
-      L.name.setVisible(vis).setText(e.name).setColor(i === myIdx ? '#e0a243' : '#fffaec').setPosition(G.x, G.y - 64).setAlpha(a);
-      L.pct.setVisible(vis).setText(Math.round(e.pct) + '%').setColor(heatCss(e.pct)).setPosition(G.x, G.y - 47).setAlpha(a);
-      if (e.emote && vis && EMOTES[e.emote.id]) { const t = e.emote.t, al = t < 150 ? t / 150 : t > 1500 ? 1 - (t - 1500) / 300 : 1; L.emo.setVisible(true).setText(EMOTES[e.emote.id]).setPosition(G.x, G.y - 82).setAlpha(clamp(al, 0, 1)); }
+      L.name.setVisible(false); L.pct.setVisible(false); void a;
+      if (e.emote && vis && EMOTES[e.emote.id]) { const t = e.emote.t, al = t < 150 ? t / 150 : t > 1500 ? 1 - (t - 1500) / 300 : 1; L.emo.setVisible(true).setText(EMOTES[e.emote.id]).setPosition(G.x, G.y - 52).setAlpha(clamp(al, 0, 1)); }
       else L.emo.setVisible(false);
     });
     this.hideLabels(st.f.length);

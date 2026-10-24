@@ -45,26 +45,37 @@ export class HudScene extends Phaser.Scene {
   }
 
   layoutTouch: boolean | null = null;
+  safe = { l: 0, r: 0, t: 0, b: 0 };
+  // marges de sécurité de l'écran (encoche, coins arrondis, barre d'accueil) lues depuis le CSS
+  measureSafe() {
+    const d = document.createElement('div'); d.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+    document.body.appendChild(d); const c = getComputedStyle(d); this.safe = { t: parseFloat(c.paddingTop) || 0, r: parseFloat(c.paddingRight) || 0, b: parseFloat(c.paddingBottom) || 0, l: parseFloat(c.paddingLeft) || 0 }; d.remove();
+  }
   layout() {
-    const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch; this.layoutTouch = touch;
-    this.score.setPosition(W / 2, 12).setFontSize(touch ? '22px' : '30px'); this.sub.setPosition(W / 2, 46).setVisible(!touch);
-    this.ping.setPosition(W - m, touch ? 44 : 14);
+    this.measureSafe();
+    const W = this.scale.width, H = this.scale.height, m = 16, touch = controls.isTouch, S = this.safe; this.layoutTouch = touch;
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
     if (touch) {
-      this.myName.setPosition(m, 64); this.myPct.setPosition(m, 80).setFontSize('46px'); this.myMoves.setVisible(false);
-      this.opName.setPosition(W - m, 64); this.opPct.setPosition(W - m, 80).setFontSize('34px');
-      this.hint.setPosition(W / 2, 72);
+      // tactile : peu de texte. Score au centre, étage dessous, un pourcentage dans chaque coin, indice en bas au centre
+      this.score.setPosition(W / 2, 8 + S.t).setFontSize('20px'); this.sub.setVisible(false);
+      this.ping.setOrigin(0.5, 0).setPosition(W / 2, 34 + S.t).setFontSize('11px');
+      this.myName.setVisible(false); this.opName.setVisible(false); this.myMoves.setVisible(false);
+      this.myPct.setPosition(m + S.l, 48 + S.t).setFontSize('38px');
+      this.opPct.setPosition(W - m - S.r, 48 + S.t).setFontSize('30px');
+      this.hint.setOrigin(0.5, 1).setPosition(W / 2, H - 8 - S.b).setFontSize('12px');
     } else {
+      this.score.setPosition(W / 2, 12).setFontSize('30px'); this.sub.setPosition(W / 2, 46);
+      this.ping.setOrigin(1, 0).setPosition(W - m, 14).setFontSize('12px');
       this.myName.setPosition(m + 4, H - 128); this.myPct.setPosition(m, H - 112).setFontSize('58px'); this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
       this.opName.setPosition(W - m - 4, 40); this.opPct.setPosition(W - m, 56).setFontSize('40px');
-      this.hint.setPosition(W / 2, 92);
+      this.hint.setOrigin(0.5, 1).setPosition(W / 2, 92).setFontSize('14px');
     }
   }
 
   update(_time: number, delta: number) {
     const st = session.mode === 'showcase' ? null : session.state, show = !!st; // pas de HUD dans la vitrine de la boutique
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
-    for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && (o !== this.myMoves || !controls.isTouch));
+    for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && !(controls.isTouch && (o === this.myMoves || o === this.myName || o === this.opName)));
     this.g.clear();
     this.bigT += delta;
     const bp = this.bigT / this.bigLife;
@@ -98,7 +109,7 @@ export class HudScene extends Phaser.Scene {
     else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
     // jauges : souffle (3 segments) et qi
     const touch = controls.isTouch, W = this.scale.width, H = this.scale.height;
-    const x0 = touch ? 16 : 20, y0 = touch ? 138 : H - 46, w = touch ? 120 : 168;
+    const x0 = touch ? 16 + this.safe.l : 20, y0 = touch ? 94 + this.safe.t : H - 46, w = touch ? 104 : 168;
     const seg = (w - 8) / 3;
     for (let i = 0; i < 3; i++) {
       const v = Math.max(0, Math.min(1, me.souffle - i));
