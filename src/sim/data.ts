@@ -35,6 +35,12 @@ export const RULES = {
   balanceDodgesRequired: 3,
   // D3 : l'état de l'adversaire (pourcentage) n'est pas montré. Visible avec ?debug.
   showOpponentPct: false,
+  // Anti-spam : le « spam » monte à chaque coup blanc et retombe vite. Il baisse quand on pare, esquive ou charge.
+  spamPerAttack: 0.2, spamDecay: 0.3, spamDefend: 0.35, spamThreshold: 0.6,
+  // Face à un humain : au-delà du seuil, chaque coup blanc coûte du souffle, et sans souffle le coup est bloqué.
+  spamAttackCost: 0.6,
+  // Face à un bot : plus tu spams, plus il monte de niveau (gain par seconde de spam, plafond, retombée par seconde).
+  botAdaptRate: 0.06, botAdaptMax: 0.35, botAdaptDecay: 0.02,
 };
 
 /* ---------- gardes ---------- */

@@ -16,7 +16,7 @@ export class HudScene extends Phaser.Scene {
   myName!: Phaser.GameObjects.Text; myPct!: Phaser.GameObjects.Text; myMoves!: Phaser.GameObjects.Text;
   opName!: Phaser.GameObjects.Text; opPct!: Phaser.GameObjects.Text;
   big!: Phaser.GameObjects.Text; hint!: Phaser.GameObjects.Text;
-  bigT = 0; bigLife = 1; bump = 0; matchT = 0;
+  warnT = 0; bigT = 0; bigLife = 1; bump = 0; matchT = 0;
 
   constructor() { super('hud'); }
 
@@ -41,6 +41,7 @@ export class HudScene extends Phaser.Scene {
   onFx(ev: Ev) {
     if (ev.t === 'big') { this.big.setText(ev.text).setColor(ev.col); this.bigT = 0; this.bigLife = ev.life; }
     if (ev.t === 'hit' && ev.to === session.myIdx) this.bump = 1;
+    if (ev.t === 'spam' && ev.idx === session.myIdx) this.warnT = 3500;
     if (ev.t === 'big' && ev.text === 'MANCHE 1') this.matchT = 0;
   }
 
@@ -77,7 +78,7 @@ export class HudScene extends Phaser.Scene {
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
     for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint]) o.setVisible(show && !(controls.isTouch && (o === this.myMoves || o === this.myName || o === this.opName)));
     this.g.clear();
-    this.bigT += delta;
+    this.bigT += delta; this.warnT = Math.max(0, this.warnT - delta);
     const bp = this.bigT / this.bigLife;
     this.big.setAlpha(bp >= 1 ? 0 : bp < 0.15 ? bp / 0.15 : bp > 0.7 ? 1 - (bp - 0.7) / 0.3 : 1).setScale(1 + 0.08 * Math.max(0, 1 - bp));
     if (!st) { this.sub.setVisible(false); return; }
@@ -105,6 +106,7 @@ export class HudScene extends Phaser.Scene {
     const left = Math.ceil((SUDDEN_T - (D.fightT || 0)) / 1000);
     this.hint.setColor('#ecdfc6');
     if (session.notice) this.hint.setText(session.notice);
+    else if (this.warnT > 0) this.hint.setText('Spam interdit : alterne parade, esquive et coup chargé').setColor('#ff8a6e');
     else if (D.phase === 'fight' && !D.sudden && left <= 10 && left > 0) this.hint.setText(`Mort subite dans ${left} s`).setColor('#ff8a6e');
     else if (D.phase === 'fight' && D.sudden && st.H > 112) this.hint.setText('Mort subite : le dojo rétrécit !').setColor('#ff8a6e');
     else if (session.teaser && this.matchT < 9000) this.hint.setText(`Il maîtrise ta prochaine technique : ${session.teaser} !`).setColor('#f2c14e');

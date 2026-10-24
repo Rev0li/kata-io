@@ -63,11 +63,11 @@ function makeFighter(o: any): Fighter {
     x: 0, y: 0, vx: 0, vy: 0, facing: 0, wantFacing: 0, move: { x: 0, y: 0 }, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, stunDur: 0, atk: null,
     combo: { stance: 0, idx: 0 }, comboT: 0, stance: 0, buffer: null, bufferT: 0, holding: false, holdT: 0, chargeT: 0, chargeDef: null,
     dodge: null, ledge: null, fallT: 0, elanT: 0, kos: 0, lastHitBy: null, lastHitT: -1e9, lastHitDragon: false, spawnInv: 0, emote: null,
-    dropT: 0, lastAvoid: -1, splashFx: 'plouf', koWord: 'PLOUF !', inPrev: { atk: false, parryN: 0, dodgeN: 0, emoteN: 0 },
+    dropT: 0, spam: 0, lastAvoid: -1, splashFx: 'plouf', koWord: 'PLOUF !', inPrev: { atk: false, parryN: 0, dodgeN: 0, emoteN: 0 },
   }, o);
 }
 export function resetFighter(e: Fighter, x: number, y: number) {
-  Object.assign(e, { x, y, vx: 0, vy: 0, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, atk: null, buffer: null, comboT: 0, holding: false, holdT: 0, ledge: null, dodge: null, fallT: 0, elanT: 0, spawnInv: 0, lastHitBy: null, lastHitT: -1e9, emote: null, dropT: 500, stance: 0, chargeT: 0, chargeDef: null });
+  Object.assign(e, { x, y, vx: 0, vy: 0, pct: 0, souffle: 3, qi: 0, state: 'idle', stateT: 0, atk: null, buffer: null, comboT: 0, holding: false, holdT: 0, ledge: null, dodge: null, fallT: 0, elanT: 0, spawnInv: 0, lastHitBy: null, lastHitT: -1e9, emote: null, spam: 0, dropT: 500, stance: 0, chargeT: 0, chargeDef: null });
   e.facing = e.wantFacing = x < 0 ? 0 : Math.PI;
 }
 
@@ -152,13 +152,20 @@ function startAttack(e: Fighter, d: AttackDef, o: any) {
   if (o.kind === 'white' && e.atkSlow > 1) e.atk.su = d.su * e.atkSlow;
 }
 function startWhite(e: Fighter) {
+  // Anti-spam : en dessous du seuil, aucun coût. Au-dessus, le coup coûte du souffle et se bloque sans souffle.
+  if (e.spam >= RULES.spamThreshold) {
+    if (e.souffle < RULES.spamAttackCost) { fx.float(e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14); return; }
+    e.souffle -= RULES.spamAttackCost;
+  }
+  const before = e.spam; e.spam += RULES.spamPerAttack;
+  if (before < RULES.spamThreshold && e.spam >= RULES.spamThreshold) emit({ t: 'spam', idx: e.idx });
   const ch = e.deck.chain;
   if (e.comboT <= 0 || e.combo.idx >= Math.min(3, e.abil.chain) || !ch[e.combo.stance][e.combo.idx]) e.combo = { stance: e.stance, idx: 0 };
   const idx = e.combo.idx, d = WA[ch[e.combo.stance][idx]]; e.combo.idx++;
   startAttack(e, d, { kind: 'white', idx, finisher: idx === 2 });
 }
 export function nextWhite(e: Fighter) { const ch = e.deck.chain; if (e.comboT > 0 && e.combo.idx < Math.min(3, e.abil.chain) && ch[e.combo.stance][e.combo.idx]) return WA[ch[e.combo.stance][e.combo.idx]]; return WA[ch[e.stance][0]]; }
-function startCharge(e: Fighter) { e.state = 'charge'; e.stateT = 0; e.chargeT = 0; e.chargeDef = HA[e.deck.heavy[e.stance]]; e.atk = null; e.combo = { stance: e.stance, idx: 0 }; e.comboT = 0; fx.sfx('charge', e.x, e.y, 0.6); }
+function startCharge(e: Fighter) { e.spam = Math.max(0, e.spam - RULES.spamDefend); e.state = 'charge'; e.stateT = 0; e.chargeT = 0; e.chargeDef = HA[e.deck.heavy[e.stance]]; e.atk = null; e.combo = { stance: e.stance, idx: 0 }; e.comboT = 0; fx.sfx('charge', e.x, e.y, 0.6); }
 function releaseCharge(e: Fighter) {
   const d = e.chargeDef || HA[e.deck.heavy[e.stance]];
   const power = 0.65 + 0.35 * clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1);
@@ -192,7 +199,7 @@ export function doAction(e: Fighter, type: string, arg?: any) {
       return;
     case 'parry':
       if (!e.abil.parry) return;
-      if (st === 'idle' || st === 'charge') { e.state = 'parry'; e.stateT = 0; e.atk = null; e.holding = false; return; }
+      if (st === 'idle' || st === 'charge') { e.spam = Math.max(0, e.spam - RULES.spamDefend); e.state = 'parry'; e.stateT = 0; e.atk = null; e.holding = false; return; }
       if (st === 'attack' || st === 'stun' || st === 'dodge') { e.buffer = { type: 'parry' }; e.bufferT = 0; }
       return;
     case 'dodge': {
@@ -213,7 +220,7 @@ export function doAction(e: Fighter, type: string, arg?: any) {
 function startDodge(e: Fighter, dir: any) {
   let dx: number, dy: number;
   if (dir && Math.hypot(dir.x, dir.y) > 0.2) { const l = Math.hypot(dir.x, dir.y); dx = dir.x / l; dy = dir.y / l; } else { dx = -Math.cos(e.facing); dy = -Math.sin(e.facing); }
-  e.souffle -= 1; e.state = 'dodge'; e.stateT = 0; e.dodge = { dx, dy, done: 0 }; e.atk = null; e.holding = false; e.chargeT = 0;
+  e.spam = Math.max(0, e.spam - RULES.spamDefend); e.souffle -= 1; e.state = 'dodge'; e.stateT = 0; e.dodge = { dx, dy, done: 0 }; e.atk = null; e.holding = false; e.chargeT = 0;
   fx.sfx('avoid', e.x, e.y, 0.45);
 }
 function updDodge(e: Fighter) { const p = clamp(e.stateT / DODGE_T, 0, 1), want = DODGE_DIST * easeOut(p), dd = want - e.dodge.done; e.dodge.done = want; moveSafe(e, e.dodge.dx * dd, e.dodge.dy * dd); if (e.stateT >= DODGE_T + 60) toIdle(e); }
@@ -363,7 +370,7 @@ function updEnt(e: Fighter, dt: number) {
   const ms = dt * 1000;
   if (e.state === 'dead') return;
   if (e.state === 'falling') { updFall(e, dt); return; }
-  e.stateT += ms; e.comboT -= ms; e.spawnInv = Math.max(0, e.spawnInv - ms); e.elanT = Math.max(0, e.elanT - ms);
+  e.spam = Math.max(0, e.spam - RULES.spamDecay * dt); e.stateT += ms; e.comboT -= ms; e.spawnInv = Math.max(0, e.spawnInv - ms); e.elanT = Math.max(0, e.elanT - ms);
   if (e.dropT > 0) { e.dropT -= ms; if (e.dropT <= 0) { e.dropT = 0; fx.ring(e.x, e.y, 12, 44, 380, '#ecdfc6', 4); fx.sfx('thud', e.x, e.y, 0.8); } }
   if (e.holding) e.holdT += ms;
   if (e.buffer) { e.bufferT += ms; if (e.bufferT > 450) e.buffer = null; }
@@ -407,13 +414,22 @@ function collide() {
 }
 
 /* ================= bot d'entraînement ================= */
-function newBrain(skill: number, dummy = false) { return { dummy, mode: 'idle', cd: 1200, ax: 0, ay: 0, skill, atkCd: 900, strafe: 1, strafeT: 0, pref: 58, plan: null, holdFor: 0, chain: 0, seen: new Map(), climbAt: null, respect: 0, waited: false }; }
+function newBrain(skill: number, dummy = false) { return { adapt: 0, adaptShown: false, dummy, mode: 'idle', cd: 1200, ax: 0, ay: 0, skill, atkCd: 900, strafe: 1, strafeT: 0, pref: 58, plan: null, holdFor: 0, chain: 0, seen: new Map(), climbAt: null, respect: 0, waited: false }; }
 function edgeInward(e: Fighter) { const H = S.H, m = 110; let x = 0, y = 0; if (e.x > H - m) x = -(e.x - (H - m)) / m; if (e.x < -H + m) x = (-H + m - e.x) / m; if (e.y > H - m) y = -(e.y - (H - m)) / m; if (e.y < -H + m) y = (-H + m - e.y) / m; return { x, y }; }
 function botPress(e: Fighter, hold: number) { doAction(e, 'pressAtk'); e.bot.holdFor = hold; }
 function botUpdate(e: Fighter, dt: number) {
   if (!alive(e) || e.state === 'frozen') { e.move = { x: 0, y: 0 }; return; }
-  const b = e.bot, ms = dt * 1000, s = b.skill;
+  const b = e.bot, ms = dt * 1000;
   if (b.dummy) { dummyUpdate(e, dt); return; }
+  // Anti-spam : si l'humain martèle l'attaque, le bot monte de niveau et le dit.
+  const H = S.f.find((o: Fighter) => o !== e && alive(o));
+  if (H && !H.bot) {
+    if (H.spam >= RULES.spamThreshold) {
+      b.adapt = Math.min(RULES.botAdaptMax, b.adapt + RULES.botAdaptRate * dt);
+      if (!b.adaptShown && b.adapt > 0.03) { b.adaptShown = true; fx.float(e.x, e.y - 66, 'IL T’A LU', '#e5483a', 18); }
+    } else { b.adapt = Math.max(0, b.adapt - RULES.botAdaptDecay * dt); if (b.adapt === 0) b.adaptShown = false; }
+  }
+  const s = Math.min(1, b.skill + b.adapt);
   b.atkCd -= ms; b.strafeT -= ms; b.respect -= ms;
   if (e.holding) { b.holdFor -= ms; if (b.holdFor <= 0) doAction(e, 'releaseAtk'); }
   if (e.state === 'ledge') { if (b.climbAt == null) b.climbAt = rand(150, 900) * (1.25 - s); b.climbAt -= ms; if (b.climbAt <= 0) { b.climbAt = null; climb(e); } e.move = { x: 0, y: 0 }; return; }
