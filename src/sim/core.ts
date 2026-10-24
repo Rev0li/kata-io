@@ -33,6 +33,7 @@ export interface Spec {
   belt?: string;
   dummy?: boolean;
   atkSlow?: number;
+  god?: boolean; // mode test : intouchable, aucun coup ne porte et il ne tombe pas à l'eau (parties locales seulement)
 }
 export interface SimOpts {
   firstTo?: number;

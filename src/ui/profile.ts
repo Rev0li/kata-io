@@ -19,6 +19,7 @@ export interface Profile {
   owned: string[];
   streak: number;
   autoAim: boolean;
+  god: boolean; // mode test : invincible dans les parties locales
   tries: Record<string, number>;
   daily: { day: string; best: number; won: boolean; tries: number };
 }
@@ -44,6 +45,7 @@ function loadProfile(): Profile {
     owned: Array.isArray(p.owned) ? p.owned.filter((x: any) => typeof x === 'string') : [],
     streak: Number.isFinite(p.streak) && p.streak >= 0 ? Math.floor(p.streak) : 0,
     autoAim: p.autoAim !== false,
+    god: !!p.god,
     tries: p.tries && typeof p.tries === 'object' ? p.tries : {},
     daily:
       p.daily && typeof p.daily === 'object' && typeof p.daily.day === 'string'

@@ -64,6 +64,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [ ] Serveur **TURN** (relais quand la connexion directe est bloquée : 4G, wifi d'entreprise) : coturn sur le VPS ou service loué.
 - [ ] Serveur de mise en relation PeerJS à nous, à la place de `0.peerjs.com`.
 - [ ] Reconnexion après une coupure courte au lieu de terminer le duel.
+- [ ] **Partie publique** (bouton « Bientôt » de l'accueil) : affronter un joueur au hasard sans code. Sans serveur : le premier qui cherche ouvre une salle PeerJS à un nom connu de tous, le suivant la rejoint. À tester à deux sur deux machines.
 - [ ] Plus tard : serveur autoritaire (réutilise `src/sim`) et prédiction chez le client. Hors Vercel (pas de WebSocket).
 
 ## Phase 5 : gameplay et refonte V1

@@ -1,6 +1,6 @@
 // Lancement des parties locales : étage de la Tour, défi du jour, tutoriel et exercices, entraînement contre le bot.
 import { RANKS, abilFor, towerFloor, dailyFloor, Floor } from '../sim/progression';
-import { session } from '../net/session';
+import { session, MeSpec } from '../net/session';
 import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { setLocks } from './actionbar';
 import { track } from '../analytics';
@@ -9,6 +9,9 @@ import { nav } from './nav';
 import { profile, myRank, myAbil, rollDaily } from './profile';
 import { myName, mySpec } from './home';
 import { viewState } from './viewstate';
+
+// Parties locales : le mode test peut rendre le joueur invincible (jamais en duel).
+const local = (spec: MeSpec): MeSpec => (profile.god ? { ...spec, god: true } : spec);
 
 export function startTower(n: number) {
   track('play_clicked', { kind: 'tower', floor: n });
@@ -21,7 +24,7 @@ export function startTower(n: number) {
   nav.lastMode = { kind: 'tower', floor: n };
   const f = towerFloor(n);
   setLocks(myAbil());
-  session.startTower(mySpec(), f, towerExtra(f, profile.tries[n] || 0));
+  session.startTower(local(mySpec()), f, towerExtra(f, profile.tries[n] || 0));
   if (f.twist) setTimeout(() => toast(f.twist), 400);
 }
 // Gardien : ses techniques, plus la prochaine que tu vas débloquer (avant-goût) ; il nargue si tu reviens après une défaite.
@@ -52,7 +55,7 @@ export function startDaily() {
   const f = dailyFloor(profile.daily.day);
   setLocks(myAbil());
   // le défi reste à la portée de la ceinture du joueur : au plus une technique d'avance
-  session.startTower(mySpec(), f, {
+  session.startTower(local(mySpec()), f, {
     ...towerExtra(f, profile.daily.tries),
     abil: abilFor(Math.min(f.tier, myRank() + 1)),
   });
@@ -69,7 +72,7 @@ export function startTuto(drill: string | null) {
   nav.lastMode = { kind: 'tuto', drill };
   const steps: TutoStep[] = drill ? DRILLS[drill] : MINI_TUTO;
   setLocks(drill ? myAbil() : abilFor(0));
-  session.startTuto(mySpec(drill ? myAbil() : abilFor(0)), steps);
+  session.startTuto(local(mySpec(drill ? myAbil() : abilFor(0))), steps);
 }
 // Entraînement contre le bot, dans le monde choisi à l'accueil.
 export function practice(world = viewState.world) {
@@ -78,5 +81,5 @@ export function practice(world = viewState.world) {
   viewState.world = world;
   nav.lastMode = { kind: 'practice', world };
   setLocks(myAbil());
-  session.startPractice(mySpec(), profile.level);
+  session.startPractice(local(mySpec()), profile.level);
 }

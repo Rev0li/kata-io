@@ -230,7 +230,7 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
   const H = S.H;
   if (Math.abs(e.x) > H || Math.abs(e.y) > H) {
     const sp = Math.hypot(e.vx, e.vy);
-    if (sp > 30) {
+    if (sp > 30 && !e.god) {
       if (sp / S.damp < LEDGE_MAX) grabLedge(S, e);
       else startFall(S, e);
     } else {

@@ -38,6 +38,11 @@ function resolveHit(S: Sim, att: Fighter, tgt: Fighter) {
   const a = att.atk;
   a.hit.add(tgt.id);
   if (tgt.spawnInv > 0 || tgt.state === 'climb') return;
+  if (tgt.god) {
+    // mode test : le coup glisse sur lui
+    fx.sparks(S, tgt.x, tgt.y, '#8ff5d0', 4);
+    return;
+  }
   if (tgt.state === 'dodge' && tgt.stateT >= DODGE_IF0 && tgt.stateT <= DODGE_IF1) {
     perfectDodge(S, tgt, att);
     return;

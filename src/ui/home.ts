@@ -201,6 +201,7 @@ export function renderHome() {
   ($('#devRank') as HTMLSelectElement).value = String(myRank());
   ($('#devFloor') as HTMLSelectElement).value = String(Math.min(profile.towerMax, 20));
   ($('#devLvl') as HTMLSelectElement).value = String(profile.level);
+  ($('#devGod') as HTMLInputElement).checked = profile.god;
 }
 
 /* ---------- panneau de test : ceinture, étages débloqués, niveau du bot, pièces ---------- */
@@ -233,6 +234,11 @@ export function setupDevPanel() {
     profile.level = +(e.target as HTMLSelectElement).value;
     save();
     renderTraining();
+  });
+  $('#devGod').addEventListener('change', e => {
+    profile.god = (e.target as HTMLInputElement).checked;
+    save();
+    toast(profile.god ? 'Invincible : aucun coup ne te touche (hors duel)' : 'Invincible désactivé');
   });
   $('#devReset').addEventListener('click', () => {
     Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false, coins: 0, owned: [], streak: 0 });
