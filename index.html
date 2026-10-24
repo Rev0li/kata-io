@@ -65,6 +65,7 @@
         <button id="floorsBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5"/></svg>Étages</button>
         <button id="practiceBtn" class="btn2" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>Entraînement</button>
       </div>
+      <button id="shopBtn" class="btn2 wide shopbtn" type="button"><i class="sico chest" style="background-image:url(/assets/fx/chest.png);--n:2;--f:1;--ar:.875"></i><span>Boutique d'effets</span><span class="coins"><img class="px" src="/assets/items/gold-coin.png" alt=""><b id="homeCoins">0</b></span></button>
       <div class="box">
         <span class="lbl">Duel avec un ami</span>
         <button id="createBtn" class="btn2 wide" type="button"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z"/></svg>Créer un duel privé</button>
@@ -106,10 +107,26 @@
           <label class="drow"><span>Ceinture</span><select id="devRank"></select></label>
           <label class="drow"><span>Étages débloqués</span><select id="devFloor"></select></label>
           <label class="drow"><span>Niveau du bot d'entraînement</span><select id="devLvl"><option value="0">Disciple</option><option value="1">Adepte</option><option value="2">Maître</option></select></label>
+          <button id="devCoins" class="ghost wide" type="button">+500 pièces</button>
           <button id="devReset" class="ghost wide" type="button">Tout réinitialiser</button>
         </div>
       </details>
       <p class="ver">Version de développement</p>
+    </div>
+  </section>
+
+  <section id="shop" class="screen side" hidden>
+    <div class="col card shop">
+      <div class="shophead"><h2>Boutique</h2><span class="coins big"><img class="px" src="/assets/items/gold-coin.png" alt=""><b id="shopCoins">0</b></span></div>
+      <div class="tabs" role="tablist">
+        <button class="tab on" data-tab="trainee" type="button" role="tab">Traînées de coup</button>
+        <button class="tab" data-tab="ejection" type="button" role="tab">Ploufs</button>
+      </div>
+      <p class="sub" id="shopHint">Touche un effet : il se joue sur le dojo.</p>
+      <div class="shopgrid" id="shopGrid"></div>
+      <button id="shopAct" class="btn-play" type="button"><span id="shopActLbl">Équipé</span></button>
+      <p class="sub small" id="shopEarn">Gagne des pièces dans la Tour (plus avec les étoiles), en entraînement et en duel.</p>
+      <button id="shopClose" class="ghost" type="button">Retour</button>
     </div>
   </section>
 
@@ -151,6 +168,7 @@
       <div class="stars" id="resStars" aria-label="Étoiles"><i></i><i></i><i></i></div>
       <p class="sub" id="resScore"></p>
       <p class="near" id="resNear" hidden></p>
+      <p class="streak" id="resStreak" hidden></p>
       <div class="xpgain" id="resXp" hidden><span id="resXpTxt"></span><div class="xpbar"><i id="resXpBar"></i></div></div>
       <div class="unlock" id="resUnlock" hidden>
         <div class="uhead"><img class="px scroll" id="unlockScroll" src="/assets/items/scroll-fire.png" alt=""><div><span class="lbl">Nouvelle ceinture</span><b id="unlockBelt"></b></div></div>

@@ -1,8 +1,9 @@
 // Écrans HTML posés au-dessus du jeu : accueil, Tour du temple, salon d'invitation, résultat, tutoriel.
 import { session, MeSpec } from '../net/session';
 import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
-import { PERSOS, ARMES, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
-import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil } from '../sim/progression';
+import { PERSOS, ARMES, TRAINEES, EJECTIONS, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
+import { RANKS, rankIndex, rankProgress, abilFor, FULL_ABIL, towerFloor, TOWER_LEN, starsFor, towerXp, XP_DUEL_WIN, XP_DUEL_LOSS, XP_TUTO, XP_PRACTICE_WIN, Abil, towerCoins, COINS_PRACTICE, COINS_DUEL, COINS_TUTO, streakMult } from '../sim/progression';
+import { viewState } from './viewstate';
 import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
 import { controls, clearKeys } from './controls';
 import { setLocks } from './actionbar';
@@ -12,7 +13,7 @@ const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySele
 const PROFILE_KEY = 'kata-io-dev-profile';
 
 /* ================= profil et progression ================= */
-interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean; xp: number; towerMax: number; stars: Record<string, number>; tutoDone: boolean }
+interface Profile { name: string; look: Look; level: number; sfx: boolean; music: boolean; xp: number; towerMax: number; stars: Record<string, number>; tutoDone: boolean; coins: number; owned: string[]; streak: number }
 function loadProfile(): Profile {
   let p: any = null; try { p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch (e) { /* stockage indisponible */ }
   p = p && typeof p === 'object' ? p : {};
@@ -20,6 +21,8 @@ function loadProfile(): Profile {
     name: typeof p.name === 'string' ? p.name.slice(0, 16) : '', look: sanitizeLook(p.look), level: [0, 1, 2].includes(p.level) ? p.level : 1,
     sfx: p.sfx !== false, music: p.music !== false, xp: Number.isFinite(p.xp) && p.xp >= 0 ? p.xp : 0,
     towerMax: Number.isFinite(p.towerMax) && p.towerMax >= 1 ? Math.floor(p.towerMax) : 1, stars: p.stars && typeof p.stars === 'object' ? p.stars : {}, tutoDone: !!p.tutoDone,
+    coins: Number.isFinite(p.coins) && p.coins >= 0 ? Math.floor(p.coins) : 0, owned: Array.isArray(p.owned) ? p.owned.filter((x: any) => typeof x === 'string') : [],
+    streak: Number.isFinite(p.streak) && p.streak >= 0 ? Math.floor(p.streak) : 0,
   };
 }
 const profile = loadProfile();
@@ -33,7 +36,7 @@ const params = new URLSearchParams(location.search);
 const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
 let host: HostHandle | null = null;
 let current = 'home';
-const SCREENS = ['home', 'floors', 'lobby', 'joining', 'result', 'lost', 'quit'];
+const SCREENS = ['home', 'floors', 'shop', 'lobby', 'joining', 'result', 'lost', 'quit'];
 let lastMode: { kind: 'tower' | 'practice' | 'duel' | 'tuto'; floor?: number; drill?: string | null } = { kind: 'tower', floor: 1 };
 
 function show(id: string | null) {
@@ -60,7 +63,7 @@ const PK = Object.keys(PERSOS), AK = Object.keys(ARMES);
 const persoOpen = (id: string) => PERSOS[id].floor === 0 || profile.towerMax > PERSOS[id].floor;
 const armeOpen = (id: string) => myRank() >= ARMES[id].rank;
 // Le look réellement utilisé : si un choix n'est plus débloqué (remise à zéro), on revient au défaut.
-function myLook(): Look { const l = profile.look; return { ...l, perso: persoOpen(l.perso) ? l.perso : DEFAULT_LOOK.perso, arme: armeOpen(l.arme) ? l.arme : DEFAULT_LOOK.arme }; }
+function myLook(): Look { const l = profile.look; return { ...l, perso: persoOpen(l.perso) ? l.perso : DEFAULT_LOOK.perso, arme: armeOpen(l.arme) ? l.arme : DEFAULT_LOOK.arme, trainee: owns('trainee', l.trainee) ? l.trainee : 'aucune', ejection: owns('ejection', l.ejection) ? l.ejection : 'plouf' }; }
 let viewP = -1, viewA = -1; // ce que montre le sélecteur (peut être verrouillé)
 function setFace(el: HTMLElement, id: string) { el.style.setProperty('--i', String(PERSOS[id].idx)); }
 function setWico(el: HTMLElement, id: string) { const w = ARMES[id]; el.classList.toggle('none', w.idx < 0); if (w.idx >= 0) el.style.setProperty('--i', String(w.idx)); }
@@ -85,6 +88,48 @@ function cycle(kind: 'perso' | 'arme', d: number) {
 }
 const SCROLLS: Record<string, string> = { chain2: 'scroll-plant', parry: 'scroll-ice', charge: 'scroll-rock', chain3: 'scroll-empty', elan: 'scroll-thunder', dragon: 'scroll-fire' };
 
+/* ================= boutique d'effets (pièces gagnées en jouant) ================= */
+type ShopKind = 'trainee' | 'ejection';
+const CATALOG = { trainee: TRAINEES, ejection: EJECTIONS } as Record<ShopKind, Record<string, { name: string; price: number; icon: [string, number, number] }>>;
+function owns(kind: ShopKind, id: string) { const it = CATALOG[kind][id]; return !!it && (it.price === 0 || profile.owned.includes(kind + ':' + id)); }
+function addCoins(n: number) { profile.coins += n; save(); renderCoins(); }
+function renderCoins() { $('#homeCoins').textContent = String(profile.coins); $('#shopCoins').textContent = String(profile.coins); }
+let shopTab: ShopKind = 'trainee', shopSel = '';
+const ICON_AR: Record<string, number> = { leaf: 7 / 12, chest: 14 / 16 }; // hauteur / largeur des images non carrées
+function iconStyle(icon: [string, number, number]) { return `background-image:url(/assets/fx/${icon[0]}.png);--n:${icon[1]};--f:${icon[2]};--ar:${ICON_AR[icon[0]] || 1}`; }
+function openShop() { show('shop'); viewState.shop = true; shopSel = profile.look[shopTab]; renderShop(); preview(shopSel); }
+function closeShop() { viewState.shop = false; renderHome(); show('home'); }
+function preview(id: string) { viewState.preview = { kind: shopTab, id }; }
+function renderShop() {
+  renderCoins();
+  document.querySelectorAll<HTMLElement>('#shop .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === shopTab));
+  const grid = $('#shopGrid'); grid.innerHTML = '';
+  const cur = myLook()[shopTab];
+  for (const [id, it] of Object.entries(CATALOG[shopTab])) {
+    const own = owns(shopTab, id), on = cur === id;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sitem' + (own ? ' owned' : '') + (on ? ' on' : '') + (id === shopSel ? ' sel' : '');
+    const st = on ? '<span class="st">Équipé</span>' : own ? '<span class="st">Possédé</span>'
+      : `<span class="st price${profile.coins < it.price ? ' short' : ''}"><img class="px" src="/assets/items/gold-coin.png" alt="">${it.price}</span>`;
+    b.innerHTML = `<i class="sico" style="${iconStyle(it.icon)}"></i><b>${it.name}</b>${st}`;
+    b.addEventListener('click', () => { shopSel = id; renderShop(); preview(id); sfx('ui'); });
+    grid.append(b);
+  }
+  const it = CATALOG[shopTab][shopSel], act = $('#shopAct') as HTMLButtonElement, own = owns(shopTab, shopSel);
+  act.disabled = false; act.classList.remove('short');
+  if (cur === shopSel) { $('#shopActLbl').textContent = 'Équipé'; act.disabled = true; }
+  else if (own) $('#shopActLbl').textContent = 'Équiper';
+  else if (profile.coins >= it.price) $('#shopActLbl').innerHTML = `Acheter · ${it.price} <img class="px coin" src="/assets/items/gold-coin.png" alt="pièces">`;
+  else { $('#shopActLbl').textContent = `Encore ${it.price - profile.coins} pièces`; act.disabled = true; }
+}
+function shopAction() {
+  const it = CATALOG[shopTab][shopSel]; if (!it) return;
+  if (!owns(shopTab, shopSel)) {
+    if (profile.coins < it.price) return;
+    profile.coins -= it.price; profile.owned.push(shopTab + ':' + shopSel); sfx('coin', 1.2); toast(`${it.name} : à toi !`);
+  } else sfx('ui');
+  profile.look = { ...profile.look, [shopTab]: shopSel }; save(); renderShop(); preview(shopSel);
+}
+
 /* ================= accueil ================= */
 const starStr = (n: number) => '★'.repeat(n) + '☆'.repeat(3 - n);
 function nextFloor() { return Math.max(1, profile.towerMax); }
@@ -96,7 +141,9 @@ function renderHome() {
   ($('#rankXp') as HTMLElement).style.width = Math.round(rp.frac * 100) + '%';
   $('#rankNext').textContent = rp.next ? `${profile.xp} / ${rp.next.xp} XP · prochaine technique : ${rp.next.unlock!.title}` : `${profile.xp} XP · toutes les techniques sont débloquées`;
   const f = towerFloor(nextFloor());
-  $('#towerSub').textContent = profile.tutoDone ? `Étage ${f.n} · ${f.name}` : 'Commence par le tutoriel (1 min)';
+  $('#towerSub').textContent = !profile.tutoDone ? 'Commence par le tutoriel (1 min)'
+    : profile.streak >= 2 ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}` : `Étage ${f.n} · ${f.name}`;
+  renderCoins();
   ($('#setSfx') as HTMLInputElement).checked = profile.sfx; ($('#setMusic') as HTMLInputElement).checked = profile.music;
   ($('#devRank') as HTMLSelectElement).value = String(myRank());
   ($('#devFloor') as HTMLSelectElement).value = String(Math.min(profile.towerMax, 20));
@@ -179,9 +226,9 @@ function showPerso(id: string) {
   const b = $('#resPersoUse') as HTMLButtonElement; b.disabled = false; b.textContent = 'Le prendre';
   b.onclick = () => { profile.look = { ...profile.look, perso: id }; save(); viewP = -1; renderLook(); b.disabled = true; b.textContent = 'C’est ton combattant'; };
 }
-function showXp(gain: number, before: number) {
+function showXp(gain: number, before: number, coins = 0) {
   $('#resXp').hidden = gain <= 0; if (gain <= 0) return;
-  $('#resXpTxt').textContent = `+${gain} XP`;
+  $('#resXpTxt').innerHTML = `+${gain} XP` + (coins ? ` <span class="coingain"><img class="px" src="/assets/items/gold-coin.png" alt="">+${coins}</span>` : '');
   const bar = $('#resXpBar') as HTMLElement; const rp0 = rankProgress(before), rp1 = rankProgress(profile.xp);
   bar.style.transition = 'none'; bar.style.width = Math.round((rp1.i > rp0.i ? 0 : rp0.frac) * 100) + '%'; void bar.offsetWidth;
   bar.style.transition = ''; setTimeout(() => { bar.style.width = Math.round(rp1.frac * 100) + '%'; }, 250);
@@ -192,13 +239,20 @@ function onEnd(winner: number, score: number[]) {
     const win = winner === session.myIdx, st = session.state, me = st ? st.f[session.myIdx] : null, op = st ? st.f[1 - session.myIdx] : null;
     const sMe = score[session.myIdx], sOp = score[1 - session.myIdx];
     $('#resTitle').className = win ? 'win' : 'lose';
-    $('#resStatus').textContent = ''; $('#resNear').hidden = true; $('#resUnlock').hidden = true; $('#resPerso').hidden = true;
+    $('#resStatus').textContent = ''; $('#resNear').hidden = true; $('#resUnlock').hidden = true; $('#resPerso').hidden = true; $('#resStreak').hidden = true;
+    let coins = 0;
     const starsEl = $('#resStars'); starsEl.hidden = true; starsEl.querySelectorAll('i').forEach(i => i.classList.remove('on'));
     const xpBefore = profile.xp; let gain = 0, newRank = -1;
     if (!win && op && op.pct >= 70) { $('#resNear').hidden = false; $('#resNear').textContent = `Il était à ${Math.round(op.pct)} % : encore un coup et il tombait.`; }
     if (session.mode === 'tower' && session.floor) {
       const f = session.floor, stars = starsFor(win, session.roundsLost, session.seconds, f.par);
-      gain = towerXp(f.n, win, sMe, stars);
+      const first = win && profile.towerMax <= f.n;
+      gain = towerXp(f.n, win, sMe, stars); coins = towerCoins(f.n, win, stars, first);
+      // série d'étages gagnés : multiplie l'XP et les pièces ; une défaite la remet à zéro
+      const rs = $('#resStreak');
+      if (win) { profile.streak++; const m = streakMult(profile.streak); gain = Math.round(gain * m); coins = Math.round(coins * m); if (profile.streak >= 2) { rs.hidden = false; rs.className = 'streak'; rs.textContent = `Série de ${profile.streak} étages : XP et pièces ×${m}`; } }
+      else { if (profile.streak >= 2) { rs.hidden = false; rs.className = 'streak lost'; rs.textContent = `Série perdue : ${profile.streak} étages d'affilée`; } profile.streak = 0; }
+      save();
       $('#resKicker').textContent = `Étage ${f.n} · ${f.name}`;
       $('#resTitle').textContent = win ? 'Étage réussi' : 'Défaite';
       $('#resScore').textContent = `${sMe} – ${sOp}` + (win ? ` en ${session.seconds} s` : '');
@@ -212,19 +266,19 @@ function onEnd(winner: number, score: number[]) {
         setResultButtons(`Étage ${f.n + 1}`, () => startTower(f.n + 1), 'Rejouer', () => startTower(f.n));
       } else setResultButtons('Réessayer', () => startTower(f.n), null, null);
     } else if (session.mode === 'practice') {
-      gain = win ? XP_PRACTICE_WIN : 5;
+      gain = win ? XP_PRACTICE_WIN : 5; coins = COINS_PRACTICE[win ? 1 : 0];
       $('#resKicker').textContent = 'Entraînement'; $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
       $('#resScore').textContent = `${sMe} – ${sOp} contre ${op ? op.name : 'le bot'}`;
       setResultButtons('Revanche', () => practice(), null, null);
     } else {
-      gain = win ? XP_DUEL_WIN : XP_DUEL_LOSS;
+      gain = win ? XP_DUEL_WIN : XP_DUEL_LOSS; coins = COINS_DUEL[win ? 1 : 0];
       $('#resKicker').textContent = 'Duel'; $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
       $('#resScore').textContent = `${sMe} – ${sOp} contre ${op ? op.name : 'ton adversaire'}`;
       $('#resStatus').textContent = 'Une revanche ? Il faut que vous la demandiez tous les deux.';
       setResultButtons('Revanche', () => session.requestRematch(), null, null);
     }
-    newRank = addXp(gain);
-    showXp(gain, xpBefore);
+    newRank = addXp(gain); addCoins(coins);
+    showXp(gain, xpBefore, coins);
     if (newRank > 0) showUnlock(newRank);
     sfx(win ? 'win' : 'lose'); show('result'); restartAnim($('#resTitle')); if (win) confetti();
     void me;
@@ -243,8 +297,8 @@ function onTuto(step: TutoStep | null, i: number, n: number, count: number) {
 function onTutoDone() {
   if (lastMode.drill) { toast('Technique maîtrisée'); leave(); return; }
   const first = !profile.tutoDone; profile.tutoDone = true;
-  if (first) addXp(XP_TUTO);
-  save(); toast(first ? `+${XP_TUTO} XP · la Tour du temple t'attend` : 'Tutoriel terminé');
+  if (first) { addXp(XP_TUTO); addCoins(COINS_TUTO); }
+  save(); toast(first ? `+${XP_TUTO} XP et ${COINS_TUTO} pièces · la Tour du temple t'attend` : 'Tutoriel terminé');
   startTower(nextFloor());
 }
 
@@ -299,7 +353,12 @@ export function setupUI() {
   dr.addEventListener('change', () => { profile.xp = RANKS[+dr.value].xp; profile.tutoDone = true; save(); renderHome(); toast(RANKS[+dr.value].name); });
   df.addEventListener('change', () => { profile.towerMax = +df.value; profile.tutoDone = true; save(); renderHome(); toast(`Étages 1 à ${df.value} débloqués`); });
   ($('#devLvl') as HTMLSelectElement).addEventListener('change', e => { profile.level = +(e.target as HTMLSelectElement).value; save(); });
-  $('#devReset').addEventListener('click', () => { Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false }); save(); renderHome(); toast('Progression réinitialisée'); });
+  $('#devReset').addEventListener('click', () => { Object.assign(profile, { xp: 0, towerMax: 1, stars: {}, tutoDone: false, coins: 0, owned: [], streak: 0 }); save(); renderHome(); toast('Progression réinitialisée'); });
+  $('#devCoins').addEventListener('click', () => { addCoins(500); toast('+500 pièces'); });
+  $('#shopBtn').addEventListener('click', openShop);
+  $('#shopClose').addEventListener('click', closeShop);
+  $('#shopAct').addEventListener('click', shopAction);
+  document.querySelectorAll<HTMLElement>('#shop .tab').forEach(t => t.addEventListener('click', () => { shopTab = t.dataset.tab as ShopKind; shopSel = myLook()[shopTab]; renderShop(); preview(shopSel); sfx('ui'); }));
 
   renderHome();
   audioPrefs.sfx = profile.sfx; audioPrefs.music = profile.music;
@@ -334,7 +393,7 @@ export function setupUI() {
   $('#quitYes').addEventListener('click', leave);
   $('#quitNo').addEventListener('click', () => show(null));
   window.addEventListener('keydown', e => {
-    if (e.code === 'Escape') { if (current === '' && session.active) show('quit'); else if (current === 'quit') show(null); else if (current === 'floors') show('home'); return; }
+    if (e.code === 'Escape') { if (current === '' && session.active) show('quit'); else if (current === 'quit') show(null); else if (current === 'floors') show('home'); else if (current === 'shop') closeShop(); return; }
     // relance instantanée depuis l'écran de résultat
     if (current === 'result' && (e.code === 'Space' || e.code === 'Enter') && !($('#resMain') as HTMLButtonElement).disabled) { e.preventDefault(); mainAction(); }
   });

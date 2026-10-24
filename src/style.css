@@ -16,6 +16,9 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
 #game { position: fixed; inset: 0; }
 #game canvas { display: block; touch-action: none; }
 #vig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 58%, rgba(0,0,0,.4) 100%); }
+#vig::after { content: ""; position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at 50% 50%, rgba(229,72,58,0) 52%, rgba(229,72,58,.38) 100%); }
+body.mp #vig::after { animation: beat var(--beat, .9s) ease-out infinite; }
+@keyframes beat { 0% { opacity: .9; } 18% { opacity: .35; } 30% { opacity: .75; } 100% { opacity: .15; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- écrans ---------- */
@@ -287,3 +290,50 @@ body.touch #tutoBar { top: calc(env(safe-area-inset-top, 0px) + 160px); }
 body.touch .act.locked { display: none; }
 .atk.nocharge .ring { display: none; }
 body.touch .emo { grid-area: 1 / 1; } body.touch .par { grid-area: 1 / 2; } body.touch .dod { grid-area: 2 / 1; } body.touch .atk { grid-area: 2 / 2; }
+
+/* ---------- boutique d'effets ---------- */
+.coins { display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-disp); font-weight: 800; color: var(--gold); font-size: 18px; letter-spacing: .02em; }
+.coins img { width: 16px; height: 16px; }
+.coins.big { font-size: 26px; } .coins.big img { width: 22px; height: 22px; }
+.shopbtn { display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
+.shopbtn span:first-of-type { flex: 1; text-align: left; }
+.shopbtn .sico.chest { width: 28px; height: 24px; margin: -4px 0; }
+.screen.side { background: linear-gradient(90deg, rgba(9,14,16,0) 0%, rgba(9,14,16,0) 40%, rgba(9,14,16,.85) 70%); align-items: flex-end; }
+.screen.side .col { margin: auto 0 auto auto; width: min(420px, 100%); }
+.shop { text-align: left; padding: 18px; gap: 10px; }
+.shop .shophead { display: flex; align-items: center; justify-content: space-between; }
+.shop h2 { font-size: 44px; }
+.shop .sub { margin: 0; text-align: left; font-size: 13px; }
+.shop .sub.small { font-size: 12px; color: var(--mist); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 4px; }
+.tab { border: 0; border-radius: 5px; background: none; padding: 8px 6px; font-weight: 700; font-size: 14px; color: var(--mist); }
+.tab.on { background: var(--stone); color: var(--bone); box-shadow: inset 0 -2px 0 var(--ochre); }
+.shopgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 46vh; overflow-y: auto; padding: 2px; }
+.sitem { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--ink-2); text-align: center; transition: transform .12s, border-color .12s; }
+.sitem:hover { transform: translateY(-1px); border-color: #4b5f59; }
+.sitem.sel { border-color: var(--ochre); box-shadow: 0 0 0 1px rgba(224,162,67,.5), 0 6px 20px rgba(224,162,67,.15); }
+.sitem b { font-size: 13px; line-height: 1.2; }
+.sitem .st { font-size: 12px; color: var(--mist); display: inline-flex; align-items: center; gap: 4px; }
+.sitem .st img { width: 12px; height: 12px; }
+.sitem .st.price { color: var(--gold); font-weight: 700; }
+.sitem .st.price.short { color: #a08a5a; }
+.sitem.on .st { color: var(--jade); font-weight: 700; }
+.sico { --n: 1; --f: 0; --ar: 1; display: block; width: 48px; height: calc(48px * var(--ar)); margin-block: calc((48px - 48px * var(--ar)) / 2); background-repeat: no-repeat; background-size: calc(var(--n) * 100%) 100%; background-position: calc(var(--f) * 100% / max(1, var(--n) - 1)) 0; image-rendering: pixelated; }
+.sitem:not(.owned) .sico { filter: saturate(.75); }
+.streak { margin: 0; font-weight: 700; color: var(--ochre); }
+.streak.lost { color: #ff8a6e; }
+.coingain { display: inline-flex; align-items: center; gap: 6px; justify-content: center; font-weight: 700; color: var(--gold); }
+.coingain img { width: 14px; height: 14px; }
+@media (max-width: 720px) {
+  .screen.side { background: linear-gradient(180deg, rgba(9,14,16,0) 0%, rgba(9,14,16,0) 34%, rgba(9,14,16,.9) 52%); align-items: stretch; }
+  .screen.side .col { margin: auto 0 0; width: 100%; }
+  .shop { padding: 14px; }
+  .shop h2 { font-size: 34px; }
+  .shopgrid { grid-template-columns: repeat(3, 1fr); max-height: 212px; gap: 6px; }
+  .sitem { padding: 8px 4px 6px; }
+  .sico { width: 36px; height: calc(36px * var(--ar)); margin-block: calc((36px - 36px * var(--ar)) / 2); }
+  .shop h2 { font-size: 30px; }
+  .shop #shopHint, .shop #shopEarn { display: none; }
+  .shop .btn-play { padding: 12px 14px 10px; font-size: 22px; }
+}
+#shopAct .coin { width: 18px; height: 18px; vertical-align: -2px; margin-left: 2px; }

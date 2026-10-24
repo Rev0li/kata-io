@@ -109,11 +109,27 @@ export const ARMES: Record<string, { name: string; idx: number; rank: number; le
   nodachi: { name: 'Nodachi', idx: 6, rank: 6, len: 16 },
 };
 export const ARME_COUNT = 7;
-export const TRAINEES: Record<string, { name: string; col: string | null }> = {
-  aucune: { name: 'Traînée simple', col: null }, braise: { name: 'Braise', col: '#ff8a3d' }, 'jade-t': { name: 'Souffle de jade', col: '#62e0b5' }, encre: { name: 'Encre', col: '#050505' }, aurore: { name: 'Aurore', col: 'rainbow' },
+// Boutique : traînées de coup et ploufs d'éjection, faits de sprites du pack. Prix en pièces gagnées en jouant.
+// `part` = particule semée au bout de l'arme (voir Renderer.trailPart).
+export const TRAINEES: Record<string, { name: string; col: string; price: number; part: string | null; icon: [string, number, number] }> = {
+  aucune: { name: 'Traînée simple', col: '#fffaec', price: 0, part: null, icon: ['slash', 5, 1] },
+  braise: { name: 'Braises', col: '#ff8a3d', price: 120, part: 'flame', icon: ['flame', 4, 0] },
+  sakura: { name: 'Pétales de cerisier', col: '#f6b6cf', price: 150, part: 'leaf', icon: ['leaf', 6, 2] },
+  ombre: { name: 'Fumée d’ombre', col: '#2a1f33', price: 180, part: 'smoke', icon: ['smoke', 6, 2] },
+  etoiles: { name: 'Poussière d’étoiles', col: '#fff1a8', price: 220, part: 'sparkle', icon: ['sparkle', 6, 2] },
+  vague: { name: 'Vague', col: '#7fd6ff', price: 240, part: 'splash', icon: ['splash', 6, 2] },
+  shuriken: { name: 'Shurikens', col: '#cfd8dc', price: 300, part: 'shuriken', icon: ['shuriken', 1, 0] },
+  or: { name: 'Pluie d’or', col: '#f2c14e', price: 420, part: 'coin', icon: ['coin', 4, 0] },
 };
-export const EJECTIONS: Record<string, string> = {
-  plouf: 'Plouf classique', petales: 'Pétales de cerisier', 'encre-e': "Éclaboussure d'encre", feu: "Feu d'artifice", canards: 'Canards en plastique',
+export const EJECTIONS: Record<string, { name: string; price: number; icon: [string, number, number] }> = {
+  plouf: { name: 'Plouf', price: 0, icon: ['splash', 6, 2] },
+  'encre-e': { name: 'Éclaboussure d’encre', price: 120, icon: ['smoke', 6, 3] },
+  petales: { name: 'Tempête de pétales', price: 180, icon: ['leaf', 6, 0] },
+  cochon: { name: 'Cochon volant', price: 220, icon: ['pig', 2, 0] },
+  fantome: { name: 'Fantôme', price: 260, icon: ['ghost', 4, 0] },
+  feu: { name: 'Feu d’artifice', price: 320, icon: ['star', 7, 2] },
+  tresor: { name: 'Trésor englouti', price: 380, icon: ['chest', 2, 1] },
+  phenix: { name: 'Phénix', price: 500, icon: ['bird', 4, 0] },
 };
 export const EMOTES: Record<string, string> = { salut: 'Salut !', rire: 'Ha ha !', gg: 'GG', viens: 'Viens !', lent: 'Trop lent', mouille: "L'eau est bonne ?" };
 export const DEFAULT_LOOK: Look = { perso: 'ninja-bleu', arme: 'katana', trainee: 'aucune', ejection: 'plouf' };

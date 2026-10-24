@@ -42,6 +42,8 @@ export function sfx(type: string, v = 1) {
       case 'thud': tone(95, 48, 0.2, 'sine', 0.4 * v); noise(0.12, 380, 0.8, 0.18 * v); break;
       case 'ui': tone(700, 920, 0.06, 'sine', 0.07); break;
       case 'hover': tone(1250, 1450, 0.035, 'sine', 0.025); break;
+      case 'heart': tone(70, 42, 0.14, 'sine', 0.55 * v); tone(62, 38, 0.12, 'sine', 0.4 * v, 0.17); break;
+      case 'coin': tone(988, 988, 0.07, 'square', 0.05 * v); tone(1319, 1319, 0.22, 'square', 0.05 * v, 0.07); break;
       case 'gong': tone(220, 210, 1.4, 'sine', 0.25 * v); tone(441, 430, 1, 'sine', 0.08 * v); break;
       case 'win': tone(523, 523, 0.18, 'triangle', 0.15); tone(659, 659, 0.18, 'triangle', 0.15, 0.15); tone(784, 784, 0.5, 'triangle', 0.15, 0.3); break;
       case 'lose': tone(392, 370, 0.3, 'triangle', 0.12); tone(311, 290, 0.6, 'triangle', 0.12, 0.25); break;

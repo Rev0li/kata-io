@@ -88,6 +88,28 @@ def main():
     floor.crop((11 * 16, 0, 14 * 16, 48)).save(os.path.join(OUT, 'dojo.png'), optimize=True)
     floor.crop((11 * 16, 6 * 16, 14 * 16, 9 * 16)).save(os.path.join(OUT, 'dojo-mousse.png'), optimize=True)
 
+    # Particules des effets de la boutique (traînées, ploufs) : bandes horizontales d'images.
+    def strip(frames, name):
+        w, h = frames[0].size
+        out = Image.new('RGBA', (w * len(frames), h))
+        for k, fr in enumerate(frames):
+            out.paste(fr, (k * w, 0))
+        out.save(os.path.join(OUT, 'fx', name + '.png'), optimize=True)
+
+    def column(path, col=0):  # monstres : 4 colonnes (directions) x 4 lignes (images)
+        im = Image.open(path).convert('RGBA')
+        return [im.crop((col * 16, r * 16, col * 16 + 16, r * 16 + 16)) for r in range(4)]
+
+    shutil.copy(os.path.join(NA, 'content/particle/particle_leaf_pink.png'), os.path.join(OUT, 'fx', 'leaf.png'))
+    shutil.copy(os.path.join(NA, 'content/particle/particle_wood.png'), os.path.join(OUT, 'fx', 'wood.png'))
+    shutil.copy(os.path.join(NA, 'content/character/pig/pig.png'), os.path.join(OUT, 'fx', 'pig.png'))
+    shutil.copy(os.path.join(SP, 'items/coin-2.png'), os.path.join(OUT, 'fx', 'coin.png'))
+    shutil.copy(os.path.join(SP, 'items/shuriken.png'), os.path.join(OUT, 'fx', 'shuriken.png'))
+    shutil.copy(os.path.join(SP, 'items/big-treasure-chest.png'), os.path.join(OUT, 'fx', 'chest.png'))
+    strip(column(os.path.join(SP, 'monsters/7.png')), 'ghost')
+    strip(column(os.path.join(SP, 'monsters/9.png')), 'bird')
+    strip(column(os.path.join(SP, 'monsters/2.png')), 'flame')
+
     for name, n in FX.items():
         shutil.copy(os.path.join(SP, 'fx/%d.png' % n), os.path.join(OUT, 'fx', name + '.png'))
     for name in ITEMS:

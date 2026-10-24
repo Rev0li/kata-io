@@ -3,7 +3,7 @@ import { session } from '../net/session';
 import { heatCss } from '../game/render';
 import { controls } from '../ui/controls';
 import { FIRST_TO, LEVELS, ATTACK_BY_ID } from '../sim/data';
-import { nextWhite } from '../sim/sim';
+import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
 
 const DISP = '"Big Shoulders Display", Impact, sans-serif';
@@ -88,7 +88,12 @@ export class HudScene extends Phaser.Scene {
     this.myMoves.setText(`Prochain coup : ${nw ? nw.name : '—'}` + (ab.charge ? `   ·   Chargé : ${hv ? hv.name : '—'}` : ''));
     const tip = !ab.parry ? (controls.isTouch ? 'Frappe · Esquive ses coups · Envoie-le à l’eau' : 'Frappe (clic) · Esquive ses coups (Espace) · Envoie-le à l’eau')
       : (controls.isTouch ? 'Blanc : Parer · Rouge : Esquive · Envoie-le à l’eau' : 'Blanc : pare (clic droit) · Rouge : esquive (Espace) · Envoie-le à l’eau');
-    if (session.notice) this.hint.setText(session.notice); else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
+    const left = Math.ceil((SUDDEN_T - (D.fightT || 0)) / 1000);
+    this.hint.setColor('#ecdfc6');
+    if (session.notice) this.hint.setText(session.notice);
+    else if (D.phase === 'fight' && !D.sudden && left <= 10 && left > 0) this.hint.setText(`Mort subite dans ${left} s`).setColor('#ff8a6e');
+    else if (D.phase === 'fight' && D.sudden && st.H > 112) this.hint.setText('Mort subite : le dojo rétrécit !').setColor('#ff8a6e');
+    else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
     // jauges : souffle (3 segments) et qi
     const touch = controls.isTouch, W = this.scale.width, H = this.scale.height;
     const x0 = touch ? 16 : 20, y0 = touch ? 138 : H - 46, w = touch ? 120 : 168;

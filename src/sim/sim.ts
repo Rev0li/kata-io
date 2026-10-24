@@ -20,6 +20,8 @@ export const emptyInput = (): Input => ({ mx: 0, my: 0, aim: 0, atk: false, parr
 export interface Spec { name: string; look: Look; deck?: Deck; bot?: number | null; abil?: Abil; belt?: string; dummy?: boolean; atkSlow?: number }
 export interface SimOpts { firstTo?: number; H?: number; damp?: number; free?: boolean; pos?: [number, number][] }
 export type Ev = { t: string; [k: string]: any };
+// Mort subite : passé ce délai dans une manche, le dojo rétrécit jusqu'à SUDDEN_MIN.
+export const SUDDEN_T = 40000, SUDDEN_RATE = 9, SUDDEN_MIN = 110;
 
 export type Fighter = any;
 export type Sim = any;
@@ -39,7 +41,7 @@ const fx = {
 
 /* ================= création ================= */
 export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
-  const st: Sim = { H: opts.H || DUEL_H, damp: opts.damp || KB_DAMP, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null };
+  const st: Sim = { H: opts.H || DUEL_H, H0: opts.H || DUEL_H, damp: opts.damp || KB_DAMP, time: 0, f: [], ev: [], hitstop: 0, slow: 0, uid: 0, atkUid: 0, duel: null };
   S = st;
   specs.forEach((sp, i) => {
     const e = makeFighter({ idx: i, name: String(sp.name || 'Combattant').slice(0, 24), look: sanitizeLook(sp.look), deck: sp.deck ? cloneDeck(sp.deck) : cloneDeck(DEFAULT_DECK), abil: { ...(sp.abil || FULL_ABIL) }, belt: sp.belt || null, atkSlow: sp.atkSlow || 1 });
@@ -47,7 +49,7 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
     if (sp.dummy) e.bot = newBrain(0, true);
     st.f.push(e);
   });
-  st.duel = { score: [0, 0], round: 0, phase: 'intro', t: 0, winner: -1, firstTo: opts.firstTo || FIRST_TO, start: 0 };
+  st.duel = { score: [0, 0], round: 0, phase: 'intro', t: 0, winner: -1, firstTo: opts.firstTo || FIRST_TO, start: 0, fightT: 0, sudden: false, mp: false };
   if (opts.free) {
     st.duel.phase = 'free';
     st.f.forEach((e: Fighter, i: number) => { const p = (opts.pos && opts.pos[i]) || [i ? 110 : -110, 0]; resetFighter(e, p[0], p[1]); e.dropT = 0; });
@@ -71,17 +73,27 @@ export function resetFighter(e: Fighter, x: number, y: number) {
 
 /* ================= duel ================= */
 function duelRound() {
-  const D = S.duel; D.round++; D.phase = 'intro'; D.t = 0;
+  const D = S.duel; D.round++; D.phase = 'intro'; D.t = 0; D.fightT = 0; D.sudden = false;
+  S.H = S.H0;
   const [a, b] = S.f;
   resetFighter(a, -110, 0); resetFighter(b, 110, 0);
   for (const e of S.f) { e.state = 'frozen'; e.kos = D.score[e.idx]; if (e.bot) { e.bot.plan = null; e.bot.seen.clear(); e.bot.holdFor = 0; } }
-  fx.big('MANCHE ' + D.round, '#ecdfc6', 850);
+  // balle de match : un point de plus et c'est fini
+  D.mp = D.score.some((n: number) => n === D.firstTo - 1);
+  if (D.mp) fx.big('BALLE DE MATCH', '#e5483a', 1100); else fx.big('MANCHE ' + D.round, '#ecdfc6', 850);
 }
 function duelUpdate(dt: number) {
   const D = S.duel; if (D.phase === 'free') return; const prev = D.t; D.t += dt * 1000;
   if (D.phase === 'intro') {
     for (const [m, txt] of [[900, '3'], [1500, '2'], [2100, '1']] as [number, string][]) if (D.t >= m && prev < m) { fx.big(txt, '#ecdfc6', 560); fx.sfx('ui', 0, 0, 1); }
     if (D.t >= 2700) { fx.big('COMBAT !', '#e0a243', 700); fx.sfx('gong', 0, 0, 0.6); for (const e of S.f) if (e.state === 'frozen') toIdle(e); D.phase = 'fight'; if (D.round === 1) D.start = S.time; }
+  } else if (D.phase === 'fight') {
+    D.fightT += dt * 1000;
+    if (!D.sudden && D.fightT >= SUDDEN_T) { D.sudden = true; fx.big('MORT SUBITE', '#e5483a', 1200); fx.sfx('gong', 0, 0, 0.9); fx.shake(6); emit({ t: 'sudden' }); }
+    if (D.sudden && S.H > SUDDEN_MIN) {
+      S.H = Math.max(SUDDEN_MIN, S.H - SUDDEN_RATE * dt);
+      for (const e of S.f) if (e.state === 'ledge' && e.ledge) { if (e.ledge.nx) e.x = e.ledge.nx * (S.H + 8); else e.y = e.ledge.ny * (S.H + 8); }
+    }
   } else if (D.phase === 'point') {
     if (D.t >= 1900) {
       if (D.score[0] >= D.firstTo || D.score[1] >= D.firstTo) { D.phase = 'end'; D.winner = D.score[0] > D.score[1] ? 0 : 1; emit({ t: 'end', winner: D.winner, score: D.score.slice() }); }
@@ -303,7 +315,10 @@ function koFighter(v: Fighter, killer: Fighter) {
   v.splashFx = killer ? (killer.look.ejection || 'plouf') : 'plouf';
   v.koWord = pct >= 180 || v.lastHitDragon ? 'DÉCOLLAGE !' : pct >= 120 ? 'GRAND PLOUF !' : 'PLOUF !';
   if (killer) addQi(killer, 15);
-  if (pct >= 120 || v.lastHitDragon) { S.slow = Math.max(S.slow, 700); emit({ t: 'cine', id: v.idx, ms: 900 }); }
+  const D = S.duel, final = D && D.phase === 'fight' && D.score[1 - v.idx] + 1 >= D.firstTo;
+  // éjection décisive : ralenti plus long et caméra sur la victime
+  if (final) { S.slow = Math.max(S.slow, 1100); emit({ t: 'cine', id: v.idx, ms: 1500 }); emit({ t: 'final', to: v.idx }); }
+  else if (pct >= 120 || v.lastHitDragon) { S.slow = Math.max(S.slow, 700); emit({ t: 'cine', id: v.idx, ms: 900 }); }
   emit({ t: 'ko', to: v.idx, by: killer ? killer.idx : -1, pct });
   duelPoint(v);
 }
@@ -462,8 +477,8 @@ const r1 = (v: number) => Math.round(v * 10) / 10, r2 = (v: number) => Math.roun
 export function snapshot(st: Sim) {
   const D = st.duel;
   return {
-    tm: Math.round(st.time),
-    d: [D.score[0], D.score[1], D.round, D.phase],
+    tm: Math.round(st.time), h: r1(st.H),
+    d: [D.score[0], D.score[1], D.round, D.phase, Math.round(D.fightT || 0), D.sudden ? 1 : 0, D.mp ? 1 : 0],
     f: st.f.map((e: Fighter) => {
       const a = e.atk;
       return [r1(e.x), r1(e.y), r2(e.facing), e.state, Math.round(e.stateT), e.stance, r1(e.pct), r2(e.souffle), Math.round(e.qi), Math.round(e.elanT), Math.round(e.spawnInv), Math.round(e.fallT), Math.round(e.dropT || 0), e.kos, Math.round(e.chargeT), e.chargeDef ? e.chargeDef.id : '',
@@ -475,12 +490,13 @@ export function snapshot(st: Sim) {
 // Copie locale de l'état chez l'invité, mise à jour par les instantanés et avancée entre deux.
 export function createMirror(specs: Spec[]) {
   return {
-    H: DUEL_H, time: 0, duel: { score: [0, 0], round: 1, phase: 'intro' },
+    H: DUEL_H, time: 0, duel: { score: [0, 0], round: 1, phase: 'intro', firstTo: FIRST_TO, fightT: 0, sudden: false, mp: false },
     f: specs.map((sp, i) => ({ idx: i, name: sp.name, look: sanitizeLook(sp.look), belt: sp.belt || null, abil: { ...(sp.abil || FULL_ABIL) }, x: i ? 110 : -110, y: 0, tx: i ? 110 : -110, ty: 0, facing: i ? Math.PI : 0, state: 'frozen', stateT: 0, stance: 0, pct: 0, souffle: 3, qi: 0, elanT: 0, spawnInv: 0, fallT: 0, dropT: 0, kos: 0, chargeT: 0, chargeDef: null, atk: null, emote: null, ledge: null, trail: [], heavyId: 'retourne', nextId: 'direct', fresh: true })),
   };
 }
 export function applySnapshot(m: any, s: any) {
   m.time = s.tm; m.duel.score = [s.d[0], s.d[1]]; m.duel.round = s.d[2]; m.duel.phase = s.d[3];
+  m.duel.fightT = s.d[4] || 0; m.duel.sudden = !!s.d[5]; m.duel.mp = !!s.d[6]; if (s.h) m.H = s.h;
   s.f.forEach((p: any[], i: number) => {
     const e = m.f[i]; if (!e) return;
     const [x, y, facing, state, stateT, stance, pct, souffle, qi, elanT, spawnInv, fallT, dropT, kos, chargeT, chargeId, a, em, ledge, heavyId, nextId] = p;
