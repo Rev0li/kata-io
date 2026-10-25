@@ -19,6 +19,7 @@ import { PX } from '../assets';
 import { iso, worldAngleToScreen, fillC, strokeC, cone } from './iso';
 import { C, FONT_BODY, hex, mix } from './palette';
 import type { Renderer } from './index';
+import { Puppet, PUPPETS, puppetOn } from './puppet';
 
 interface View {
   spr: Phaser.GameObjects.Sprite;
@@ -35,6 +36,7 @@ interface View {
   ghostT: number;
   full: boolean;
   partT: number;
+  pup: Puppet | null; // pantin découpé (prototype ?pantin), à la place du sprite
 }
 
 export class Fighters {
@@ -77,14 +79,24 @@ export class Fighters {
         ghostT: 0,
         full: false,
         partT: 0,
+        pup: null,
       };
     }
     return v;
+  }
+  // Pantin du combattant (recréé si le personnage change).
+  puppet(v: View, id: string) {
+    if (!v.pup || v.pup.id !== id) {
+      v.pup?.destroy();
+      v.pup = new Puppet(this.r.scene, id);
+    }
+    return v.pup;
   }
   hideViews(from: number) {
     for (let i = from; i < this.views.length; i++) {
       this.views[i].spr.setVisible(false);
       this.views[i].wpn.setVisible(false);
+      this.views[i].pup?.setVisible(false);
     }
   }
 
@@ -250,6 +262,7 @@ export class Fighters {
     if (st === 'dead') {
       spr.setVisible(false);
       wpn.setVisible(false);
+      v.pup?.setVisible(false);
       v.prevState = st;
       v.prevPhase = '';
       v.prevDrop = 0;
@@ -384,15 +397,55 @@ export class Fighters {
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
     const depth = 2.5 + (G.y + 4000) * 1e-5;
-    spr
-      .setVisible(true)
-      .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-      .setPosition(G.x + jit, G.y - 18)
-      .setScale(PX * scale * sx, PX * scale * sy)
-      .setRotation(rot)
-      .setAlpha(ga)
-      .setDepth(depth);
-    if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    // pantin découpé : le personnage a ses pièces et l'option ?pantin est active
+    const pup = puppetOn && PUPPETS[e.look.perso] ? this.puppet(v, e.look.perso) : null;
+    const lead = Math.cos(sa) >= 0;
+    const weaponRight = S && !S.kick ? (S.side > 0 ? lead : !lead) : lead;
+    if (pup) {
+      spr.setVisible(false);
+      pup.draw({
+        view: col === 1 ? 'dos' : 'face',
+        dirX: c,
+        dirY: sn,
+        state: st,
+        moving,
+        walk: v.walk,
+        time,
+        strike: S
+          ? {
+              phase: S.phase,
+              ext: clamp(Math.hypot(S.P.x, S.P.y) / Math.max(20, e.atk.def.rg), 0, 1),
+              kick: S.kick,
+              side: S.side,
+            }
+          : null,
+        charge: st === 'charge' ? clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1) : 0,
+        stateT: e.stateT,
+        belt: hex(e.belt || beltOf(e.kos)[2]),
+      });
+      pup.show(G.x + jit, G.y + 3, scale, sx, sy, rot, ga, depth);
+      pup.tint(
+        v.flash > 0
+          ? 'flash'
+          : st === 'charge'
+            ? mix(0xffffff, e.qi >= 100 ? 0xffd25a : 0xff5a46, 0.35 + 0.35 * Math.sin(time * 0.035))
+            : twin
+              ? 0xffa890
+              : 'none',
+      );
+    } else v.pup?.setVisible(false);
+    if (!pup)
+      spr
+        .setVisible(true)
+        .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
+        .setPosition(G.x + jit, G.y - 18)
+        .setScale(PX * scale * sx, PX * scale * sy)
+        .setRotation(rot)
+        .setAlpha(ga)
+        .setDepth(depth);
+    if (pup) {
+      /* teinte déjà posée sur le pantin */
+    } else if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     else {
       spr.setTintMode(Phaser.TintModes.MULTIPLY);
       if (st === 'charge') {
@@ -439,7 +492,8 @@ export class Fighters {
       wang = f + side * 0.3;
     }
     if (W.idx >= 0 && hand) {
-      const hs = iso(hand.x, hand.y, 14),
+      // avec le pantin, l'arme est dans son poing
+      const hs = pup ? pup.fistWorld(weaponRight) : iso(hand.x, hand.y, 14),
         wsa = worldAngleToScreen(wang),
         behind = !S && hs.y + 14 < G.y - 2;
       wpn
@@ -502,7 +556,7 @@ export class Fighters {
       v.ghostT -= dt * 1000;
       if (v.ghostT <= 0) {
         v.ghostT = 40;
-        fx.ghost(spr, depth - 1e-5, C.jade);
+        if (!pup) fx.ghost(spr, depth - 1e-5, C.jade);
       }
     }
     if (st === 'ledge' && v.prevState !== 'ledge') fx.fx('dust', G.x, G.y, 0, 1.6);
