@@ -32,7 +32,14 @@ Ce qui donne envie de rejouer :
 - **Balle de match** : annonce, battement de cœur et vignette rouge ; l'éjection décisive passe au ralenti.
 - **Bonus** : « Parfait » (manche gagnée sans être touché, +5 pièces) et « Sauvé ! » (rattrapé au bord puis remonté, +2 pièces).
 
-## Boutique d'effets
+## Accueil
+
+L'accueil est un écran de jeu, pas un site à onglets : **ton combattant en grand sur la plateforme** du monde choisi (il salue en arrivant), un gros bouton **Jouer** (étage suivant de la Tour, ou le tutoriel la première fois), puis **Défi du jour**, **Entraînement** et **Duel**. En bas à gauche : nom, ceinture, XP, prochaine technique, **Vestiaire** et **Étages**. La roue en haut à droite ouvre les paramètres (commandes, son, plein écran, mode test). Entraînement et Duel s'ouvrent dans un panneau à droite, le décor reste visible.
+
+## Vestiaire
+
+Tout ce qui change l'apparence au même endroit : **combattant** (gagné en battant le gardien d'un étage), **arme** (gagnée avec une ceinture), **traînée** et **plouf** (achetés avec les pièces). On y entre par le bouton Vestiaire ou en touchant son combattant sur la plateforme.
+
 
 Les **pièces** se gagnent en jouant : Tour (plus avec les étoiles, la première victoire et la série), défi du jour, entraînement et duels. Rien ne s'achète en euros.
 
@@ -40,11 +47,11 @@ Les **pièces** se gagnent en jouant : Tour (plus avec les étoiles, la premièr
 |---|---|
 | Braises, pétales de cerisier, fumée d'ombre, poussière d'étoiles, vague, shurikens, pluie d'or | Encre, tempête de pétales, cochon volant, fantôme, feu d'artifice, trésor englouti, phénix |
 
-La traînée suit le bout de l'arme pendant le coup, au premier plan et en transparence. Le plouf est celui du joueur qui éjecte, donc l'adversaire le voit aussi. Dans la boutique, chaque effet se joue en situation derrière le panneau : ton combattant frappe un mannequin pour une traînée, ou l'envoie à l'eau pour un plouf.
+La traînée suit le bout de l'arme pendant le coup, au premier plan et en transparence. Le plouf est celui du joueur qui éjecte, donc l'adversaire le voit aussi. Dans le vestiaire, chaque effet se joue en situation derrière le panneau : ton combattant frappe un mannequin pour une traînée, ou l'envoie à l'eau pour un plouf.
 
 ## Mode test
 
-Le panneau **Mode test** de l'accueil permet de :
+Le **Mode test**, replié dans les paramètres (roue en haut à droite), permet de :
 
 - choisir sa ceinture ;
 - choisir les étages débloqués (ce qui débloque aussi les combattants) ;
@@ -56,11 +63,11 @@ Le panneau **Mode test** de l'accueil permet de :
 
 ## Jouer
 
-1. **Créer un duel privé** : la page affiche un code de salle et un lien d'invitation.
+1. **Duel** puis **Créer un duel privé** : la page affiche un code de salle et un lien d'invitation.
 2. Envoyer le lien à son adversaire. Le duel commence dès qu'il l'ouvre et clique sur « Rejoindre le duel ».
 3. À la fin, chacun peut demander une revanche ; elle démarre quand les deux l'ont demandée.
 
-**S'entraîner** lance un duel contre un bot (Disciple, Adepte ou Maître), sans réseau.
+**Entraînement** lance un duel contre un bot (Disciple, Adepte ou Maître) dans le monde choisi, sans réseau.
 
 | Action | Clavier et souris | Tactile |
 |---|---|---|
@@ -127,10 +134,10 @@ src/
   ui/                  écrans HTML (ui.ts : branchement des boutons et des événements de la partie)
     dom.ts, nav.ts     utilitaires, écran affiché
     profile.ts         profil et progression sauvegardés dans le navigateur (sans DOM)
-    home.ts            accueil, combattant, réglages, panneau de test
+    home.ts            accueil (écran de jeu), entraînement, panneau de test
     launch.ts          lancement des parties locales
     floors.ts          liste des étages
-    shop.ts            boutique d'effets
+    shop.ts            vestiaire : combattant, arme, traînées, ploufs
     lobby.ts           duel privé et retour à l'accueil
     result.ts          écran de fin de partie
     tutobar.ts         barre du tutoriel
@@ -203,7 +210,7 @@ Les visuels de référence sont dans `art/reference/` : fiche du personnage (gi 
 
 ## Mobile : paysage uniquement
 
-Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écran « Tourne ton téléphone » prend la place. En paysage court (hauteur de 540 px ou moins), l'interface se compacte : accueil en deux colonnes, boutique en panneau à droite, commandes réduites, HUD en haut. Le plein écran (réglage « Plein écran », touche F, ou premier toucher sur Android) masque la barre du navigateur ; sur iPhone il faut « Sur l'écran d'accueil » (le manifeste demande plein écran et paysage).
+Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écran « Tourne ton téléphone » prend la place. En paysage court (hauteur de 540 px ou moins), l'interface se compacte : accueil resserré, vestiaire en panneau à droite, commandes réduites, HUD en haut. Le plein écran (réglage « Plein écran », touche F, ou premier toucher sur Android) masque la barre du navigateur ; sur iPhone il faut « Sur l'écran d'accueil » (le manifeste demande plein écran et paysage).
 
 ## Déploiement sur Vercel
 

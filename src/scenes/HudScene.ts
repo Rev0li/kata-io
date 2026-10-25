@@ -166,7 +166,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    const st = session.mode === 'showcase' ? null : session.state,
+    const st = session.mode === 'showcase' || session.mode === 'menu' ? null : session.state,
       show = !!st; // pas de HUD dans la vitrine de la boutique
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
     for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint])

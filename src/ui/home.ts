@@ -1,10 +1,10 @@
-// Écran d'accueil (maquette art/reference/mondes/accueil-v2.png), en onglets :
-//   Accueil         profil (ceinture et XP) et bouton de la Tour, duel privé, partie publique (après toutes les techniques)
-//   Mon combattant  nom, combattant et arme
-//   Temple          Tour du temple, défi du jour, entraînement dans un monde
-//   Boutique        écran de la boutique (shop.ts)
-//   Mode test       panneau de test, à la place de Communauté en attendant
-// Les paramètres (commandes, son, plein écran) s'ouvrent par la roue en haut à droite.
+// Écran d'accueil façon écran de jeu : ton combattant en grand sur la plateforme (dans la scène), un gros bouton
+// Jouer (étage suivant de la Tour) et les autres modes en boutons secondaires. Les sous-écrans s'ouvrent par-dessus :
+//   Vestiaire     combattant, arme, traînées, ploufs (shop.ts) ; on y entre aussi en touchant son combattant
+//   Étages        la Tour étage par étage (floors.ts)
+//   Entraînement  monde et niveau du bot
+//   Duel          duel privé (code), partie publique (verrouillée jusqu'à la fin de la Tour)
+// Les paramètres (commandes, son, plein écran, mode test) s'ouvrent par la roue en haut à droite.
 import { PERSOS, ARMES, MONDES, LEVELS } from '../sim/data';
 import {
   RANKS,
@@ -16,11 +16,12 @@ import {
   Abil,
   TOWER_LEN,
 } from '../sim/progression';
-import { MeSpec } from '../net/session';
+import { session, MeSpec } from '../net/session';
 import { controls } from './controls';
 import { sfx } from '../game/audio';
 import { $, toast } from './dom';
-import { profile, save, myRank, myAbil, myLook, persoOpen, armeOpen, PK, AK, nextFloor, rollDaily } from './profile';
+import { show } from './nav';
+import { profile, save, myRank, myAbil, myLook, nextFloor, rollDaily } from './profile';
 import { viewState } from './viewstate';
 
 // Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
@@ -47,22 +48,11 @@ const WORLD_TILE: Record<string, [string, string, string]> = {
   forge: ['forge/tour-a', '#2b1713', '#e2561f'],
 };
 
-/* ---------- onglets : des panneaux de l'accueil ; la Boutique ouvre son écran ---------- */
-export type HomeTab = 'accueil' | 'combattants' | 'temple' | 'test';
-const PANELS: Record<HomeTab, string> = {
-  accueil: '#panelAccueil',
-  combattants: '#panelCombattants',
-  temple: '#panelTemple',
-  test: '#panelTest',
-};
-export function homeTab(tab: HomeTab) {
-  for (const [t, sel] of Object.entries(PANELS)) $(sel).hidden = t !== tab;
-  document.querySelectorAll<HTMLElement>('#home .htab[data-tab]').forEach(b => {
-    b.classList.toggle('on', b.dataset.tab === tab);
-    b.setAttribute('aria-current', String(b.dataset.tab === tab));
-  });
+/* ---------- retour à l'accueil : ton combattant reprend sa place sur la plateforme ---------- */
+export function goHome() {
+  session.startMenu(mySpec());
   renderHome();
-  $('#home').scrollTop = 0;
+  show('home');
 }
 
 /* ---------- entraînement : monde et niveau du bot ---------- */
@@ -129,9 +119,7 @@ export function mySpec(abil: Abil = myAbil()): MeSpec {
   return { name: myName(), look: myLook(), abil, belt: RANKS[myRank()].belt };
 }
 
-/* ---------- sélecteur de combattant et d'arme ---------- */
-let viewP = -1,
-  viewA = -1; // ce que montre le sélecteur (peut être verrouillé)
+/* ---------- vignettes du combattant et de l'arme ---------- */
 export function setFace(el: HTMLElement, id: string) {
   el.style.setProperty('--i', String(PERSOS[id].idx));
 }
@@ -139,43 +127,6 @@ export function setWico(el: HTMLElement, id: string) {
   const w = ARMES[id];
   el.classList.toggle('none', w.idx < 0);
   if (w.idx >= 0) el.style.setProperty('--i', String(w.idx));
-}
-// Le sélecteur revient sur le combattant et l'arme équipés.
-export function resetLookView() {
-  viewP = viewA = -1;
-}
-export function renderLook() {
-  const l = myLook();
-  if (viewP < 0) viewP = PK.indexOf(l.perso);
-  if (viewA < 0) viewA = AK.indexOf(l.arme);
-  const p = PK[viewP],
-    a = AK[viewA],
-    po = persoOpen(p),
-    ao = armeOpen(a);
-  setFace($('#persoFace'), p);
-  $('#persoName').textContent = PERSOS[p].name;
-  $('#persoReq').textContent = po ? '' : `Bats le gardien de l’étage ${PERSOS[p].floor}`;
-  $('#persoCyc').classList.toggle('locked', !po);
-  setWico($('#armeIco'), a);
-  $('#armeName').textContent = ARMES[a].name;
-  $('#armeReq').textContent = ao ? '' : RANKS[ARMES[a].rank].name;
-  $('#armeCyc').classList.toggle('locked', !ao);
-  const np = PK.filter(persoOpen).length,
-    na = AK.filter(armeOpen).length;
-  $('#lookCount').textContent = `${np} combattants sur ${PK.length} · ${na} armes sur ${AK.length}`;
-  setFace($('#rankFaceImg'), l.perso);
-}
-export function cycle(kind: 'perso' | 'arme', d: number) {
-  if (kind === 'perso') {
-    viewP = (viewP + d + PK.length) % PK.length;
-    if (persoOpen(PK[viewP])) profile.look = { ...profile.look, perso: PK[viewP] };
-  } else {
-    viewA = (viewA + d + AK.length) % AK.length;
-    if (armeOpen(AK[viewA])) profile.look = { ...profile.look, arme: AK[viewA] };
-  }
-  save();
-  renderLook();
-  sfx('ui');
 }
 
 /* ---------- accueil ---------- */
@@ -185,8 +136,7 @@ export function renderCoins() {
 }
 export function renderHome() {
   ($('#nameIn') as HTMLInputElement).value = profile.name;
-  resetLookView();
-  renderLook();
+  $('#heroName').textContent = profile.name;
   const rp = rankProgress(profile.xp);
   $('#rankBelt').style.background = rp.cur.belt;
   $('#rankName').textContent = rp.cur.name;
@@ -204,7 +154,7 @@ export function renderHome() {
       (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
   const f = towerFloor(nextFloor());
   renderTraining();
-  $('#towerSub').textContent = $('#rankTowerSub').textContent = !profile.tutoDone
+  $('#towerSub').textContent = !profile.tutoDone
     ? 'Commence par le tutoriel (1 min)'
     : profile.streak >= 2
       ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}`

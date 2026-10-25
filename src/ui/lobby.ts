@@ -9,7 +9,7 @@ import { track } from '../analytics';
 import { sfx } from '../game/audio';
 import { $, toast, wake } from './dom';
 import { nav, show } from './nav';
-import { myName, mySpec, renderHome } from './home';
+import { myName, mySpec, goHome } from './home';
 
 const params = new URLSearchParams(location.search);
 export const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
@@ -66,6 +66,7 @@ export async function createRoom() {
   track('play_clicked', { kind: 'duel_create' });
   wake();
   myName();
+  session.leave(true); // ton combattant quitte l'accueil : la salle attend l'adversaire
   show('lobby');
   lobbyDojo = 'alea';
   viewState.dojo = null;
@@ -104,6 +105,7 @@ export async function join(codeRaw: string) {
   track('invite_opened', {});
   wake();
   myName();
+  session.leave(true);
   show('joining');
   $('#joinTitle').textContent = 'Salle ' + code;
   $('#joinStatus').textContent = 'Connexion à la salle…';
@@ -123,6 +125,5 @@ export function leave() {
   session.leave(true);
   closeHost();
   cleanUrl();
-  renderHome();
-  show('home');
+  goHome();
 }

@@ -26,7 +26,7 @@ import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 import { track } from '../analytics';
 
-export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
+export type Mode = 'idle' | 'menu' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
 const STEP = 1 / 60,
   SNAP_MS = 33;
 
@@ -191,6 +191,19 @@ class Session {
     this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp };
     this.begin();
     if (extra.taunt && this.sim) this.sim.f[1].emote = { id: extra.taunt, t: -700 };
+  }
+  // Accueil : ton combattant seul sur la plateforme, face à la caméra. Ni compté ni mesuré comme une partie.
+  startMenu(me: MeSpec) {
+    this.leave(true);
+    this.mode = 'menu';
+    this.myIdx = 0;
+    this.floor = null;
+    this.teaser = '';
+    this.attempt = 1;
+    this.specs = [me];
+    this.opts = { free: true, pos: [[0, 0]] };
+    this.begin(true);
+    this.sim.f[0].emote = { id: 'salut', t: -300 };
   }
   startShowcase(me: MeSpec) {
     this.leave(true);
@@ -635,6 +648,13 @@ class Session {
     }
     // hôte ou mode local : pas fixe de 1/60 s
     if (this.mode === 'showcase') this.showcaseTick(dt);
+    if (this.mode === 'menu') {
+      // immobile, tourné vers la caméra (angle du monde qui pointe vers le bas de l'écran)
+      const inp = this.input;
+      inp.mx = inp.my = 0;
+      inp.atk = false;
+      inp.aim = Math.PI / 4;
+    }
     this.acc += Math.min(dt, 0.1);
     let n = 0;
     while (this.acc >= STEP && n < 6) {
@@ -700,7 +720,7 @@ class Session {
     }
   }
   leave(silent = false) {
-    if (this.active && !this.ended && this.mode !== 'showcase' && this.matches > 0) {
+    if (this.active && !this.ended && this.mode !== 'showcase' && this.mode !== 'menu' && this.matches > 0) {
       const D = this.state?.duel;
       track('match_abandoned', {
         mode: this.mode,
@@ -710,7 +730,7 @@ class Session {
         score_foe: D ? D.score[1 - this.myIdx] : null,
       });
     }
-    if (silent === false || this.mode === 'idle') this.matches = 0;
+    if (silent === false || this.mode === 'idle' || this.mode === 'menu') this.matches = 0;
     const c = this.conn;
     this.conn = null;
     if (c) c.close();

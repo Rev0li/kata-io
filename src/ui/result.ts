@@ -20,7 +20,7 @@ import { sfx } from '../game/audio';
 import { $, confetti, restartAnim } from './dom';
 import { show } from './nav';
 import { profile, save, addXp, addCoins, myRank, rollDaily, PK, AK } from './profile';
-import { setFace, setWico, renderLook, renderCoins, resetLookView, SCROLLS } from './home';
+import { setFace, setWico, renderCoins, SCROLLS } from './home';
 import { startTower, startDaily, startTuto, practice } from './launch';
 
 const nth = (n: number) => (n === 1 ? '1er' : n + 'e');
@@ -76,8 +76,6 @@ function showPerso(id: string) {
   b.onclick = () => {
     profile.look = { ...profile.look, perso: id };
     save();
-    resetLookView();
-    renderLook();
     b.disabled = true;
     b.textContent = 'C’est ton combattant';
   };

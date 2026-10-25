@@ -3,10 +3,10 @@
 //   dom.ts      utilitaires ($, toast, animations, son des boutons)
 //   nav.ts      écran affiché, dernier mode lancé
 //   profile.ts  profil et progression (sauvegardés dans le navigateur)
-//   home.ts     accueil, combattant, réglages, panneau de test
+//   home.ts     accueil (écran de jeu), entraînement, panneau de test
 //   launch.ts   lancement des parties locales (Tour, défi du jour, tutoriel, entraînement)
 //   floors.ts   liste des étages de la Tour
-//   shop.ts     boutique d'effets
+//   shop.ts     vestiaire : combattant, arme, traînées, ploufs
 //   lobby.ts    duel privé (salle, invitation) et retour à l'accueil
 //   result.ts   écran de fin de partie
 //   tutobar.ts  barre du tutoriel
@@ -16,11 +16,12 @@ import { controls } from './controls';
 import { audioPrefs, setMusicLevel } from '../game/audio';
 import { $, toast, wake, setupButtonFx } from './dom';
 import { nav, show } from './nav';
-import { profile, save, nextFloor, ShopKind } from './profile';
-import { renderHome, cycle, myName, setupDevPanel, setupTraining, homeTab, HomeTab } from './home';
+import { viewState } from './viewstate';
+import { profile, save, nextFloor } from './profile';
+import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining } from './home';
 import { startTower, startDaily, startTuto, practice } from './launch';
 import { renderFloors } from './floors';
-import { openShop, closeShop, selectTab, shopAction } from './shop';
+import { openShop, closeShop, selectTab, shopAction, LockerTab } from './shop';
 import { net, inviteCode, createRoom, join, leave, closeHost } from './lobby';
 import { onEnd, onRematch, cancelEnd, runMain, runAlt } from './result';
 import { onTuto, onTutoDone, skipTuto } from './tutobar';
@@ -52,31 +53,39 @@ export function setupUI() {
 
   setupButtonFx();
   setupDevPanel();
-  // boutique
-  $('#shopBtn').addEventListener('click', openShop);
+  // vestiaire : par le bouton, ou en touchant son combattant sur la plateforme
+  $('#lockerBtn').addEventListener('click', openShop);
+  viewState.onHero = () => {
+    if (nav.current === 'home') openShop();
+  };
   $('#dailyBtn').addEventListener('click', startDaily);
   $('#shopClose').addEventListener('click', closeShop);
   $('#shopAct').addEventListener('click', shopAction);
   document
     .querySelectorAll<HTMLElement>('#shop .tab')
-    .forEach(t => t.addEventListener('click', () => selectTab(t.dataset.tab as ShopKind)));
+    .forEach(t => t.addEventListener('click', () => selectTab(t.dataset.tab as LockerTab)));
 
   setupTraining();
-  renderHome();
   audioPrefs.sfx = profile.sfx;
   audioPrefs.music = profile.music;
   // accueil
   $('#towerBtn').addEventListener('click', () => startTower(nextFloor()));
-  $('#rankTowerBtn').addEventListener('click', () => startTower(nextFloor()));
   $('#floorsBtn').addEventListener('click', () => {
     renderFloors();
     show('floors');
   });
   $('#floorsClose').addEventListener('click', () => show('home'));
+  $('#trainBtn').addEventListener('click', () => {
+    renderTraining();
+    show('training');
+  });
+  $('#trainClose').addEventListener('click', () => show('home'));
   $('#practiceBtn').addEventListener('click', () => practice());
-  document
-    .querySelectorAll<HTMLElement>('#home .htab[data-tab]')
-    .forEach(b => b.addEventListener('click', () => homeTab(b.dataset.tab as HomeTab)));
+  $('#duelBtn').addEventListener('click', () => {
+    renderHome();
+    show('duel');
+  });
+  $('#duelClose').addEventListener('click', () => show('home'));
   $('#setBtn').addEventListener('click', () => show('settings'));
   $('#setClose').addEventListener('click', () => show('home'));
   $('#tutoBtn').addEventListener('click', () => startTuto(null));
@@ -91,11 +100,6 @@ export function setupUI() {
     i.value = cleanCode(i.value);
   });
   $('#nameIn').addEventListener('change', () => myName());
-  $('#tPrev').addEventListener('click', () => cycle('perso', -1));
-  $('#tNext').addEventListener('click', () => cycle('perso', 1));
-  $('#mPrev').addEventListener('click', () => cycle('arme', -1));
-  $('#mNext').addEventListener('click', () => cycle('arme', 1));
-  $('#rankFace').addEventListener('click', () => homeTab('combattants'));
   // réglages
   $('#setAutoAim').addEventListener('change', e => {
     profile.autoAim = controls.autoAim = (e.target as HTMLInputElement).checked;
@@ -152,7 +156,7 @@ export function setupUI() {
     if (e.code === 'Escape') {
       if (current === '' && session.active) show('quit');
       else if (current === 'quit') show(null);
-      else if (current === 'floors' || current === 'settings') show('home');
+      else if (['floors', 'settings', 'training', 'duel'].includes(current)) show('home');
       else if (current === 'shop') closeShop();
       return;
     }
@@ -174,6 +178,7 @@ export function setupUI() {
     $('#joinBtn').classList.add('hot');
     $('#joinBtn').textContent = 'Rejoindre le duel';
   }
-  show('home');
+  goHome();
+  if (inviteCode) show('duel');
   if (net === 'local') toast('Mode réseau local (deux onglets du même navigateur)');
 }
