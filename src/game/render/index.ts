@@ -8,7 +8,7 @@
 //   arena.ts     plateforme du dojo et lanternes
 //   lake.ts      poissons, objets flottants, ronds dans l'eau, reflets, particules d'ambiance
 //   effects.ts   étincelles, anneaux, lignes de vitesse, sprites d'impact, ploufs, textes flottants
-//   fighters.ts  combattants, armes, annonce du coup chargé, traînées, emotes
+//   fighters.ts  combattants, armes, annonce du coup chargé, éclat du coup entrant, traînées, emotes
 //   worlds.ts    les quatre mondes : disposition du décor, premier plan
 //   world.ts     sol, étang (eau, glace, lave), décor posé et premier plan en parallaxe
 import Phaser from 'phaser';
@@ -243,6 +243,9 @@ export class Renderer {
     for (const e of fs) this.fighters.draw(g, e, e.idx, time, dt, myIdx, twin && e.idx === 1);
     this.fighters.hideViews(st.f.length);
     for (const e of fs) this.fighters.drawTelegraph(g, e);
+    // coups qui menacent le joueur : éclat d'avertissement au premier plan
+    const me = st.f[myIdx];
+    for (const e of fs) this.fighters.drawWarning(t, e, me, time);
     for (const e of fs) {
       e.trail = (e.trail || []).filter((p: any) => time - p.t < 160);
       this.fighters.drawTrail(tg, e.trail, e.look.trainee, time);

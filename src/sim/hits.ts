@@ -124,8 +124,7 @@ function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
   fx.sparks(S, tgt.x - Math.cos(ang) * 10, tgt.y - Math.sin(ang) * 10, col, red ? 16 : 9);
   if (red || v > 700) fx.ring(S, tgt.x, tgt.y, 8, red ? 52 : 36, 240, col, red ? 5 : 3);
   fx.sfx(S, v > 650 ? 'bighit' : 'hit', tgt.x, tgt.y, clamp(0.6 + v / 1500, 0.6, 1.2));
-  S.hitstop = Math.max(S.hitstop, Math.min(150, 40 + v / 22));
-  fx.shake(S, Math.min(10, 2 + v / 170));
+  S.hitstop = Math.max(S.hitstop, Math.min(150, 40 + v / 22)); // pas de tremblement d'écran : il rendait le combat illisible
   emit(S, { t: 'hit', by: att.idx, to: tgt.idx, v, red, idx: a.idx, dragon: a.dragon, exh: !!tgt.exhHit });
 }
 function parried(S: Sim, def: Fighter, att: Fighter, perfect: boolean) {
@@ -152,7 +151,6 @@ function parried(S: Sim, def: Fighter, att: Fighter, perfect: boolean) {
   fx.float(S, def.x, def.y - 52, perfect ? 'PARADE PARFAITE' : 'PARADE', col, perfect ? 19 : 17);
   fx.sfx(S, perfect ? 'perfect' : 'parry', def.x, def.y);
   S.hitstop = Math.max(S.hitstop, 90);
-  fx.shake(S, perfect ? 5 : 3);
   if (perfect) S.slow = Math.max(S.slow, 160);
   emit(S, { t: 'parry', by: def.idx, perfect });
 }

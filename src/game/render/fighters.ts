@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import {
   RAD,
+  R,
   CHARGE_FULL,
   CHARGE_START,
   PARRY_PERFECT,
@@ -13,7 +14,7 @@ import {
   EMOTES,
   beltOf,
 } from '../../sim/data';
-import { clamp, lerp, easeOut } from '../../sim/sim';
+import { clamp, lerp, easeOut, angDiff } from '../../sim/sim';
 import { PX } from '../assets';
 import { iso, worldAngleToScreen, fillC, strokeC, cone } from './iso';
 import { C, FONT_BODY, hex, mix } from './palette';
@@ -155,6 +156,55 @@ export class Fighters {
       fillC(g, e.x, e.y, rr);
       strokeC(g, e.x, e.y, rr);
     } else cone(g, e.x, e.y, e.facing, rr, Math.max(d.arc, 24) * RAD);
+  }
+
+  // Coup entrant : éclat en étoile (façon animé) devant la tête de l'attaquant, dès la première image du coup,
+  // seulement si le coup peut toucher la cible (à portée en comptant l'élan, et dans l'angle). Le démarrage d'un
+  // coup blanc dure 150 à 240 ms, à peine le temps de réagir : l'éclat doit être immédiat et sans ambiguïté.
+  drawWarning(g: Phaser.GameObjects.Graphics, e: any, target: any, time: number) {
+    const a = e.atk;
+    if (e.state !== 'attack' || !a || !a.def || !target || target === e) return;
+    if (target.state === 'dead' || target.state === 'falling') return;
+    const d = a.def,
+      end = a.su + a.ac * 0.5;
+    if (a.t >= end) return;
+    const dx = target.x - e.x,
+      dy = target.y - e.y,
+      dist = Math.hypot(dx, dy);
+    if (dist > d.rg + d.lunge + R * 0.7 + 12) return;
+    if (
+      d.arc < 360 &&
+      Math.abs(angDiff(e.facing, Math.atan2(dy, dx))) > (d.arc * RAD) / 2 + Math.atan2(R, Math.max(dist, 1)) + 0.25
+    )
+      return;
+    // apparition en 50 ms, puis l'éclat tient jusqu'au coup et s'éteint pendant la frappe
+    const grow = easeOut(clamp(a.t / 50, 0, 1)),
+      fade = a.t > a.su ? 1 - (a.t - a.su) / (end - a.su) : 1,
+      k = grow * clamp(fade, 0, 1);
+    if (k <= 0) return;
+    const red = a.kind === 'red',
+      col = red ? (a.dragon ? C.gold : C.red) : 0xffffff,
+      f = e.facing,
+      p = iso(e.x + Math.cos(f) * 4, e.y + Math.sin(f) * 4, 50),
+      L = (red ? 21 : 18) * (0.6 + 0.4 * k) * (1 + 0.08 * Math.sin(time * 0.05)),
+      rot = time * 0.004;
+    const star = (len: number) => {
+      const pts: any[] = [];
+      for (let i = 0; i < 8; i++) {
+        const an = rot + (i * Math.PI) / 4,
+          r = i % 2 ? len * 0.28 : len;
+        pts.push({ x: p.x + Math.cos(an) * r, y: p.y + Math.sin(an) * r });
+      }
+      return pts;
+    };
+    g.fillStyle(col, 0.22 * k);
+    g.fillCircle(p.x, p.y, L * 0.9);
+    g.lineStyle(3, 0x0f1719, 0.75 * k);
+    g.strokePoints(star(L), true);
+    g.fillStyle(col, k);
+    g.fillPoints(star(L), true);
+    g.fillStyle(0xffffff, k);
+    g.fillCircle(p.x, p.y, 2.5);
   }
 
   // Traînée de coup : au premier plan (au-dessus des personnages), en transparence.

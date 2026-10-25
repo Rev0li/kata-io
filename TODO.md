@@ -12,8 +12,8 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Retours de jeu (à faire avant le retest de la phase 2)
 
-- [ ] **Supprimer le tremblement d'écran à chaque coup** : dynamique mais illisible. Garder au plus un tremblement sur l'éjection décisive (à confirmer en jouant).
-- [ ] **Indicateur de coup entrant** (remplace le cône pâle retiré) : sans lui, impossible de parer ou d'esquiver à temps. Proposition :
+- [x] **Supprimer le tremblement d'écran à chaque coup** : dynamique mais illisible. Garder au plus un tremblement sur l'éjection décisive (à confirmer en jouant).
+- [x] **Indicateur de coup entrant** (remplace le cône pâle retiré) : sans lui, impossible de parer ou d'esquiver à temps. Proposition :
   - un **éclat type animé** (étoile blanche qui scintille) sur l'arme ou la tête de l'attaquant **dès la première frame** du démarrage du coup, puisque le démarrage ne dure que 150 à 240 ms ;
   - affiché **seulement quand le coup peut me toucher** (je suis à portée et dans l'angle), pour ne pas encombrer l'écran ;
   - le coup chargé garde son annonce au sol en rouge (inchangé) ;
