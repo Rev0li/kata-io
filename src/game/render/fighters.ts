@@ -185,8 +185,8 @@ export class Fighters {
     const red = a.kind === 'red',
       col = red ? (a.dragon ? C.gold : C.red) : 0xffffff,
       f = e.facing,
-      p = iso(e.x + Math.cos(f) * 4, e.y + Math.sin(f) * 4, 50),
-      L = (red ? 21 : 18) * (0.6 + 0.4 * k) * (1 + 0.08 * Math.sin(time * 0.05)),
+      p = iso(e.x + Math.cos(f) * 4, e.y + Math.sin(f) * 4, 46),
+      L = (red ? 14 : 11) * (0.6 + 0.4 * k) * (1 + 0.08 * Math.sin(time * 0.05)),
       rot = time * 0.004;
     const star = (len: number) => {
       const pts: any[] = [];
@@ -197,14 +197,14 @@ export class Fighters {
       }
       return pts;
     };
-    g.fillStyle(col, 0.22 * k);
-    g.fillCircle(p.x, p.y, L * 0.9);
-    g.lineStyle(3, 0x0f1719, 0.75 * k);
+    g.fillStyle(col, 0.1 * k);
+    g.fillCircle(p.x, p.y, L * 0.8);
+    g.lineStyle(2, 0x0f1719, 0.55 * k);
     g.strokePoints(star(L), true);
-    g.fillStyle(col, k);
+    g.fillStyle(col, 0.9 * k);
     g.fillPoints(star(L), true);
     g.fillStyle(0xffffff, k);
-    g.fillCircle(p.x, p.y, 2.5);
+    g.fillCircle(p.x, p.y, 1.5);
   }
 
   // Traînée de coup : au premier plan (au-dessus des personnages), en transparence.
