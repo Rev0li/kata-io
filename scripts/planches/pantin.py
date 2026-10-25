@@ -22,10 +22,10 @@ TS = os.path.join(ROOT, 'src', 'game', 'render', 'pantins', CID + '.ts')
 PRE = 0.2  # réduction des pièces de face (corps entier d'environ 940 px -> 190 px)
 LIMBS = ('bras', 'avant-bras', 'cuisse', 'jambe', 'bras-sans-main')
 # Corps (hors tête) agrandi par vue : la planche de dos a été générée avec un corps plus petit que la tête.
-BODY = {'dos': 1.3}
+BODY = {'dos': 1.3, 'profil': 1.35}
 
 
-def axis(im):
+def axis(im, facing_right=False):
     a = im.getchannel('A')
     w, h = im.size
     pts = [(x, y) for y in range(0, h, 2) for x in range(0, w, 2) if a.getpixel((x, y)) > 128]
@@ -42,6 +42,9 @@ def axis(im):
     a1 = (mx + vx * lo, my + vy * lo)
     a2 = (mx + vx * hi, my + vy * hi)
     prox, dist = (a1, a2) if a1[1] <= a2[1] else (a2, a1)
+    if facing_right and abs(a2[0] - a1[0]) > abs(a2[1] - a1[1]):
+        # profil tourné vers la droite : une pièce couchée part de la gauche (coude) vers la droite (poing)
+        prox, dist = (a1, a2) if a1[0] <= a2[0] else (a2, a1)
     return [round(prox[0], 1), round(prox[1], 1)], [round(dist[0], 1), round(dist[1], 1)]
 
 
@@ -80,7 +83,7 @@ for view, hh in heads.items():
         if name.startswith('jambe'):
             p['prox'], p['dist'] = shin_axis(im)
         elif name.rsplit('-', 1)[0] in LIMBS or name in LIMBS:
-            p['prox'], p['dist'] = axis(im)
+            p['prox'], p['dist'] = axis(im, view == 'profil')
         pieces[name] = p
     views[view] = pieces
 

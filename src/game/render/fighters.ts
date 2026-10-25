@@ -340,6 +340,7 @@ export class Fighters {
       row = 0;
     let sx = 1,
       sy = 1;
+    const dcol = col; // direction réelle du regard (la planche du pack force certaines colonnes plus bas)
     const S = st === 'attack' && e.atk && e.atk.def ? this.strike(e) : null;
     const moving = v.spd > 40;
     switch (st) {
@@ -404,7 +405,8 @@ export class Fighters {
     if (pup) {
       spr.setVisible(false);
       pup.draw({
-        view: col === 1 ? 'dos' : 'face',
+        view: dcol === 1 ? 'dos' : dcol === 0 ? 'face' : 'profil',
+        flip: dcol === 2,
         dirX: c,
         dirY: sn,
         state: st,
