@@ -40,37 +40,37 @@ Trois planches de pièces par personnage : **face**, **dos** et **profil** (tour
 - Vue isométrique 2:1, soit une caméra plongeante d'environ **30°**. Les combattants restent debout.
 - À l'écran, un combattant fait **50 à 60 px de haut** sur téléphone (aujourd'hui 16 px agrandis 3 fois). Tout doit rester lisible à cette taille : silhouette nette, couleurs franches, peu de petits détails.
 - On génère grand (combattant entier d'environ **1000 px de haut**) et le jeu réduit.
-- Proportions **chibi** : la tête fait environ un tiers de la hauteur.
+- Proportions **chibi** : la tête fait environ 30 % de la hauteur. En dessous, le visage devient illisible à 60 px.
 
 ---
 
 ## 2. Bloc de style (à coller à la fin de chaque prompt)
 
-> Kung-fu fighting game character art, chibi proportions (head about one third of total height), clean cartoon cel-shading with thick dark brown-black outlines (#1b1412), two flat shadow tones, subtle rim light, warm slightly desaturated colors, crisp readable silhouette, light coming from the top-left, same art style as the attached Japanese garden arena references. Plain flat light grey background (#EDEDED), no ground shadow, no scenery, no text, no labels, no watermark, no frame.
+Style validé le 2026-10-25 avec la fiche du ninja bleu : anime chibi net, cheveux en pics avec reflets chauds, couleurs vives, trait sombre, ombres en aplats.
 
-**À joindre comme références de style** à chaque génération :
+> Clean anime chibi style matching the attached character sheet exactly: spiky hair with warm highlights, bright saturated colors, thin dark outlines, flat cel shading with one highlight tone, head about 30% of total height. Plain flat light grey background (#EDEDED), no ground shadow, no scenery, no text.
 
-- `art/reference/mondes/cerisiers-jeu.png` (le monde dans lequel le combattant doit tenir) ;
-- `art/reference/mondes/cerisiers-planche.png` (le trait et les couleurs des éléments) ;
-- `art/reference/perso-turnaround.png` (le personnage principal : gi bleu clair, chevilles bandées).
+**À joindre à chaque génération** : la fiche validée du ninja bleu, [`art/source/combattants/ninja-bleu/fiche.png`](../art/source/combattants/ninja-bleu/fiche.png). C'est elle qui garde le même personnage d'une planche à l'autre, et le même style pour les 13 autres combattants.
 
-À partir de l'étape B, joindre aussi **la fiche de référence validée à l'étape A** : c'est elle qui garde le personnage identique d'une planche à l'autre.
+Pour la fiche de contrôle (étape G), joindre aussi `art/reference/mondes/cerisiers-jeu.png`.
 
 ---
 
 ## 3. Les prompts du ninja bleu
 
-### A. Fiche de référence (turnaround)
+### A. Fiche de référence (turnaround) : validée
 
-Sert à figer le personnage. On la regénère jusqu'à en être content, puis on ne la change plus.
+Sert à figer le personnage. **Faite le 2026-10-25** : [`art/source/combattants/ninja-bleu/fiche.png`](../art/source/combattants/ninja-bleu/fiche.png). Ne plus la changer.
 
-> Character turnaround sheet of a young martial artist called "Blue Ninja": light blue gi, belt in plain light grey, short black hair, wrapped ankles, barefoot, determined expression. Four views side by side at the exact same scale, feet on the same baseline: front, three-quarter front, side view facing right, back. Neutral fighting guard stance, fists up, arms slightly away from the body so they don't hide the torso. Full body, nothing cropped, even spacing between views. [BLOC DE STYLE]
+Le prompt utilisé, pour mémoire et pour les autres combattants :
+
+> Character turnaround sheet of a young martial artist called "Blue Ninja": bright blue gi with baggy trousers, belt in plain light grey, spiky black hair with chestnut highlights, grey wraps on the wrists and ankles, barefoot, determined expression. Four views side by side at the exact same scale, feet on the same baseline: front, three-quarter front, side view facing right, back. Neutral fighting guard stance, fists up, arms slightly away from the body so they don't hide the torso. Full body, nothing cropped, even spacing between views. [BLOC DE STYLE]
 
 Format conseillé : paysage 16:9.
 
 ### B. Pièces détachées, vue de face
 
-> Cut-out puppet parts sheet for 2D skeletal animation, front view, of exactly the same character as the attached turnaround sheet. Each body part drawn separately and spaced well apart, never overlapping, all at the same scale as if the full body were about 1000 px tall: head with neutral expression, head shouting, head hurt with squinted eyes, torso with gi collar and shoulders, belt with its knot in plain light grey, hips with top of the trousers, left upper arm, right upper arm, left forearm with closed fist, right forearm with closed fist, one open palm hand, left thigh, right thigh, left lower leg with bare wrapped foot, right lower leg with bare wrapped foot. Every joint has a rounded overlapping end with extra material so parts can rotate without gaps. Neat grid layout with generous empty space between parts. [BLOC DE STYLE]
+> Cut-out puppet parts sheet for 2D skeletal animation, front view, of exactly the same character as the attached turnaround sheet. Each body part drawn separately and spaced well apart, never overlapping, all at the same scale as if the full body were about 1000 px tall: head with neutral expression, head shouting, head hurt with squinted eyes, torso with gi collar and shoulders, belt with its knot in plain light grey, hips with top of the trousers, left upper arm, right upper arm, left forearm with closed fist, right forearm with closed fist, one open palm hand, left thigh, right thigh, left lower leg with bare wrapped foot, right lower leg with bare wrapped foot. The bottom hem of the gi jacket stays attached to the torso piece (it overlaps the hips), and the wrist wraps stay on the forearms. Every joint has a rounded overlapping end with extra material so parts can rotate without gaps. Neat grid layout with generous empty space between parts. [BLOC DE STYLE]
 
 ### C. Pièces détachées, vue de dos
 
