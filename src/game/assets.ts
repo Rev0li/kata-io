@@ -2,6 +2,7 @@
 // Les planches sont assemblées par scripts/build-assets.py dans public/assets.
 import Phaser from 'phaser';
 import { worldImages } from './render/worlds';
+import { preloadPuppets } from './render/puppet';
 import { LIFE } from './render/themes';
 
 export const PX = 3; // un pixel du pack = 3 unités du monde
@@ -53,6 +54,7 @@ export function preloadAssets(scene: Phaser.Scene) {
   // Mondes : éléments provisoires découpés dans les planches (art/decoupe -> public/assets/mondes).
   for (const k of worldImages(Object.values(LIFE).flatMap(l => l.floats)))
     scene.load.image('m:' + k, BASE + 'mondes/' + k + '.png');
+  preloadPuppets(scene); // prototype ?pantin : combattants en pièces détachées
 }
 
 export function setupAssets(scene: Phaser.Scene) {
