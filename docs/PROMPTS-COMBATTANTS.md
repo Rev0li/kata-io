@@ -1,5 +1,7 @@
 # Pack de prompts : combattants
 
+> **Abandonné le 2026-10-25.** Les combattants restent en pixel art (pack Ninja Adventure), agrandis d'un tiers (4 px par pixel du pack au lieu de 3). Le pantin découpé du ninja bleu a été testé derrière `?pantin` puis retiré du jeu. Les planches générées restent dans `art/source/combattants/ninja-bleu/` et `art/decoupe/combattants/`, pour mémoire.
+
 Prompts prêts à coller dans l'IA de génération d'images, pour remplacer les combattants en pixel art 16 px par des combattants dessinés dans le style des mondes. Complète [DIRECTION-ARTISTIQUE.md](DIRECTION-ARTISTIQUE.md) (section 6.1).
 
 On commence par **un seul combattant, le ninja bleu**, et on le teste dans le jeu avant de produire les 13 autres.

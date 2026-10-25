@@ -15,11 +15,10 @@ import {
   beltOf,
 } from '../../sim/data';
 import { clamp, lerp, easeOut, angDiff } from '../../sim/sim';
-import { PX } from '../assets';
+import { FIGHTER_PX, FIGHTER_K } from '../assets';
 import { iso, worldAngleToScreen, fillC, strokeC, cone } from './iso';
 import { C, FONT_BODY, hex, mix } from './palette';
 import type { Renderer } from './index';
-import { Puppet, PUPPETS, puppetOn } from './puppet';
 
 interface View {
   spr: Phaser.GameObjects.Sprite;
@@ -36,7 +35,6 @@ interface View {
   ghostT: number;
   full: boolean;
   partT: number;
-  pup: Puppet | null; // pantin découpé (prototype ?pantin), à la place du sprite
 }
 
 export class Fighters {
@@ -58,11 +56,11 @@ export class Fighters {
     let v = this.views[i];
     if (!v) {
       const scene = this.r.scene;
-      const spr = scene.add.sprite(0, 0, 'persos', 0).setScale(PX).setDepth(2.5);
+      const spr = scene.add.sprite(0, 0, 'persos', 0).setScale(FIGHTER_PX).setDepth(2.5);
       const wpn = scene.add
         .image(0, 0, 'armes', 0)
         .setOrigin(2 / 16, 0.5)
-        .setScale(PX)
+        .setScale(FIGHTER_PX)
         .setDepth(2.5);
       v = this.views[i] = {
         spr,
@@ -79,24 +77,14 @@ export class Fighters {
         ghostT: 0,
         full: false,
         partT: 0,
-        pup: null,
       };
     }
     return v;
-  }
-  // Pantin du combattant (recréé si le personnage change).
-  puppet(v: View, id: string) {
-    if (!v.pup || v.pup.id !== id) {
-      v.pup?.destroy();
-      v.pup = new Puppet(this.r.scene, id);
-    }
-    return v.pup;
   }
   hideViews(from: number) {
     for (let i = from; i < this.views.length; i++) {
       this.views[i].spr.setVisible(false);
       this.views[i].wpn.setVisible(false);
-      this.views[i].pup?.setVisible(false);
     }
   }
 
@@ -262,7 +250,6 @@ export class Fighters {
     if (st === 'dead') {
       spr.setVisible(false);
       wpn.setVisible(false);
-      v.pup?.setVisible(false);
       v.prevState = st;
       v.prevPhase = '';
       v.prevDrop = 0;
@@ -290,10 +277,10 @@ export class Fighters {
     const G = iso(e.x, e.y);
     if (st !== 'falling' && st !== 'ledge') {
       g.fillStyle(0x1e180c, 0.34 * ga);
-      g.fillEllipse(G.x, G.y + 2, 32 * (1 - dp * 0.5), 14 * (1 - dp * 0.5));
+      g.fillEllipse(G.x, G.y + 2, 32 * FIGHTER_K * (1 - dp * 0.5), 14 * FIGHTER_K * (1 - dp * 0.5));
       const ringCol = i === myIdx ? C.ochre : hex(e.belt || beltOf(e.kos)[2]);
       g.lineStyle(2, ringCol, (i === myIdx ? 0.9 : 0.65) * ga);
-      g.strokeEllipse(G.x, G.y + 2, 44, 21);
+      g.strokeEllipse(G.x, G.y + 2, 44 * FIGHTER_K, 21 * FIGHTER_K);
     }
     if (st === 'charge') {
       const p = clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1),
@@ -340,7 +327,6 @@ export class Fighters {
       row = 0;
     let sx = 1,
       sy = 1;
-    const dcol = col; // direction réelle du regard (la planche du pack force certaines colonnes plus bas)
     const S = st === 'attack' && e.atk && e.atk.def ? this.strike(e) : null;
     const moving = v.spd > 40;
     switch (st) {
@@ -398,56 +384,15 @@ export class Fighters {
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
     const depth = 2.5 + (G.y + 4000) * 1e-5;
-    // pantin découpé : le personnage a ses pièces et l'option ?pantin est active
-    const pup = puppetOn && PUPPETS[e.look.perso] ? this.puppet(v, e.look.perso) : null;
-    const lead = Math.cos(sa) >= 0;
-    const weaponRight = S && !S.kick ? (S.side > 0 ? lead : !lead) : lead;
-    if (pup) {
-      spr.setVisible(false);
-      pup.draw({
-        view: dcol === 1 ? 'dos' : dcol === 0 ? 'face' : 'profil',
-        flip: dcol === 2,
-        dirX: c,
-        dirY: sn,
-        state: st,
-        moving,
-        walk: v.walk,
-        time,
-        strike: S
-          ? {
-              phase: S.phase,
-              ext: clamp(Math.hypot(S.P.x, S.P.y) / Math.max(20, e.atk.def.rg), 0, 1),
-              kick: S.kick,
-              side: S.side,
-            }
-          : null,
-        charge: st === 'charge' ? clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1) : 0,
-        stateT: e.stateT,
-        belt: hex(e.belt || beltOf(e.kos)[2]),
-      });
-      pup.show(G.x + jit, G.y + 3, scale, sx, sy, rot, ga, depth);
-      pup.tint(
-        v.flash > 0
-          ? 'flash'
-          : st === 'charge'
-            ? mix(0xffffff, e.qi >= 100 ? 0xffd25a : 0xff5a46, 0.35 + 0.35 * Math.sin(time * 0.035))
-            : twin
-              ? 0xffa890
-              : 'none',
-      );
-    } else v.pup?.setVisible(false);
-    if (!pup)
-      spr
-        .setVisible(true)
-        .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-        .setPosition(G.x + jit, G.y - 18)
-        .setScale(PX * scale * sx, PX * scale * sy)
-        .setRotation(rot)
-        .setAlpha(ga)
-        .setDepth(depth);
-    if (pup) {
-      /* teinte déjà posée sur le pantin */
-    } else if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    spr
+      .setVisible(true)
+      .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
+      .setPosition(G.x + jit, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
+      .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy)
+      .setRotation(rot)
+      .setAlpha(ga)
+      .setDepth(depth);
+    if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     else {
       spr.setTintMode(Phaser.TintModes.MULTIPLY);
       if (st === 'charge') {
@@ -460,7 +405,7 @@ export class Fighters {
 
     // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos. Calcul dans le monde, puis projection.
     const W = ARMES[e.look.arme] || ARMES.katana,
-      WS = PX * 0.82,
+      WS = FIGHTER_PX * 0.82,
       L = W.len * WS;
     const s0 = S ? e.atk.startStance : e.stance,
       side = s0 & 1 ? 1 : -1;
@@ -494,10 +439,9 @@ export class Fighters {
       wang = f + side * 0.3;
     }
     if (W.idx >= 0 && hand) {
-      // avec le pantin, l'arme est dans son poing
-      const hs = pup ? pup.fistWorld(weaponRight) : iso(hand.x, hand.y, 14),
+      const hs = iso(hand.x, hand.y, 14 * FIGHTER_K),
         wsa = worldAngleToScreen(wang),
-        behind = !S && hs.y + 14 < G.y - 2;
+        behind = !S && hs.y + 14 * FIGHTER_K < G.y - 2;
       wpn
         .setVisible(true)
         .setFrame(W.idx)
@@ -513,7 +457,7 @@ export class Fighters {
 
     // traînée au bout de l'arme (points en coordonnées écran) et effets de coup
     if (S && S.phase === 'ac' && tip) {
-      const T = iso(tip.x, tip.y, 14);
+      const T = iso(tip.x, tip.y, 14 * FIGHTER_K);
       (e.trail ||= []).push({ x: T.x, y: T.y, t: time, red: e.atk.kind === 'red', gold: e.atk.dragon });
       v.partT -= dt * 1000;
       if (v.partT <= 0) {
@@ -558,7 +502,7 @@ export class Fighters {
       v.ghostT -= dt * 1000;
       if (v.ghostT <= 0) {
         v.ghostT = 40;
-        if (!pup) fx.ghost(spr, depth - 1e-5, C.jade);
+        fx.ghost(spr, depth - 1e-5, C.jade);
       }
     }
     if (st === 'ledge' && v.prevState !== 'ledge') fx.fx('dust', G.x, G.y, 0, 1.6);
@@ -597,7 +541,7 @@ export class Fighters {
         emo
           .setVisible(true)
           .setText(EMOTES[e.emote.id])
-          .setPosition(G.x, G.y - 52)
+          .setPosition(G.x, G.y - 52 * FIGHTER_K)
           .setAlpha(clamp(al, 0, 1));
       } else emo.setVisible(false);
     });
