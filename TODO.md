@@ -67,6 +67,16 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [ ] **Partie publique** (bouton « Bientôt » de l'accueil) : affronter un joueur au hasard sans code. Sans serveur : le premier qui cherche ouvre une salle PeerJS à un nom connu de tous, le suivant la rejoint. À tester à deux sur deux machines.
 - [ ] Plus tard : serveur autoritaire (réutilise `src/sim`) et prédiction chez le client. Hors Vercel (pas de WebSocket).
 
+## Phase 4b : comptes joueurs (voir [docs/COMPTES.md](docs/COMPTES.md))
+
+- [ ] Service comptes sur le VPS : BetterAuth + PostgreSQL (instance séparée de rev0auth), comptes invités, Google et Discord.
+- [ ] API du profil : lire, écrire, fusionner (avec tests).
+- [ ] Côté jeu : compte invité créé en silence, profil synchronisé, reprise du profil local existant.
+- [ ] Interface : « Protège ta progression » (dès l'étage 3 gagné), « J'ai déjà un compte », « Se déconnecter », « Supprimer mon compte ».
+- [ ] Duel public et classement du défi du jour réservés aux comptes protégés.
+- [ ] Domaine `kata.rev0li.duckdns.org` servi par Caddy (jeu + API).
+- [ ] Mode test désactivé pour les comptes protégés.
+
 ## Phase 5 : gameplay et refonte V1
 
 - [ ] Équilibrage de la Tour (`npx tsx scripts/towercheck.ts 0.45`) : l'étage 2 (47 %) est plus dur que les étages 3 à 6, les étages 9 à 12 sont à 10 % ou moins, l'étage 5 dure 131 s.

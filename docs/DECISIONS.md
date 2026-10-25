@@ -93,6 +93,13 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
  
 ---
  
+## D13. Comptes joueurs
+- **Question :** comment le joueur retrouve-t-il sa progression d'un appareil à l'autre, le plus simplement possible ?
+- **Décision :** **compte invité d'abord**, créé en silence au premier lancement ; on le protège en un clic avec **Google** ou **Discord**. Pas de mot de passe. **Statut : DÉCIDÉ, pas encore codé.**
+- **Technique :** BetterAuth + PostgreSQL sur le VPS, **instance séparée de rev0auth**. Le jeu et l'API servis sur un seul domaine (`kata.rev0li.duckdns.org`, à créer) par Caddy.
+- **Précisions :** invitation à protéger son compte dès l'étage 3 gagné ; duel public et classement du défi du jour réservés aux comptes protégés ; progression locale actuelle reprise automatiquement.
+- **Détails :** [COMPTES.md](COMPTES.md).
+
 ## Ordre de production retenu
 1. **Vanilla fun et complet** : combat, souffle, stabilité, ring-out, anti-stalemate, anti-spam, sensation "animé", boucle manche/victoire/revanche.
 2. **Duel privé** et multijoueur.
