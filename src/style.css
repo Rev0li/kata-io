@@ -2286,8 +2286,13 @@ body.touch .atk b {
       rgba(8, 12, 18, 0.6) 100%
     );
 }
-.screen.menu > * {
+.screen.menu > *,
+.mpanel > * {
   pointer-events: auto;
+}
+/* téléphone : la colonne se défait, chaque élément se pose sur un bord de l'écran */
+.mpanel {
+  display: contents;
 }
 .mbar {
   position: absolute;
@@ -2667,5 +2672,33 @@ details.dev .inner {
   }
   .shop .shopgrid {
     max-height: calc(100vh - 222px);
+  }
+}
+
+/* ordinateur : logo, combattant et modes de jeu regroupés en une colonne, juste à droite du combattant */
+@media (min-width: 1000px) and (min-height: 600px) {
+  .mpanel {
+    position: absolute;
+    left: calc(50% + 40px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mpanel .mbar,
+  .mpanel .mhero,
+  .mpanel .mplay {
+    position: static;
+    transform: none;
+    width: auto;
+  }
+  .mpanel .mbar {
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+  .mpanel .mlogo {
+    font-size: 48px;
   }
 }

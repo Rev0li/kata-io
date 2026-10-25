@@ -144,7 +144,9 @@ export class GameScene extends Phaser.Scene {
     } // vitrine de la boutique
     // accueil : le combattant en grand, un peu à gauche ; la colonne des modes de jeu est à droite
     const menu = session.mode === 'menu' && !viewState.shop;
-    if (menu && this.scale.width > this.scale.height) tx += (this.scale.width * 0.13) / cam.zoom;
+    // ordinateur (≥ 1000 × 600) : la colonne commence juste à droite du centre ; téléphone : elle est collée au bord droit
+    const wide = this.scale.width >= 1000 && this.scale.height >= 600;
+    if (menu && this.scale.width > this.scale.height) tx += (wide ? 190 : this.scale.width * 0.13) / cam.zoom;
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
     if (viewState.shop) {
       const W0 = this.scale.width,
@@ -160,7 +162,7 @@ export class GameScene extends Phaser.Scene {
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
-    if (menu) z = clamp(H / 400, 1.3, 2.4); // gros plan sur le combattant, en gardant la plateforme et un peu de décor
+    if (menu) z = wide ? clamp(H / 450, 1.5, 2.2) : clamp(H / 400, 1.3, 2.4); // gros plan sur le combattant, en gardant la plateforme et un peu de décor
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
