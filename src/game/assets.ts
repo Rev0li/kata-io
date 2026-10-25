@@ -2,10 +2,13 @@
 // Les planches sont assemblées par scripts/build-assets.py dans public/assets.
 import Phaser from 'phaser';
 import { worldImages } from './render/worlds';
-import { preloadPuppets } from './render/puppet';
 import { LIFE } from './render/themes';
 
 export const PX = 3; // un pixel du pack = 3 unités du monde
+// Combattants et armes un peu plus grands que le reste du pack (4 au lieu de 3). Réglable avec ?px= pour comparer.
+const pxParam = typeof location !== 'undefined' ? Number(new URLSearchParams(location.search).get('px')) : 0;
+export const FIGHTER_PX = pxParam >= 2 && pxParam <= 6 ? pxParam : 4;
+export const FIGHTER_K = FIGHTER_PX / PX; // facteur d'agrandissement, pour les décalages (main, ombre, bulles)
 export const FX_KEYS = [
   'hit',
   'star',
@@ -54,7 +57,6 @@ export function preloadAssets(scene: Phaser.Scene) {
   // Mondes : éléments provisoires découpés dans les planches (art/decoupe -> public/assets/mondes).
   for (const k of worldImages(Object.values(LIFE).flatMap(l => l.floats)))
     scene.load.image('m:' + k, BASE + 'mondes/' + k + '.png');
-  preloadPuppets(scene); // prototype ?pantin : combattants en pièces détachées
 }
 
 export function setupAssets(scene: Phaser.Scene) {

@@ -13,6 +13,7 @@
 //   world.ts     sol, étang (eau, glace, lave), décor posé et premier plan en parallaxe
 import Phaser from 'phaser';
 import { lerp, Ev } from '../../sim/sim';
+import { FIGHTER_K } from '../assets';
 import { sfxAt } from '../audio';
 import { ISO, iso, worldAngleToScreen, fillC, strokeC } from './iso';
 import { C, hex } from './palette';
@@ -105,7 +106,7 @@ export class Renderer {
     switch (ev.t) {
       case 'float': {
         const S = iso(ev.x, ev.y + 52);
-        fx.addFloat(S.x, S.y - 46, ev.text, ev.col, ev.size);
+        fx.addFloat(S.x, S.y - 46 * FIGHTER_K, ev.text, ev.col, ev.size); // au-dessus de la tête
         break;
       }
       case 'sparks':

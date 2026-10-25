@@ -20,6 +20,8 @@ Le pixel art est la couche qui jure : les décors et les références sont déj�
 
 ### Décision à prendre : le style cible
 
+**Décidé le 2026-10-25 pour les combattants : on garde le pixel art**, agrandi d'un tiers (`FIGHTER_PX = 4` dans `src/game/assets.ts`). Un pantin découpé dessiné a été essayé puis abandonné (voir [PROMPTS-COMBATTANTS.md](PROMPTS-COMBATTANTS.md)).
+
 **Recommandation : cartoon cel-shading à contour sombre, celui des références.** Les décors SVG en sont déjà proches, et la maquette `accueil-v2.png` montre qu'il tient aussi pour l'interface. Le pixel art serait remplacé progressivement, en commençant par les combattants. Les maquettes des mondes (section 5) vont dans ce sens.
 
 Alternative : garder le pixel art et repixeliser les décors. Moins de travail sur les personnages (le pack fournit déjà les animations), mais on perd les décors vectoriels et la maquette d'accueil.
