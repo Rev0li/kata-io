@@ -27,7 +27,7 @@ import { onEnd, onRematch, cancelEnd, runMain, runAlt } from './result';
 import { onTuto, onTutoDone, skipTuto } from './tutobar';
 
 export function setupUI() {
-  controls.blockedFn = () => nav.current !== '';
+  controls.blockedFn = () => nav.current !== '' && nav.current !== 'home'; // à l'accueil, on s'échauffe au clavier
   session.hooks = {
     onStart() {
       cancelEnd();

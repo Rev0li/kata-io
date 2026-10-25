@@ -37,12 +37,20 @@ export class GameScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (session.mode === 'menu') {
-        // accueil : toucher son combattant ouvre le vestiaire
-        const me = session.state?.f[0];
-        if (!me) return;
+        // accueil : toucher son combattant ouvre le vestiaire, toucher le mannequin le frappe, toucher la plateforme y marche
+        const st = session.state;
+        if (!st) return;
         const w = cam.getWorldPoint(p.x, p.y),
-          g = iso2(me.x, me.y);
-        if (Math.abs(w.x - g.x) < 30 && Math.abs(w.y - (g.y - 20)) < 36) viewState.onHero?.();
+          on = (e: any) => {
+            const g = iso2(e.x, e.y);
+            return Math.abs(w.x - g.x) < 30 && Math.abs(w.y - (g.y - 20)) < 36;
+          };
+        if (on(st.f[0])) viewState.onHero?.();
+        else if (st.f[1] && on(st.f[1])) session.menuGo(st.f[1].x, st.f[1].y, true);
+        else {
+          const t = unIso(w.x, w.y);
+          if (Math.abs(t.x) < st.H - 10 && Math.abs(t.y) < st.H - 10) session.menuGo(t.x, t.y, false);
+        }
         return;
       }
       if (!session.active || controls.blocked() || p.wasTouch) return;
@@ -162,7 +170,7 @@ export class GameScene extends Phaser.Scene {
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
-    if (menu) z = wide ? clamp(H / 450, 1.5, 2.2) : clamp(H / 400, 1.3, 2.4); // gros plan sur le combattant, en gardant la plateforme et un peu de décor
+    if (menu) z = wide ? clamp(H / 560, 1.3, 1.8) : clamp(H / 400, 1.3, 2.4); // gros plan sur le combattant, en gardant la plateforme et un peu de décor
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
