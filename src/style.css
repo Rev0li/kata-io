@@ -2494,7 +2494,7 @@ body.touch .atk b {
 .lock {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .lock[hidden] {
   display: none;
@@ -2502,6 +2502,10 @@ body.touch .atk b {
 .lock small {
   color: var(--cream);
   font-size: 12px;
+}
+.lock .lockhd {
+  color: var(--ochre);
+  font-weight: 600;
 }
 .lock .xpbar i {
   background: linear-gradient(90deg, var(--gold-2), var(--gold-1));

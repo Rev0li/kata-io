@@ -6,7 +6,16 @@
 //   Mode test       panneau de test, à la place de Communauté en attendant
 // Les paramètres (commandes, son, plein écran) s'ouvrent par la roue en haut à droite.
 import { PERSOS, ARMES, MONDES, LEVELS } from '../sim/data';
-import { RANKS, rankProgress, towerFloor, streakMult, dailyFloor, DAILY_COINS, Abil } from '../sim/progression';
+import {
+  RANKS,
+  rankProgress,
+  towerFloor,
+  streakMult,
+  dailyFloor,
+  DAILY_COINS,
+  Abil,
+  TOWER_LEN,
+} from '../sim/progression';
 import { MeSpec } from '../net/session';
 import { controls } from './controls';
 import { sfx } from '../game/audio';
@@ -14,9 +23,12 @@ import { $, toast } from './dom';
 import { profile, save, myRank, myAbil, myLook, persoOpen, armeOpen, PK, AK, nextFloor, rollDaily } from './profile';
 import { viewState } from './viewstate';
 
-// Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire, au bout de la Tour).
+// Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
+// et les 12 étages de la Tour gagnés (towerMax = prochain étage à jouer, donc 13 après le 12e).
 const TECHS = RANKS.filter(r => r.unlock).length;
-export const publicOpen = () => myRank() >= RANKS.length - 1;
+const techsGot = () => RANKS.slice(1, myRank() + 1).filter(r => r.unlock).length;
+const floorsWon = () => Math.min(TOWER_LEN, profile.towerMax - 1);
+export const publicOpen = () => techsGot() >= TECHS && floorsWon() >= TOWER_LEN;
 
 // Parchemin de chaque technique (pack Ninja Adventure, public/assets/items).
 export const SCROLLS: Record<string, string> = {
@@ -197,12 +209,15 @@ export function renderHome() {
     : profile.streak >= 2
       ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}`
       : `Étage ${f.n} · ${f.name}`;
-  // partie publique : verrouillée tant que toutes les techniques ne sont pas acquises
-  const got = RANKS.slice(1, myRank() + 1).filter(r => r.unlock).length,
+  // partie publique : verrouillée tant que la Tour n'est pas finie et toutes les techniques acquises
+  const got = techsGot(),
+    won = floorsWon(),
     open = publicOpen();
   $('#publicLock').hidden = open;
-  $('#publicLockTxt').textContent = `Gravis la Tour : il faut toutes les techniques (${got} sur ${TECHS}).`;
-  ($('#publicProg') as HTMLElement).style.width = Math.round((got / TECHS) * 100) + '%';
+  $('#publicTechs').textContent = `Techniques : ${got} sur ${TECHS}`;
+  ($('#publicTechsBar') as HTMLElement).style.width = Math.round((got / TECHS) * 100) + '%';
+  $('#publicFloors').textContent = `Étages de la Tour : ${won} sur ${TOWER_LEN}`;
+  ($('#publicFloorsBar') as HTMLElement).style.width = Math.round((won / TOWER_LEN) * 100) + '%';
   $('#publicBtn').textContent = open ? 'Bientôt' : 'Verrouillée';
   renderCoins();
   ($('#setSfx') as HTMLInputElement).checked = profile.sfx;
