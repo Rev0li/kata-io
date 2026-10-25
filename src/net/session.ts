@@ -372,7 +372,14 @@ class Session {
       });
     }
     if (this.mode === 'guest') this.mirror = createMirror(this.specs);
-    else this.sim = createSim(this.specs, this.opts);
+    else {
+      this.sim = createSim(this.specs, this.opts);
+      // Les compteurs d'actions (parade, esquive, emote) continuent d'une partie à l'autre : le nouveau combattant
+      // part des valeurs actuelles, sinon il prend l'écart pour un appui et esquive dès son apparition.
+      const me = this.sim.f[this.myIdx],
+        i = this.input;
+      if (me && !me.bot) me.inPrev = { atk: false, parryN: i.parryN, dodgeN: i.dodgeN, emoteN: i.emoteN };
+    }
     if (!silent) this.hooks.onStart?.();
   }
 
