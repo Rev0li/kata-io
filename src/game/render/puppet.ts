@@ -34,7 +34,8 @@ export function preloadPuppets(scene: Phaser.Scene) {
 
 // Ce que le rendu des combattants sait de la posture à afficher.
 export interface Pose {
-  view: 'face' | 'dos';
+  view: 'face' | 'dos' | 'profil';
+  flip: boolean; // profil tourné vers la gauche (la planche est tournée vers la droite)
   dirX: number; // direction du regard à l'écran (cos), pour les coups et le côté de l'arme
   dirY: number; // (sin)
   state: string;
@@ -78,7 +79,8 @@ export class Puppet {
   box: Phaser.GameObjects.Container;
   parts: Record<string, Img> = {};
   rig: PuppetRig;
-  view: 'face' | 'dos' | '' = '';
+  view: 'face' | 'dos' | 'profil' | '' = '';
+  flip = false;
   fist: { L: { x: number; y: number }; R: { x: number; y: number } } = { L: { x: 0, y: 0 }, R: { x: 0, y: 0 } };
   bodyH = 190;
 
@@ -98,7 +100,7 @@ export class Puppet {
   }
 
   // Construit les pièces d'une vue, dans l'ordre d'affichage (du fond vers l'avant).
-  private build(view: 'face' | 'dos') {
+  private build(view: 'face' | 'dos' | 'profil') {
     this.box.removeAll(true);
     this.parts = {};
     this.view = view;
@@ -118,7 +120,21 @@ export class Puppet {
             'avant-bras-g',
             'tete',
           ]
-        : ['bras-g', 'bras-d', 'jambe-g', 'jambe-d', 'bassin', 'cuisse-g', 'cuisse-d', 'buste-ceinture', 'tete'];
+        : view === 'dos'
+          ? ['bras-g', 'bras-d', 'jambe-g', 'jambe-d', 'bassin', 'cuisse-g', 'cuisse-d', 'buste-ceinture', 'tete']
+          : [
+              'avant-bras-loin',
+              'bras-loin',
+              'jambe-loin',
+              'bassin',
+              'jambe-proche',
+              'buste',
+              'pan-veste',
+              'ceinture',
+              'tete',
+              'bras-proche',
+              'avant-bras-proche',
+            ];
     for (const n of order) {
       if (!this.rig[view][n]) continue;
       const img = this.scene.add.image(0, 0, `pp:${this.id}:${view}:${n}`);
@@ -145,6 +161,8 @@ export class Puppet {
 
   draw(p: Pose) {
     if (p.view !== this.view) this.build(p.view);
+    this.flip = p.view === 'profil' && p.flip;
+    if (p.view === 'profil') return this.drawProfile(p);
     const R = this.rig[p.view],
       face = p.view === 'face';
     // longueurs des os
@@ -284,13 +302,107 @@ export class Puppet {
     if (belt) belt.setTint(p.belt);
   }
 
+  // Profil (tourné vers la droite ; le miroir donne la gauche) : jambes d'une pièce qui pivotent à la hanche,
+  // bras proche et bras éloigné (plus sombre) en deux os.
+  private drawProfile(p: Pose) {
+    const R = this.rig.profil,
+      st = p.state,
+      t = p.time,
+      s = p.strike,
+      ph = (p.walk / 52) * Math.PI * 2,
+      walking = p.moving && (st === 'idle' || st === 'frozen'),
+      down = Math.PI / 2;
+    const legL = len(R['jambe-proche']) * 0.96,
+      armL = len(R['bras-proche']) * 0.9,
+      foreL = len(R['avant-bras-proche']) * 0.85,
+      torso = R['buste'],
+      head = R['tete'];
+    // jambes : angle depuis la verticale (négatif = pied vers l'avant)
+    let aN = -0.2,
+      aF = 0.2;
+    if (walking) {
+      aN = 0.4 * Math.sin(ph);
+      aF = -0.4 * Math.sin(ph);
+    }
+    if (st === 'charge') {
+      aN = -0.32 - 0.1 * p.charge;
+      aF = 0.32 + 0.1 * p.charge;
+    }
+    if (st === 'dodge') {
+      aN = -0.45;
+      aF = 0.3;
+    }
+    if (s && s.kick) aN = -(Math.PI / 2 + 0.15) * s.ext;
+    const bob = walking ? -Math.abs(Math.sin(ph)) * 3 : Math.sin(t * 0.004) * 0.8;
+    // la hanche descend quand les jambes s'écartent : les pieds restent au sol
+    const support = s && s.kick ? Math.cos(aF) : Math.min(Math.cos(aN), Math.cos(aF));
+    const hipY = -legL * support + bob,
+      lean = st === 'dodge' ? -0.25 : s && s.kick ? -0.15 * s.ext : s && s.phase === 'ac' ? 0.08 : 0;
+    const hemY = hipY + 2,
+      topY = hemY - torso.h,
+      shY = topY + torso.h * 0.25,
+      shX = 2 + lean * 12,
+      neckY = topY + 6;
+    this.bodyH = -(neckY - head.h * HEAD * 0.95) + 2;
+    this.place('bassin', 0.45, 0.08, 0, hipY - 8);
+    this.bone('jambe-loin', -2, hipY, down + aF);
+    this.bone('jambe-proche', 2, hipY, down + aN);
+    this.place('buste', 0.5, 1, 0, hemY, lean);
+    this.place('pan-veste', 0.4, 0.12, 0, hemY - 6, lean * 0.5);
+    const belt = this.parts['ceinture'];
+    if (belt) {
+      this.place('ceinture', 0.5, 0.5, 0, hemY - 8, lean * 0.5);
+      belt.setScale((torso.w * 1.05) / R['ceinture'].w, 1).setTint(p.belt);
+    }
+    this.place('tete', 0.42, 0.95, 2 + lean * 18, neckY + (st === 'charge' ? 2 : 0), lean * 0.6);
+    this.parts['tete']?.setScale(HEAD);
+    // poings : garde devant le visage, coup vers l'avant, selon l'état
+    const uy = p.dirY * 0.3;
+    let hN = { x: shX + 16, y: shY + 4 },
+      hF = { x: shX + 12, y: shY };
+    if (walking) {
+      hN.x += Math.sin(ph) * 2;
+      hF.x -= Math.sin(ph) * 2;
+    }
+    if (s && !s.kick) {
+      const reach = (armL + foreL) * (0.3 + 0.7 * s.ext),
+        tgt = { x: shX + reach, y: shY + 2 + uy * reach };
+      if (s.side > 0) hN = tgt;
+      else hF = tgt;
+    } else if (st === 'charge') {
+      hN = { x: -10, y: shY + 14 };
+      hF = { x: -6, y: shY + 10 };
+    } else if (st === 'parry') {
+      hN = { x: shX + 11, y: shY - 6 };
+      hF = { x: shX + 9, y: shY - 2 };
+    } else if (st === 'stun' || st === 'recover' || st === 'tumble') {
+      hN = { x: -14, y: shY - 12 + Math.sin(t * 0.03) * 5 };
+      hF = { x: -10, y: shY - 14 - Math.sin(t * 0.03) * 5 };
+    } else if (st === 'falling' || st === 'ledge' || st === 'climb') {
+      hN = { x: 6, y: shY - 34 };
+      hF = { x: 2, y: shY - 32 };
+    }
+    for (const [near, h] of [
+      [false, hF],
+      [true, hN],
+    ] as [boolean, { x: number; y: number }][]) {
+      const c = near ? 'proche' : 'loin',
+        sx = shX + (near ? 1 : -3),
+        sy = shY + (near ? 0 : -1);
+      const k = ik2(sx, sy, h.x, h.y, armL, foreL, 0);
+      this.bone('bras-' + c, sx, sy, k.a1);
+      this.bone('avant-bras-' + c, k.ex - Math.cos(k.a1) * JOINT, k.ey - Math.sin(k.a1) * JOINT, k.a2);
+      if (near) this.fist.L = this.fist.R = { x: k.fx, y: k.fy }; // l'arme est dans le poing proche
+    }
+  }
+
   // Place le pantin (pieds en x, y), à l'échelle du monde ; renvoie de quoi poser l'arme dans la main.
   show(x: number, y: number, scale: number, sx: number, sy: number, rot: number, alpha: number, depth: number) {
     const k = (HEIGHT / this.bodyH) * scale;
     this.box
       .setVisible(true)
       .setPosition(x, y)
-      .setScale(k * sx, k * sy)
+      .setScale(k * sx * (this.flip ? -1 : 1), k * sy)
       .setRotation(rot)
       .setAlpha(alpha)
       .setDepth(depth);
