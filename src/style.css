@@ -2204,29 +2204,40 @@ body.touch .atk b {
 /* roue des paramètres, en haut à droite de l'accueil */
 .topbtn {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
-  right: max(12px, env(safe-area-inset-right, 0px));
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: max(14px, env(safe-area-inset-right, 0px));
   z-index: 5;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 1px solid var(--slate);
-  border-radius: 10px;
-  background: rgba(17, 24, 32, 0.9);
+  border-radius: 50%;
+  background: rgba(17, 24, 32, 0.88);
   color: var(--cream);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
+/* roue crantée : un anneau, huit dents (pointillés épais) et le moyeu */
 .topbtn svg {
   width: 24px;
   height: 24px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform 0.4s ease;
+}
+.topbtn svg .teeth {
+  stroke-width: 3.2;
+  stroke-dasharray: 3.3 3.3;
 }
 .topbtn:hover {
   color: var(--gold-1);
   border-color: var(--gold-2);
+}
+.topbtn:hover svg {
+  transform: rotate(45deg);
 }
 /* bouton secondaire, à côté d'un bouton doré */
 .btn-ghost {
