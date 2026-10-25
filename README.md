@@ -36,6 +36,8 @@ Ce qui donne envie de rejouer :
 
 L'accueil est un écran de jeu, pas un site à onglets : **ton combattant en grand sur la plateforme** du monde choisi (il salue en arrivant), un gros bouton **Jouer** (étage suivant de la Tour, ou le tutoriel la première fois), puis **Défi du jour**, **Entraînement** et **Duel**. En bas à gauche : nom, ceinture, XP, prochaine technique, **Vestiaire** et **Étages**. La roue en haut à droite ouvre les paramètres (commandes, son, plein écran, mode test). Entraînement et Duel s'ouvrent dans un panneau à droite, le décor reste visible.
 
+**On s'échauffe à l'accueil** : un mannequin d'entraînement se tient à côté de ton combattant. Sur ordinateur, ZQSD ou flèches pour bouger, J frapper, K parer, Espace esquiver, 1 à 4 pour les emotes (le clavier ne marche qu'à l'accueil, pas dans les autres écrans). Au toucher ou à la souris : toucher la plateforme, le combattant y marche ; toucher le mannequin, il va le frapper ; toucher son combattant ouvre le Vestiaire. Le mannequin encaisse sans tomber et revient à sa place.
+
 ## Vestiaire
 
 Tout ce qui change l'apparence au même endroit : **combattant** (gagné en battant le gardien d'un étage), **arme** (gagnée avec une ceinture), **traînée** et **plouf** (achetés avec les pièces). On y entre par le bouton Vestiaire ou en touchant son combattant sur la plateforme.
