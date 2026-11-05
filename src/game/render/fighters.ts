@@ -468,7 +468,7 @@ export class Fighters {
     }
 
     // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos. Calcul dans le monde, puis projection.
-    const W = ARMES[e.look.arme] || ARMES.katana,
+    const W = LPC ? ARMES.mains : ARMES[e.look.arme] || ARMES.katana, // essai LPC : mains nues (armes du pack plus adaptées)
       WS = LPC ? 2.6 : FIGHTER_PX * 0.82,
       L = W.len * WS;
     const s0 = S ? e.atk.startStance : e.stance,
