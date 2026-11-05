@@ -102,6 +102,8 @@ Les durées viennent de la simulation (`src/sim`).
 | Tornade | pied, tour complet | **à dessiner**, ou `jump` + rotation des 4 directions (effet tourbillon) |
 | Fauchage | pied rasant, tour | **à dessiner** (balayage accroupi long) |
 
+**Gestes provisoires en place** (`GESTES` dans `src/game/render/fighters.ts`, sans nouveau dessin) : les jambes utilisent la marche (genou levé à l'armement, jambes écartées à la frappe) ; les tours (tornade, fauchage, balayage, fouetté, pied retourné) passent par les 4 directions, image par image ; les sauts (uppercut volant, tornade, genou, fouetté) et le pied hache (monte puis s'abat, poussière) décollent le sprite ; balayage, fauchage et uppercut s'accroupissent (sprite tassé) ; double frappe et rafale rejouent le geste à chaque frappe (la rafale alterne estoc et taille) ; le revers joue la taille à l'envers ; le coude est un estoc court ; la paume pousse mains devant ; le coup de bélier court avant de frapper. En plus : respiration au repos, posture ramassée pendant la charge.
+
 **Bilan coups** : 7 poings jouables avec LPC tel quel ; **9 coups de jambe et 2 retouches à produire**.
 
 ## 5. Gestes et emotes

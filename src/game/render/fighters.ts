@@ -51,6 +51,50 @@ const CAST_OPEN = 1,
   CAST_FLUNG = 4,
   CAST_FLAIL = 5,
   CAST_DOWN = 6;
+// Marche réutilisée pour les jambes : 0 = debout, 1 = jambes écartées (jambe tendue), 3 = genou levé.
+const WALK_STAND = 0,
+  WALK_SPREAD = 1,
+  WALK_KNEE = 3;
+// Ordre des directions LPC en tournant sur soi (bas, gauche, haut, droite) : un tour se joue image par image.
+const SPIN = [2, 1, 0, 3];
+// Geste de chaque coup (les 18 coups de src/sim/data.ts), fait avec les images complètes de LPC :
+// bras = estoc ou taille ; jambes = marche (genou levé puis jambes écartées) ; push = paume (sort, mains devant).
+// low = accroupi (hauteur), hop = saut (px), spin = tours pendant la frappe, turn = tour pendant l'armement,
+// slam = monte à l'armement puis s'abat, run = course d'élan, rev = taille à l'envers, short = estoc court,
+// alt = alterne estoc et taille à chaque frappe.
+interface Geste {
+  g: 'thrust' | 'slash' | 'kick' | 'push';
+  low?: number;
+  hop?: number;
+  spin?: number;
+  turn?: boolean;
+  slam?: boolean;
+  run?: boolean;
+  rev?: boolean;
+  short?: boolean;
+  alt?: boolean;
+  knee?: boolean;
+}
+const GESTES: Record<string, Geste> = {
+  direct: { g: 'thrust' },
+  crochet: { g: 'slash' },
+  revers: { g: 'slash', rev: true },
+  coude: { g: 'thrust', short: true },
+  paume: { g: 'push' },
+  double: { g: 'thrust' },
+  rafale: { g: 'thrust', alt: true },
+  lowkick: { g: 'kick', low: 0.93 },
+  genou: { g: 'kick', knee: true, hop: 3 },
+  fouette: { g: 'kick', hop: 4, spin: 0.5 },
+  balayage: { g: 'kick', low: 0.82, spin: 0.5 },
+  pique: { g: 'kick', hop: 2 },
+  retourne: { g: 'kick', turn: true },
+  hache: { g: 'kick', slam: true },
+  uppercut: { g: 'thrust', hop: 14, low: 0.9 },
+  belier: { g: 'thrust', run: true },
+  tornade: { g: 'kick', hop: 8, spin: 1 },
+  faucheur: { g: 'kick', low: 0.82, spin: 1 },
+};
 function lpcFrame(row: number, f: number) {
   return row * LPC_COLS + f;
 }
@@ -252,18 +296,81 @@ export class Fighters {
     }
   }
 
-  // Essai LPC : image selon l'état (marche, estoc ou balayage suivant la phase du coup, charge, parade, esquive, chute),
-  // et petit décollage vertical (dy, en px, négatif = en l'air) pour les réactions aux coups.
-  lpcPose(e: any, S: any, st: string, col: number, v: View) {
+  // Essai LPC : image selon l'état, décollage vertical (dy, px, négatif = en l'air) et tassement (sy, 1 = normal).
+  lpcPose(e: any, S: any, st: string, col: number, v: View, time: number) {
+    if (st === 'attack' && S) return this.lpcAttack(e, S, LPC_DIR[col]);
     const f = this.lpcFrameOf(e, S, st, col, v);
     const t = e.stateT;
     if (st === 'stun' && e.stunDur < 600) {
       // touché : projeté un instant (petit bond en arrière)
       const k = t / (e.stunDur * 0.5);
-      return { f, dy: k < 1 ? -4 * Math.sin(Math.PI * k) : 0 };
+      return { f, dy: k < 1 ? -4 * Math.sin(Math.PI * k) : 0, sy: 1 };
     }
-    if (st === 'tumble') return { f, dy: -7 * Math.abs(Math.sin(t / 110)) }; // éjecté : rebonds
-    return { f, dy: 0 };
+    if (st === 'tumble') return { f, dy: -7 * Math.abs(Math.sin(t / 110)), sy: 1 }; // éjecté : rebonds
+    if (st === 'charge') return { f, dy: 0, sy: 0.94 }; // fléchi, ramassé sur lui-même
+    if ((st === 'idle' || st === 'frozen') && v.spd <= 40) return { f, dy: 0, sy: 1 + 0.012 * Math.sin(time / 380) }; // respire
+    return { f, dy: 0, sy: 1 };
+  }
+
+  // Coup : armement (su), frappe (ac, une par coup pour les coups multiples), retour (rc).
+  lpcAttack(e: any, S: any, dir: number) {
+    const R = LPC_ROW,
+      a = e.atk,
+      d = a.def,
+      G: Geste = GESTES[d.id] || { g: d.limb === 'poing' ? (d.sweep ? 'slash' : 'thrust') : 'kick' };
+    const prog = (p: number, n: number) => Math.min(n - 1, Math.floor(clamp(p, 0, 0.999) * n));
+    const t = a.t,
+      su = a.su,
+      ac = a.ac,
+      hits = d.hits || 1;
+    const phase = S.phase,
+      pSu = clamp(t / su, 0, 1),
+      pRc = clamp((t - su - ac) / a.rc, 0, 1);
+    // frappe en cours (coups multiples : chaque frappe rejoue le geste)
+    const seg = ac / hits,
+      k = Math.min(hits - 1, Math.floor(clamp(t - su, 0, ac - 1) / seg)),
+      pAc = clamp((t - su - k * seg) / seg, 0, 1),
+      pAll = clamp((t - su) / ac, 0, 1);
+    // direction : tour pendant l'armement (pied retourné) ou pendant la frappe (tornade, balayage)
+    let dd = dir;
+    const turnBy = (frac: number) => SPIN[(SPIN.indexOf(dir) + Math.floor(frac * 4)) % 4];
+    if (G.turn && phase === 'su') dd = turnBy(pSu);
+    if (G.spin && phase === 'ac') dd = turnBy(pAll * 4 * G.spin);
+    let f: number,
+      dy = 0,
+      sy = 1;
+    const arm = (g: string) => {
+      const sweep = g === 'slash',
+        row = (sweep ? R.slash : R.thrust) + dd,
+        n = sweep ? 6 : 8,
+        wind = sweep ? 2 : 4;
+      if (phase === 'su') return lpcFrame(row, prog(pSu, wind));
+      if (phase === 'ac') {
+        let i = wind + prog(pAc, n - wind);
+        if (G.rev) i = n - 1 - prog(pAc, n - wind); // revers : le bras repart dans l'autre sens
+        if (G.short) i = Math.min(i, wind + 1); // coude : geste court
+        return lpcFrame(row, i);
+      }
+      return lpcFrame(row, pRc < 0.5 ? n - 1 : 0);
+    };
+    if (G.g === 'kick') {
+      const legs = (i: number) => lpcFrame(R.walk + dd, i);
+      if (phase === 'su') f = legs(pSu < 0.5 ? WALK_STAND : WALK_KNEE);
+      else if (phase === 'ac') f = legs(G.knee ? WALK_KNEE : WALK_SPREAD);
+      else f = legs(pRc < 0.5 ? WALK_SPREAD : WALK_STAND);
+    } else if (G.g === 'push') {
+      f = lpcFrame(R.cast + dd, phase === 'su' ? CAST_OPEN : phase === 'ac' ? CAST_GUARD : pRc < 0.5 ? CAST_GUARD : 0);
+    } else if (G.run && phase === 'su')
+      f = lpcFrame(R.walk + dd, 1 + (Math.floor(t / 35) % 8)); // course d'élan
+    else f = arm(G.alt && k % 2 ? 'slash' : G.g);
+    // hauteur : saut pendant la frappe, accroupi, ou monte puis s'abat
+    if (G.slam) {
+      if (phase === 'su') dy = -12 * Math.sin((Math.PI / 2) * pSu);
+      else if (phase === 'ac') dy = -12 * (1 - pAll);
+    } else if (G.hop && phase === 'ac') dy = -G.hop * Math.sin(Math.PI * pAll);
+    if (G.low && phase !== 'rc') sy = phase === 'su' ? 1 - (1 - G.low) * pSu : G.low;
+    else if (G.low) sy = G.low + (1 - G.low) * pRc;
+    return { f, dy, sy };
   }
 
   lpcFrameOf(e: any, S: any, st: string, col: number, v: View): number {
@@ -468,11 +575,11 @@ export class Fighters {
     const depth = 2.5 + (G.y + 4000) * 1e-5;
     if (LPC) {
       const id = PERSOS[e.look.perso] ? e.look.perso : 'ninja-bleu';
-      const pose = this.lpcPose(e, S, st, faceCol, v);
+      const pose = this.lpcPose(e, S, st, faceCol, v, time);
       spr
         .setTexture('lpc-' + id, pose.f)
         .setPosition(G.x + jit, G.y + 4 + pose.dy)
-        .setScale(LPC_SCALE * scale * sx, LPC_SCALE * scale * sy);
+        .setScale(LPC_SCALE * scale * sx, LPC_SCALE * scale * sy * pose.sy);
     } else
       spr
         .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
@@ -582,6 +689,10 @@ export class Fighters {
           tint,
           red ? 0.85 : 0.6,
         );
+    }
+    if (LPC && phase === 'rc' && v.prevPhase === 'ac') {
+      const gst = GESTES[e.atk.def.id];
+      if (gst && (gst.slam || (gst.hop || 0) >= 8)) fx.fx('dust', G.x, G.y, 0, gst.slam ? 2 : 1.4);
     }
     v.prevPhase = phase;
     if (st === 'dodge') {
