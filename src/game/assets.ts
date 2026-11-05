@@ -8,6 +8,8 @@ export const PX = 3; // un pixel du pack = 3 unités du monde
 // Combattants et armes un peu plus grands que le reste du pack (4 au lieu de 3). Réglable avec ?px= pour comparer.
 const pxParam = typeof location !== 'undefined' ? Number(new URLSearchParams(location.search).get('px')) : 0;
 export const FIGHTER_PX = pxParam >= 2 && pxParam <= 6 ? pxParam : 4;
+// Contour des combattants : adouci par défaut (scripts/contour.py), noir d'origine du pack avec ?contour=noir.
+const contourNoir = typeof location !== 'undefined' && new URLSearchParams(location.search).get('contour') === 'noir';
 export const FIGHTER_K = FIGHTER_PX / PX; // facteur d'agrandissement, pour les décalages (main, ombre, bulles)
 export const FX_KEYS = [
   'hit',
@@ -44,7 +46,10 @@ export const FLOATS = ['nenuphar', 'fleur', 'glace', 'lave', 'lanterne', 'feuill
 const BASE = import.meta.env.BASE_URL + 'assets/';
 
 export function preloadAssets(scene: Phaser.Scene) {
-  scene.load.spritesheet('persos', BASE + 'persos.png', { frameWidth: 16, frameHeight: 16 });
+  scene.load.spritesheet('persos', BASE + (contourNoir ? 'persos-noir.png' : 'persos.png'), {
+    frameWidth: 16,
+    frameHeight: 16,
+  });
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16 });
   // Rastérisés à la taille demandée (4096 px de large au plus : limite des GPU mobiles) puis affichés à 2400 × 420.
   for (const t of THEME_BG) scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', { width: 4096, height: 717 });

@@ -14,6 +14,8 @@ import sys
 
 from PIL import Image
 
+from contour import adoucir
+
 NA, SP = sys.argv[1], os.path.join(sys.argv[2], 'ninja-adventure')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets')
 # Assets générés mais plus utilisés par le jeu : gardés hors de public/ (non déployés).
@@ -74,7 +76,9 @@ def main():
             front = im.crop((0, 0, 16, 16)).resize((32, 32), Image.NEAREST)
             f.paste(front, (3, 6), front)
         faces.paste(f, (38 * i, 0))
-    sheet.save(os.path.join(OUT, 'persos.png'), optimize=True)
+    # Contour noir d'origine gardé à part pour comparer (?contour=noir), contour adouci par défaut.
+    sheet.save(os.path.join(OUT, 'persos-noir.png'), optimize=True)
+    adoucir(sheet).save(os.path.join(OUT, 'persos.png'), optimize=True)
     faces.save(os.path.join(OUT, 'portraits.png'), optimize=True)
 
     # Armes : pointe vers la droite, poignée à gauche, centrées dans une case de 16 px.
