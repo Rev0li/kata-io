@@ -1,0 +1,16 @@
+{
+ "ninja-bleu": "sex=male&body=Body_Color_light&head=Human_Male_light&expression=Angry_light&hat=Hood_navy&facial_mask=Plain_Mask_blue&clothes=Longsleeve_navy&legs=Pants_navy&shoes=Sandals_black&sash=Sash_red",
+ "ninja-vert": "sex=male&body=Body_Color_olive&head=Human_Male_olive&expression=Angry_olive&hair=Spiked_black&headcover=Thick_Headband_forest&facial_mask=Plain_Mask_dark&clothes=Longsleeve_forest&legs=Pants_forest&shoes=Sandals_black&sash=Narrow_sash_black",
+ "moine": "sex=muscular&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&legs=Wide_pants_orange&shoes=Sandals_brown",
+ "samourai": "sex=male&body=Body_Color_light&head=Human_Male_light&expression=Angry_light&hair=Long_black&armour=Leather_leather&clothes=Longsleeve_maroon&legs=Pants_maroon&shoes=Basic_Boots_black&sash=Sash_red",
+ "ronin": "sex=male&body=Body_Color_taupe&head=Human_Male_Gaunt_taupe&expression=Neutral_taupe&hair=Bedhead_black&beard=Basic_Beard_black&clothes=Longsleeve_gray&legs=Pants_charcoal&shoes=Sandals_brown&sash=Narrow_sash_brown&cape=Tattered_brown",
+ "oni": "sex=muscular&body=Body_Color_blue&head=Troll_blue&accessory=Upward_Horns_iron&legs=Wide_pants_black&shoes=Sandals_black",
+ "loup": "sex=male&body=Body_Color_fur_white&head=Wolf_male_fur_white&clothes=Longsleeve_teal&legs=Pants_charcoal&shoes=Sandals_black&sash=Sash_teal",
+ "ermite": "sex=male&body=Body_Color_light&head=Human_Male_Elderly_light&expression=Neutral_light&hair=Long_white&beard=Winter_Beard_white&clothes=Longsleeve_tan&legs=Pants_brown&shoes=Sandals_brown&sash=Narrow_sash_brown",
+ "squelette": "sex=male&body=Skeleton_white&head=Skeleton_white&cape=Tattered_black&legs=Pants_black",
+ "ninja-pourpre": "sex=male&body=Body_Color_light&head=Human_Male_light&expression=Angry_light&hat=Hood_purple&facial_mask=Plain_Mask_black&clothes=Longsleeve_purple&legs=Pants_purple&shoes=Sandals_black&sash=Sash_black",
+ "ombre": "sex=male&body=Body_Color_light&head=Human_Male_light&expression=Angry_light&hat=Hood_black&facial_mask=Plain_Mask_black&clothes=Longsleeve_black&legs=Pants_black&shoes=Sandals_black&sash=Sash_charcoal",
+ "bandit": "sex=male&body=Body_Color_taupe&head=Human_Male_taupe&expression=Angry_taupe&hair=Messy_black&bandana=Bandana_maroon&facial_mask=Plain_Mask_dark&clothes=Longsleeve_brown&legs=Pants_brown&shoes=Basic_Boots_brown&belt=Leather_Belt_leather",
+ "sumo": "sex=muscular&body=Body_Color_light&head=Human_Male_Plump_light&expression=Angry_light&hair=Bedhead_black&legs=Wide_pants_white&shoes=Sandals_brown",
+ "shogun": "sex=male&body=Body_Color_light&head=Human_Male_light&expression=Angry_light&hat=Spangenhelm_gold&armour=Plate_gold&beard=Trimmed_Beard_black&legs=Pants_red&shoes=Basic_Boots_black&cape=Solid_red"
+}

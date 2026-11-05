@@ -15,7 +15,7 @@ import {
   beltOf,
 } from '../../sim/data';
 import { clamp, lerp, easeOut, angDiff } from '../../sim/sim';
-import { FIGHTER_PX, FIGHTER_K } from '../assets';
+import { FIGHTER_PX, FIGHTER_K, LPC, LPC_SCALE } from '../assets';
 import { iso, worldAngleToScreen, fillC, strokeC, cone } from './iso';
 import { C, FONT_BODY, hex, mix } from './palette';
 import type { Renderer } from './index';
@@ -37,6 +37,27 @@ interface View {
   partT: number;
 }
 
+// Essai LPC (?lpc) : planche de 13 colonnes, lignes par animation et par direction (haut, gauche, bas, droite).
+const LPC_COLS = 13;
+const LPC_DIR = [2, 0, 1, 3]; // colonne du pack (bas, haut, gauche, droite) -> direction LPC
+const LPC_ROW = {
+  cast: 0,
+  thrust: 4,
+  walk: 8,
+  slash: 12,
+  hurt: 20,
+  climb: 21,
+  idle: 22,
+  run: 38,
+  emote: 34,
+  combat: 42,
+};
+function lpcFrame(row: number, f: number) {
+  return row * LPC_COLS + f;
+}
+
+const HAND_Z = LPC ? 26 : 14 * FIGHTER_K; // hauteur des mains au-dessus du sol (arme, traînée)
+
 export class Fighters {
   views: View[] = [];
   emos: Phaser.GameObjects.Text[] = [];
@@ -57,6 +78,7 @@ export class Fighters {
     if (!v) {
       const scene = this.r.scene;
       const spr = scene.add.sprite(0, 0, 'persos', 0).setScale(FIGHTER_PX).setDepth(2.5);
+      if (LPC) spr.setOrigin(0.5, 62 / 64); // pieds LPC : ligne 62 de la case de 64
       const wpn = scene.add
         .image(0, 0, 'armes', 0)
         .setOrigin(2 / 16, 0.5)
@@ -231,6 +253,44 @@ export class Fighters {
     }
   }
 
+  // Essai LPC : image selon l'état (marche, estoc ou balayage suivant la phase du coup, charge, parade, esquive, chute).
+  lpcPose(e: any, S: any, st: string, col: number, v: View, time: number, em: string | undefined): number {
+    const dir = LPC_DIR[col],
+      R = LPC_ROW;
+    const prog = (p: number, n: number) => Math.min(n - 1, Math.floor(clamp(p, 0, 0.999) * n));
+    if (em === 'salut' && e.emote.t < 900 && st === 'idle') return lpcFrame(R.emote + dir, 1);
+    switch (st) {
+      case 'attack': {
+        if (!S) return lpcFrame(R.combat + dir, 0);
+        const a = e.atk,
+          sweep = !!a.def.sweep,
+          row = (sweep ? R.slash : R.thrust) + dir,
+          n = sweep ? 6 : 8,
+          wind = sweep ? 2 : 4; // images d'armement, puis frappe
+        if (S.phase === 'su') return lpcFrame(row, prog(a.t / a.su, wind));
+        if (S.phase === 'ac') return lpcFrame(row, wind + prog((a.t - a.su) / a.ac, n - wind));
+        return lpcFrame(row, (n - 1) * (1 - clamp((a.t - a.su - a.ac) / a.rc, 0, 1)) > n / 2 ? n - 1 : 0);
+      }
+      case 'charge':
+        return lpcFrame(R.cast + dir, prog(e.chargeT / (CHARGE_FULL - CHARGE_START), 5));
+      case 'parry':
+        return lpcFrame(R.combat + dir, 1);
+      case 'dodge':
+        return lpcFrame(R.run + dir, 1 + (Math.floor(e.stateT / 45) % 7));
+      case 'stun':
+      case 'recover':
+        return lpcFrame(R.hurt, prog(e.stateT / 300, 3));
+      case 'tumble':
+      case 'falling':
+        return lpcFrame(R.hurt, 3 + prog(e.stateT / 400, 3));
+      case 'ledge':
+      case 'climb':
+        return lpcFrame(R.climb, Math.floor(e.stateT / 90) % 6);
+    }
+    if (v.spd > 40) return lpcFrame(R.walk + dir, 1 + (Math.floor(v.walk / 7) % 8));
+    return lpcFrame(R.idle + dir, Math.floor(time / 500) % 2);
+  }
+
   draw(g: Phaser.GameObjects.Graphics, e: any, i: number, time: number, dt: number, myIdx: number, twin: boolean) {
     const fx = this.r.fx;
     const v = this.view(i),
@@ -384,14 +444,18 @@ export class Fighters {
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
     const depth = 2.5 + (G.y + 4000) * 1e-5;
-    spr
-      .setVisible(true)
-      .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-      .setPosition(G.x + jit, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
-      .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy)
-      .setRotation(rot)
-      .setAlpha(ga)
-      .setDepth(depth);
+    if (LPC) {
+      const id = PERSOS[e.look.perso] ? e.look.perso : 'ninja-bleu';
+      spr
+        .setTexture('lpc-' + id, this.lpcPose(e, S, st, col, v, time, em))
+        .setPosition(G.x + jit, G.y + 4)
+        .setScale(LPC_SCALE * scale * sx, LPC_SCALE * scale * sy);
+    } else
+      spr
+        .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
+        .setPosition(G.x + jit, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
+        .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy);
+    spr.setVisible(true).setRotation(rot).setAlpha(ga).setDepth(depth);
     if (v.flash > 0) spr.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     else {
       spr.setTintMode(Phaser.TintModes.MULTIPLY);
@@ -405,7 +469,7 @@ export class Fighters {
 
     // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos. Calcul dans le monde, puis projection.
     const W = ARMES[e.look.arme] || ARMES.katana,
-      WS = FIGHTER_PX * 0.82,
+      WS = LPC ? 2.6 : FIGHTER_PX * 0.82,
       L = W.len * WS;
     const s0 = S ? e.atk.startStance : e.stance,
       side = s0 & 1 ? 1 : -1;
@@ -439,9 +503,9 @@ export class Fighters {
       wang = f + side * 0.3;
     }
     if (W.idx >= 0 && hand) {
-      const hs = iso(hand.x, hand.y, 14 * FIGHTER_K),
+      const hs = iso(hand.x, hand.y, HAND_Z),
         wsa = worldAngleToScreen(wang),
-        behind = !S && hs.y + 14 * FIGHTER_K < G.y - 2;
+        behind = !S && hs.y + HAND_Z < G.y - 2;
       wpn
         .setVisible(true)
         .setFrame(W.idx)
@@ -457,7 +521,7 @@ export class Fighters {
 
     // traînée au bout de l'arme (points en coordonnées écran) et effets de coup
     if (S && S.phase === 'ac' && tip) {
-      const T = iso(tip.x, tip.y, 14 * FIGHTER_K);
+      const T = iso(tip.x, tip.y, HAND_Z);
       (e.trail ||= []).push({ x: T.x, y: T.y, t: time, red: e.atk.kind === 'red', gold: e.atk.dragon });
       v.partT -= dt * 1000;
       if (v.partT <= 0) {

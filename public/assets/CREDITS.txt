@@ -3,3 +3,7 @@ https://pixel-boy.itch.io/ninja-adventure-asset-pack
 Sources : https://github.com/pixel-boy/NinjaAdventure
           https://github.com/sparklinlabs/superpowers-asset-packs (dossier ninja-adventure, CC0)
 Assemblé par scripts/build-assets.py.
+
+Essai (?lpc, pas en production) : combattants composés avec le générateur LPC, licences CC-BY-SA / GPL / OGA-BY selon les pièces.
+Auteurs et licences de chaque pièce : public/assets/lpc/CREDITS.csv
+https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator

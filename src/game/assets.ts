@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { worldImages } from './render/worlds';
 import { LIFE } from './render/themes';
+import { PERSOS } from '../sim/data';
 
 export const PX = 3; // un pixel du pack = 3 unités du monde
 // Combattants et armes un peu plus grands que le reste du pack (4 au lieu de 3). Réglable avec ?px= pour comparer.
@@ -10,6 +11,10 @@ const pxParam = typeof location !== 'undefined' ? Number(new URLSearchParams(loc
 export const FIGHTER_PX = pxParam >= 2 && pxParam <= 6 ? pxParam : 4;
 // Contour des combattants : adouci par défaut (scripts/contour.py), noir d'origine du pack avec ?contour=noir.
 const contourNoir = typeof location !== 'undefined' && new URLSearchParams(location.search).get('contour') === 'noir';
+// Essai (mode dev) : combattants du générateur LPC avec ?lpc dans l'adresse. Planches dans public/assets/lpc,
+// recettes dans scripts/lpc-presets.json, crédits obligatoires dans public/assets/lpc/CREDITS.csv.
+export const LPC = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lpc');
+export const LPC_SCALE = 1.2; // une case LPC de 64 px, personnage d'environ 48 px de haut
 export const FIGHTER_K = FIGHTER_PX / PX; // facteur d'agrandissement, pour les décalages (main, ombre, bulles)
 export const FX_KEYS = [
   'hit',
@@ -50,6 +55,9 @@ export function preloadAssets(scene: Phaser.Scene) {
     frameWidth: 16,
     frameHeight: 16,
   });
+  if (LPC)
+    for (const id of Object.keys(PERSOS))
+      scene.load.spritesheet('lpc-' + id, BASE + 'lpc/' + id + '.png', { frameWidth: 64, frameHeight: 64 });
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16 });
   // Rastérisés à la taille demandée (4096 px de large au plus : limite des GPU mobiles) puis affichés à 2400 × 420.
   for (const t of THEME_BG) scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', { width: 4096, height: 717 });
@@ -69,6 +77,8 @@ export function setupAssets(scene: Phaser.Scene) {
   for (const k of scene.textures.getTextureKeys())
     if (k.startsWith('m:')) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.LINEAR);
   // Pixel art : pas de lissage quand on agrandit.
+  if (LPC)
+    for (const id of Object.keys(PERSOS)) scene.textures.get('lpc-' + id).setFilter(Phaser.Textures.FilterMode.NEAREST);
   for (const k of ['persos', 'armes', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)])
     scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
   for (const k of FX_KEYS) {
