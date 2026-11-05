@@ -40,18 +40,17 @@ interface View {
 // Essai LPC (?lpc) : planche de 13 colonnes, lignes par animation et par direction (haut, gauche, bas, droite).
 const LPC_COLS = 13;
 const LPC_DIR = [2, 0, 1, 3]; // colonne du pack (bas, haut, gauche, droite) -> direction LPC
-const LPC_ROW = {
-  cast: 0,
-  thrust: 4,
-  walk: 8,
-  slash: 12,
-  hurt: 20,
-  climb: 21,
-  idle: 22,
-  run: 38,
-  emote: 34,
-  combat: 42,
-};
+// Seules les animations de base de LPC sont utilisées : elles existent pour toutes les pièces. Les ajouts récents
+// (repos, saut, course, garde, emote) manquent de pièces chez la moitié des combattants (pantalon, ceinture, masque) :
+// voir scripts/lpc-verif.py.
+const LPC_ROW = { cast: 0, thrust: 4, walk: 8, slash: 12, hurt: 20 };
+// Images du sort réutilisées : 1 = mains jointes, 2 = mains devant (garde), 4 = bras écartés (projeté), 5 = bras levés,
+// 6 = bras qui retombent.
+const CAST_OPEN = 1,
+  CAST_GUARD = 2,
+  CAST_FLUNG = 4,
+  CAST_FLAIL = 5,
+  CAST_DOWN = 6;
 function lpcFrame(row: number, f: number) {
   return row * LPC_COLS + f;
 }
@@ -253,15 +252,28 @@ export class Fighters {
     }
   }
 
-  // Essai LPC : image selon l'état (marche, estoc ou balayage suivant la phase du coup, charge, parade, esquive, chute).
-  lpcPose(e: any, S: any, st: string, col: number, v: View, time: number, em: string | undefined): number {
+  // Essai LPC : image selon l'état (marche, estoc ou balayage suivant la phase du coup, charge, parade, esquive, chute),
+  // et petit décollage vertical (dy, en px, négatif = en l'air) pour les réactions aux coups.
+  lpcPose(e: any, S: any, st: string, col: number, v: View) {
+    const f = this.lpcFrameOf(e, S, st, col, v);
+    const t = e.stateT;
+    if (st === 'stun' && e.stunDur < 600) {
+      // touché : projeté un instant (petit bond en arrière)
+      const k = t / (e.stunDur * 0.5);
+      return { f, dy: k < 1 ? -4 * Math.sin(Math.PI * k) : 0 };
+    }
+    if (st === 'tumble') return { f, dy: -7 * Math.abs(Math.sin(t / 110)) }; // éjecté : rebonds
+    return { f, dy: 0 };
+  }
+
+  lpcFrameOf(e: any, S: any, st: string, col: number, v: View): number {
     const dir = LPC_DIR[col],
-      R = LPC_ROW;
+      R = LPC_ROW,
+      cast = (f: number) => lpcFrame(R.cast + dir, f);
     const prog = (p: number, n: number) => Math.min(n - 1, Math.floor(clamp(p, 0, 0.999) * n));
-    if (em === 'salut' && e.emote.t < 900 && st === 'idle') return lpcFrame(R.emote + dir, 1);
     switch (st) {
       case 'attack': {
-        if (!S) return lpcFrame(R.combat + dir, 0);
+        if (!S) return cast(CAST_GUARD);
         const a = e.atk,
           sweep = !!a.def.sweep,
           row = (sweep ? R.slash : R.thrust) + dir,
@@ -271,24 +283,32 @@ export class Fighters {
         if (S.phase === 'ac') return lpcFrame(row, wind + prog((a.t - a.su) / a.ac, n - wind));
         return lpcFrame(row, (n - 1) * (1 - clamp((a.t - a.su - a.ac) / a.rc, 0, 1)) > n / 2 ? n - 1 : 0);
       }
-      case 'charge':
-        return lpcFrame(R.cast + dir, prog(e.chargeT / (CHARGE_FULL - CHARGE_START), 5));
+      case 'charge': // armé comme un estoc, tenu jusqu'à la relâche
+        return lpcFrame(R.thrust + dir, prog(e.chargeT / (CHARGE_FULL - CHARGE_START), 4));
       case 'parry':
-        return lpcFrame(R.combat + dir, 1);
+        return cast(CAST_GUARD);
       case 'dodge':
-        return lpcFrame(R.run + dir, 1 + (Math.floor(e.stateT / 45) % 7));
-      case 'stun':
-      case 'recover':
-        return lpcFrame(R.hurt, prog(e.stateT / 300, 3));
+        return lpcFrame(R.walk + dir, 1 + (Math.floor(e.stateT / 40) % 8));
+      // Réactions dans les 4 directions, tous les vêtements suivent. Pas de rotation.
+      case 'stun': {
+        const t = e.stateT,
+          D = e.stunDur;
+        if (t > D - 120) return cast(CAST_DOWN); // il se reprend
+        if (D >= 600) return cast(Math.floor(t / 110) % 2 ? CAST_FLAIL : CAST_FLUNG); // contré : les bras battent
+        return cast(CAST_FLUNG); // touché : bras écartés sous l'impact
+      }
+      case 'recover': // parade ratée : garde ouverte
+        return cast(CAST_OPEN);
       case 'tumble':
+        return cast(CAST_FLUNG);
       case 'falling':
         return lpcFrame(R.hurt, 3 + prog(e.stateT / 400, 3));
       case 'ledge':
-      case 'climb':
-        return lpcFrame(R.climb, Math.floor(e.stateT / 90) % 6);
+      case 'climb': // de dos, en attendant une escalade complète
+        return lpcFrame(R.walk, 1 + (Math.floor(e.stateT / 90) % 8));
     }
     if (v.spd > 40) return lpcFrame(R.walk + dir, 1 + (Math.floor(v.walk / 7) % 8));
-    return lpcFrame(R.idle + dir, Math.floor(time / 500) % 2);
+    return lpcFrame(R.walk + dir, 0);
   }
 
   draw(g: Phaser.GameObjects.Graphics, e: any, i: number, time: number, dt: number, myIdx: number, twin: boolean) {
@@ -385,6 +405,7 @@ export class Fighters {
     // 4 directions du pack : la colonne suit l'angle à l'écran
     let col = Math.abs(c) >= Math.abs(sn) * 0.85 ? (c > 0 ? 3 : 2) : sn > 0 ? 0 : 1,
       row = 0;
+    const faceCol = col; // direction réelle (le pack Ninja Adventure force la face pour certaines postures)
     let sx = 1,
       sy = 1;
     const S = st === 'attack' && e.atk && e.atk.def ? this.strike(e) : null;
@@ -447,9 +468,10 @@ export class Fighters {
     const depth = 2.5 + (G.y + 4000) * 1e-5;
     if (LPC) {
       const id = PERSOS[e.look.perso] ? e.look.perso : 'ninja-bleu';
+      const pose = this.lpcPose(e, S, st, faceCol, v);
       spr
-        .setTexture('lpc-' + id, this.lpcPose(e, S, st, col, v, time, em))
-        .setPosition(G.x + jit, G.y + 4)
+        .setTexture('lpc-' + id, pose.f)
+        .setPosition(G.x + jit, G.y + 4 + pose.dy)
         .setScale(LPC_SCALE * scale * sx, LPC_SCALE * scale * sy);
     } else
       spr

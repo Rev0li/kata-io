@@ -22,6 +22,8 @@ Chaque planche a des cases de 64 px. Sauf mention contraire, chaque animation ex
 | hurt (blessé, tombe au sol) | 6 | **face seulement** | sonné, culbute, chute |
 | climb (escalade) | 6 | **dos seulement** | accroché au bord, remontée |
 
+**Pièces incomplètes** (contrôle : `python3 scripts/lpc-verif.py`) : les animations de base (marche, estoc, taille, sort, blessé) existent pour toutes nos pièces. Les ajouts récents (repos, saut, course, garde, emote) n'existent pas pour certaines pièces : pantalon large du moine, du sumo et de l'oni, ceintures, masque du ninja bleu. Le personnage y apparaît sans ces pièces. **Le jeu n'utilise donc que les animations de base.** Les ajouts récents ne serviront que si on complète ces pièces.
+
 **Ce qui manque à LPC** : aucun coup de pied ni de genou, aucune réaction dans les 4 directions (le blessé n'existe que de face), aucune parade, aucune roulade.
 
 ## 2. Comment une nouvelle animation se fabrique
@@ -53,9 +55,9 @@ Les durées viennent de la simulation (`src/sim`).
 | Parade parfaite | – | idem + éclat doré | même pose, éclat suffit | – |
 | Parade ratée (`recover`) | quelques centaines de ms | hurt | **garde ouverte, déséquilibre** | à dessiner, ou `combat` + recul |
 | Esquive | courte | run | **pas chassé ou roulade** | `run` acceptable ; roulade à dessiner |
-| Touché, sonné (`stun`) | 200 à 520 ms | hurt (face) | **recul « touché »** dans les 4 directions, sans rotation | à dessiner (2 à 3 images × 4 dir.) |
-| Contré par une parade (`stun`) | 650 à 900 ms | hurt (face) | **déséquilibre long** (bras qui battent) | à dessiner, ou recul touché tenu |
-| Éjection forte (`tumble`) | jusqu'à l'arrêt | hurt couché | **vol plané puis roulade au sol** | à dessiner (4 dir.) |
+| Touché, sonné (`stun`) | 200 à 520 ms | **provisoire** : bras écartés du sort + petit bond, 4 directions, sans rotation | **recul « touché »** dans les 4 directions, sans rotation | à dessiner (2 à 3 images × 4 dir.) |
+| Contré par une parade (`stun`) | 650 à 900 ms | **provisoire** : bras qui battent (sort 4 et 5) | **déséquilibre long** (bras qui battent) | à dessiner, ou recul touché tenu |
+| Éjection forte (`tumble`) | jusqu'à l'arrêt | **provisoire** : bras écartés + rebonds | **vol plané puis roulade au sol** | à dessiner (4 dir.) |
 | Épuisé (pris d'un coup, recul ×2,6) | – | rien | **essoufflé** (épaules qui montent) | à dessiner ou effet (gouttes) |
 | Tombe à l'eau (`falling`) | 560 ms | hurt + rétrécit (plus de vrille) | **chute en arrière, bras en l'air** | à dessiner (1 dir. suffit) |
 | Accroché au bord (`ledge`) | jusqu'à 1,5 s | climb (de dos) | **mains sur le rebord**, vu de chaque côté | LPC `climb` (dos) ; 3 dir. à dessiner |
