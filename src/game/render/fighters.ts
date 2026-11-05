@@ -322,7 +322,7 @@ export class Fighters {
     if (st === 'falling') {
       const p = clamp(e.fallT / 560, 0, 1);
       scale = 1 - 0.5 * p;
-      rot = p * 5;
+      rot = LPC ? 0 : p * 5;
       ga = 1 - 0.35 * p;
     }
     if (e.spawnInv > 0 && st !== 'climb' && st !== 'falling' && !(e.dropT > 0))
@@ -440,8 +440,9 @@ export class Fighters {
     }
     sx *= 1 + 0.22 * v.squash;
     sy *= 1 - 0.18 * v.squash;
-    if (st === 'tumble') rot += e.stateT * 0.022;
-    if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
+    // sonné, culbute : le sprite tourne sur lui-même ; en essai LPC, ce sont les images qui jouent (pas de rotation)
+    if (!LPC && st === 'tumble') rot += e.stateT * 0.022;
+    if (!LPC && (st === 'stun' || st === 'recover')) rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
     const depth = 2.5 + (G.y + 4000) * 1e-5;
     if (LPC) {
