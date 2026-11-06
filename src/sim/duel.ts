@@ -12,7 +12,7 @@ export function duelRound(S: Sim) {
   const D = S.duel;
   D.round++;
   D.phase = 'intro';
-  D.t = 0;
+  D.t = D.quick ? 2150 : 0; // relance rapide : on saute 3-2-1, il reste l'arrivée des combattants et « COMBAT ! »
   D.fightT = 0;
   D.sudden = false;
   S.H = S.H0;

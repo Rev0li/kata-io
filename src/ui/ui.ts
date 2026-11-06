@@ -190,6 +190,13 @@ export function setupUI() {
       else if (current === 'shop') closeShop();
       return;
     }
+    // accueil : Entrée lance la montée (Espace sert à esquiver pendant l'échauffement)
+    if (current === 'home' && e.code === 'Enter' && !(e.target instanceof HTMLInputElement)) {
+      e.preventDefault();
+      if (MINI) startRun();
+      else startTower(nextFloor());
+      return;
+    }
     // relance instantanée depuis l'écran de résultat
     if (
       current === 'result' &&

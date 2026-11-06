@@ -180,7 +180,11 @@ class Session {
     this.begin();
   }
   // extra : techniques du gardien (avant-goût de la prochaine technique), numéro d'essai, réplique de défi
-  startTower(me: MeSpec, floor: Floor, extra: { abil?: Abil; attempt?: number; taunt?: string; teaser?: string } = {}) {
+  startTower(
+    me: MeSpec,
+    floor: Floor,
+    extra: { abil?: Abil; attempt?: number; taunt?: string; teaser?: string; quick?: boolean } = {},
+  ) {
     this.leave(true);
     this.mode = 'tower';
     this.myIdx = 0;
@@ -198,7 +202,7 @@ class Session {
         belt: RANKS[floor.tier].belt,
       },
     ];
-    this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp };
+    this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp, quick: !!extra.quick };
     this.begin();
     if (extra.taunt && this.sim) this.sim.f[1].emote = { id: extra.taunt, t: -700 };
   }

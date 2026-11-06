@@ -13,16 +13,17 @@ import { MINI } from './edition';
 
 // Montée de la Tour (version minimale) : de l'étage 1 jusqu'à la première défaite ; le temps de combat s'additionne.
 export const montee = { etages: 0, secondes: 0 };
-export function startRun() {
+// quick : relance sans compte à rebours (Recommencer, étage suivant)
+export function startRun(quick = false) {
   montee.etages = 0;
   montee.secondes = 0;
-  startTower(1);
+  startTower(1, quick);
 }
 
 // Parties locales : le mode test peut rendre le joueur invincible (jamais en duel).
 const local = (spec: MeSpec): MeSpec => (profile.god ? { ...spec, god: true } : spec);
 
-export function startTower(n: number) {
+export function startTower(n: number, quick = false) {
   track('play_clicked', { kind: 'tower', floor: n });
   wake();
   myName();
@@ -34,7 +35,7 @@ export function startTower(n: number) {
   // version minimale : une seule manche par étage, gagnée tu montes, perdue la montée s'arrête
   const f = MINI ? { ...towerFloor(n), firstTo: 1 } : towerFloor(n);
   setLocks(myAbil());
-  session.startTower(local(mySpec()), f, towerExtra(f, MINI ? 0 : profile.tries[n] || 0));
+  session.startTower(local(mySpec()), f, { ...towerExtra(f, MINI ? 0 : profile.tries[n] || 0), quick });
   if (f.twist) setTimeout(() => toast(f.twist), 400);
 }
 // Gardien : ses techniques, plus la prochaine que tu vas débloquer (avant-goût) ; il nargue si tu reviens après une défaite.
