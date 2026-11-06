@@ -15,6 +15,7 @@ import sys
 from PIL import Image
 
 from contour import adoucir
+from espacer import espacer
 
 NA, SP = sys.argv[1], os.path.join(sys.argv[2], 'ninja-adventure')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets')
@@ -77,8 +78,9 @@ def main():
             f.paste(front, (3, 6), front)
         faces.paste(f, (38 * i, 0))
     # Contour noir d'origine gardé à part pour comparer (?contour=noir), contour adouci par défaut.
-    sheet.save(os.path.join(OUT, 'persos-noir.png'), optimize=True)
-    adoucir(sheet).save(os.path.join(OUT, 'persos.png'), optimize=True)
+    # Cases écartées (scripts/espacer.py) : plus de trait de la case voisine au bord des combattants.
+    espacer(sheet).save(os.path.join(OUT, 'persos-noir.png'), optimize=True)
+    espacer(adoucir(sheet)).save(os.path.join(OUT, 'persos.png'), optimize=True)
     faces.save(os.path.join(OUT, 'portraits.png'), optimize=True)
 
     # Armes : pointe vers la droite, poignée à gauche, centrées dans une case de 16 px.
@@ -89,7 +91,7 @@ def main():
         im = im.crop(im.getbbox())
         assert im.width <= 16 and im.height <= 16, (wid, im.size)
         weap.paste(im, (16 * i, 8 - im.height // 2), im)
-    weap.save(os.path.join(OUT, 'armes.png'), optimize=True)
+    espacer(weap).save(os.path.join(OUT, 'armes.png'), optimize=True)
 
     # Sol du dojo : un motif de 3 x 3 tuiles du temple (pierre claire, ou mousse pour le tatami mouillé).
     # Archivé : la plateforme est maintenant dessinée en code (render.ts).
