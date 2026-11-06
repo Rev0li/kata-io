@@ -100,6 +100,12 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Précisions :** invitation à protéger son compte dès l'étage 3 gagné ; duel public et classement du défi du jour réservés aux comptes protégés ; progression locale actuelle reprise automatiquement.
 - **Détails :** [COMPTES.md](COMPTES.md).
 
+## D16. Styles de combat : l'arme fait partie du personnage
+- **Décision (2026-11-06) :** plus de choix d'arme séparé. Chaque personnage a **son style et son arme** (`src/sim/styles.ts`). Un style = un **jeu de coups** (enchaînements par garde, coup chargé) et un **profil** de multiplicateurs (D8) : `vitesse` (durée des coups), `allonge` (portée), `force` (recul donné), `poids` (recul reçu).
+- **Quatre styles pour commencer :** Équilibré (ninja bleu, moine, rōnin), Rapide (ninjas pourpre, de jade et de l'ombre, squelette), Puissant (bandit, oni, sumo), Allonge (samouraï, ermite, loup, shōgun).
+- **Les gardiens** de la Tour jouent le style de leur personnage. L'onglet Arme du vestiaire est masqué ; chaque fiche indique le style.
+- **Garde-fou (D8) :** mesure de la Tour en manche unique pour chaque style, aucun ne doit être injouable. Les sprites n'ont que 7 poses : les styles se distinguent par le rythme, la portée, la force et l'arme dessinée.
+
 ## D15. Éjection en l'air (prototype du 2026-11-06)
 - **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
 - **Prototype :** un coup au-delà de `TUMBLE_V` **soulève** le combattant (hauteur `z`, gravité, ombre au sol) ; il freine **moins en l'air** (`airDamp` 0,6), et rien ne se décide tant qu'il vole : s'il atterrit dans l'eau, c'est plouf, loin du bord. Au-delà de `starV` il part dans le ciel (**« ÉTOILE ! »**). **Rattrapage au bord** : jamais après une projection, et une fois par manche. Réglages : `LAUNCH` dans `src/sim/data.ts`.

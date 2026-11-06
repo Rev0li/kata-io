@@ -21,7 +21,7 @@ import {
   alive,
 } from '../sim/sim';
 import { Conn } from './transport';
-import { LEVELS, randLook, randDeck, BOT_NAMES, sanitizeLook, Look, isDojo } from '../sim/data';
+import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo } from '../sim/data';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 import { track } from '../analytics';
@@ -170,8 +170,7 @@ class Session {
       me,
       {
         name: BOT_NAMES[(Math.random() * BOT_NAMES.length) | 0],
-        look: randLook(),
-        deck: randDeck(),
+        look: randLook(), // jeu de coups : celui du style de son personnage (D16)
         bot: lv.skill,
         abil: me.abil,
         belt: RANKS[Math.min(RANKS.length - 1, level * 3)].belt,

@@ -215,9 +215,17 @@ describe('entrées humaines', () => {
       [masher, null],
       60 * 30,
     );
-    expect(summary.events.tired).toBeGreaterThan(0); // chaque coup coûte du souffle : le martèlement s'arrête tout seul
     expect(st.f[1].bot.adapt).toBeGreaterThan(0);
     expect(summary).toMatchSnapshot();
+  });
+  test('marteler un adversaire immobile vide le souffle (chaque coup en coûte)', () => {
+    const { summary } = run(
+      [human('Joueur', { abil: FULL_ABIL }), human('Cible', { abil: FULL_ABIL, god: true })], // cible invincible : la manche ne s'arrête pas
+      { seed: 3003, firstTo: 9 },
+      [masher, null],
+      60 * 20,
+    );
+    expect(summary.events.tired).toBeGreaterThan(0);
   });
   test('deux humains scriptés (duel entre amis)', () => {
     const { summary } = run(

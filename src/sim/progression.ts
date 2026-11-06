@@ -1,6 +1,7 @@
 // Progression : ceintures, techniques débloquées, étages de la Tour du temple.
 // Aucune dépendance au DOM : ces règles serviront aussi côté serveur.
-import { Look, Deck, DEFAULT_DECK, randDeck, PERSOS, ARMES, TRAINEES, EJECTIONS } from './data';
+import { Look, Deck, randDeck, PERSOS, ARMES, TRAINEES, EJECTIONS } from './data';
+import { styleDeck } from './styles';
 
 /* ---------- techniques ---------- */
 export interface Abil {
@@ -281,14 +282,14 @@ export function towerFloor(n: number): Floor {
   if (n <= FLOORS.length) {
     const f = FLOORS[n - 1];
     // Les huit premiers gardiens ont les mêmes enchaînements que le joueur : la difficulté vient du niveau, pas de la portée.
-    return { ...f, n, deck: n <= 8 ? DEFAULT_DECK : randDeck(seeded(n)), par: f.firstTo === 3 ? 75 : 50 };
+    return { ...f, n, deck: styleDeck(f.look.perso), par: f.firstTo === 3 ? 75 : 50 }; // chaque gardien a le style de son personnage (D16)
   }
   // Tour infinie : au-delà du dernier gardien, des adversaires générés, de plus en plus coriaces.
   const rnd = seeded(n),
     tw = TWISTS[(rnd() * TWISTS.length) | 0];
   const persos = Object.keys(PERSOS),
     armes = Object.keys(ARMES);
-  return {
+  const fl: Floor = {
     n,
     name: 'Ombre de l’étage ' + n,
     skill: Math.min(0.95, 0.86 + (n - FLOORS.length) * 0.005),
@@ -304,9 +305,10 @@ export function towerFloor(n: number): Floor {
       trainee: 'etoiles',
       ejection: 'phenix',
     },
-    deck: randDeck(rnd),
+    deck: randDeck(rnd), // remplacé juste après par le jeu du style
     par: 75,
   };
+  return { ...fl, deck: styleDeck(fl.look.perso) };
 }
 // Étoiles : 1 pour la victoire, 2 sans perdre de manche, 3 sans perdre de manche et sous le temps de référence.
 export function starsFor(won: boolean, roundsLost: number, seconds: number, par: number) {
