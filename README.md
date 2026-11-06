@@ -6,7 +6,7 @@ Version de développement : Phaser 4, TypeScript et Vite, avec une connexion pai
 
 ## Version minimale (en ligne)
 
-Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1, on enchaîne les gardiens jusqu'à la première défaite (ou « M'arrêter là »), puis on inscrit son pseudo au **classement**. Toutes les techniques, combattants et armes sont disponibles dès le départ ; le tutoriel est facultatif. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
+Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1, on enchaîne les gardiens, une manche chacun, jusqu'à la première défaite (ou « M'arrêter là »), puis on inscrit son pseudo au **classement**. Toutes les techniques, combattants et armes sont disponibles dès le départ ; le tutoriel est facultatif. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
 
 ## Progression
 

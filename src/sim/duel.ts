@@ -28,10 +28,10 @@ export function duelRound(S: Sim) {
       e.bot.holdFor = 0;
     }
   }
-  // balle de match : un point de plus et c'est fini
-  D.mp = D.score.some((n: number) => n === D.firstTo - 1);
+  // balle de match : un point de plus et c'est fini (pas en manche unique : tout se joue d'emblée)
+  D.mp = D.firstTo > 1 && D.score.some((n: number) => n === D.firstTo - 1);
   if (D.mp) fx.big(S, 'BALLE DE MATCH', '#e5483a', 1100);
-  else fx.big(S, 'MANCHE ' + D.round, '#ecdfc6', 850);
+  else fx.big(S, D.firstTo === 1 ? 'COMBAT' : 'MANCHE ' + D.round, '#ecdfc6', 850);
 }
 export function duelUpdate(S: Sim, dt: number) {
   const D = S.duel;

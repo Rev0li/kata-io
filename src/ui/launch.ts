@@ -31,7 +31,8 @@ export function startTower(n: number) {
     return;
   }
   nav.lastMode = { kind: 'tower', floor: n };
-  const f = towerFloor(n);
+  // version minimale : une seule manche par étage, gagnée tu montes, perdue la montée s'arrête
+  const f = MINI ? { ...towerFloor(n), firstTo: 1 } : towerFloor(n);
   setLocks(myAbil());
   session.startTower(local(mySpec()), f, towerExtra(f, MINI ? 0 : profile.tries[n] || 0));
   if (f.twist) setTimeout(() => toast(f.twist), 400);

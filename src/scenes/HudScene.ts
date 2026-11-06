@@ -96,7 +96,7 @@ export class HudScene extends Phaser.Scene {
     }
     if (ev.t === 'final') this.fl(0xffffff, 0.7, 380);
     if (ev.t === 'ko') this.fl(0xffffff, 0.3, 140);
-    if (ev.t === 'big' && ev.text === 'MANCHE 1') this.matchT = 0;
+    if (ev.t === 'big' && (ev.text === 'MANCHE 1' || ev.text === 'COMBAT')) this.matchT = 0;
   }
 
   fl(col: number, a: number, life: number) {
@@ -200,7 +200,9 @@ export class HudScene extends Phaser.Scene {
     this.score
       .setVisible(!tuto)
       .setText(session.mode === 'tower' ? `TOI  ${sMe} — ${sOp}` : `TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
-    this.sub.setVisible(!controls.isTouch && !tuto).setText(`Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`);
+    this.sub
+      .setVisible(!controls.isTouch && !tuto)
+      .setText(D.firstTo === 1 ? 'Manche unique' : `Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`);
     const fl = session.floor;
     this.ping.setText(
       tuto
