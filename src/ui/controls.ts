@@ -11,8 +11,6 @@ const EMOTE_KEYS: Record<string, string> = { Digit1: 'salut', Digit2: 'rire', Di
 
 export const controls = {
   isTouch: matchMedia('(pointer: coarse)').matches,
-  mouseSeen: false,
-  autoAim: true, // visée automatique vers l'adversaire, comme sur mobile (réglable sur ordinateur)
   blockedFn: () => false as boolean,
   blocked() {
     return this.blockedFn();

@@ -61,9 +61,6 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (!p.wasTouch && p.leftButtonReleased()) controls.setAtk(false);
     });
-    this.input.on('pointermove', () => {
-      controls.mouseSeen = true;
-    });
     this.scene.launch('hud');
   }
 
@@ -98,15 +95,8 @@ export class GameScene extends Phaser.Scene {
     // entrées : déplacement et visée
     let aim = session.input.aim;
     if (me) {
-      // même ciblage pour tous : automatique sur mobile, et sur ordinateur sauf si le joueur choisit la souris
-      if (controls.isTouch || controls.autoAim || !controls.mouseSeen) {
-        if (foe && foe.state !== 'dead' && foe.state !== 'falling') aim = Math.atan2(foe.y - me.y, foe.x - me.x);
-      } else {
-        const p = this.input.activePointer;
-        const sp = cam.getWorldPoint(p.x, p.y),
-          w = unIso(sp.x, sp.y);
-        if (Math.hypot(w.x - me.x, w.y - me.y) > 6) aim = Math.atan2(w.y - me.y, w.x - me.x);
-      }
+      // visée toujours automatique vers l'adversaire, sur mobile comme sur ordinateur (plus de visée à la souris)
+      if (foe && foe.state !== 'dead' && foe.state !== 'falling') aim = Math.atan2(foe.y - me.y, foe.x - me.x);
     }
     updateControls(aim);
 

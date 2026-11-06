@@ -172,8 +172,6 @@ export function renderHome() {
   renderCoins();
   ($('#setSfx') as HTMLInputElement).checked = profile.sfx;
   ($('#setMusic') as HTMLInputElement).checked = profile.music;
-  ($('#setAutoAim') as HTMLInputElement).checked = profile.autoAim;
-  controls.autoAim = profile.autoAim;
   ($('#devRank') as HTMLSelectElement).value = String(myRank());
   ($('#devFloor') as HTMLSelectElement).value = String(Math.min(profile.towerMax, 20));
   ($('#devLvl') as HTMLSelectElement).value = String(profile.level);

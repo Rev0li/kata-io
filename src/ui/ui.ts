@@ -101,11 +101,6 @@ export function setupUI() {
   });
   $('#nameIn').addEventListener('change', () => myName());
   // réglages
-  $('#setAutoAim').addEventListener('change', e => {
-    profile.autoAim = controls.autoAim = (e.target as HTMLInputElement).checked;
-    save();
-    toast(profile.autoAim ? 'Visée automatique activée' : 'Visée à la souris');
-  });
   $('#setSfx').addEventListener('change', e => {
     profile.sfx = audioPrefs.sfx = (e.target as HTMLInputElement).checked;
     save();
