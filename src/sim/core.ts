@@ -42,6 +42,7 @@ export interface SimOpts {
   free?: boolean;
   pos?: [number, number][];
   seed?: number;
+  quick?: boolean; // relance : pas de compte à rebours 3-2-1, juste « COMBAT ! »
 }
 export type Ev = { t: string; [k: string]: any };
 export type Fighter = any;

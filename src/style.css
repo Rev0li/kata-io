@@ -3032,3 +3032,24 @@ body.mini .mplay {
     overflow-y: auto;
   }
 }
+
+/* accueil : rappel de la touche Entrée sur le bouton Jouer (ordinateur) */
+.mbig {
+  position: relative;
+}
+.mbig .mkey {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  padding: 1px 6px;
+  border: 1px solid rgba(43, 28, 12, 0.45);
+  border-radius: 4px;
+  background: rgba(255, 240, 205, 0.35);
+  color: #3b2810;
+  font-family: var(--f-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+}

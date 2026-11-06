@@ -71,6 +71,7 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
     fightT: 0,
     sudden: false,
     mp: false,
+    quick: !!opts.quick,
   };
   if (opts.free) {
     st.duel.phase = 'free';

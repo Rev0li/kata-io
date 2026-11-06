@@ -173,7 +173,7 @@ export function onEnd(winner: number, score: number[]) {
         $('#resStatus').textContent = `Prochain gardien : ${towerFloor(f.n + 1).name}`;
         setResultButtons(
           `Étage ${f.n + 1}`,
-          () => startTower(f.n + 1),
+          () => startTower(f.n + 1, true),
           'M’arrêter là',
           () => finMontee(false),
         );
@@ -299,7 +299,7 @@ function finMontee(defaite: boolean) {
     : b.floors
       ? `Ton record : ${b.floors} étage${b.floors > 1 ? 's' : ''}.`
       : '';
-  setResultButtons('Recommencer', () => startRun(), null, null);
+  setResultButtons('Recommencer', () => startRun(true), null, null);
   $('#resRun').hidden = false;
   const form = $('#runForm') as HTMLFormElement,
     input = $('#runName') as HTMLInputElement,
