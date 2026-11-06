@@ -126,7 +126,7 @@ export function onEnd(winner: number, score: number[]) {
     let gain = 0;
     if (!win && op && op.pct >= 70) {
       $('#resNear').hidden = false;
-      $('#resNear').textContent = `Il était à ${Math.round(op.pct)} % : encore un coup et il tombait.`;
+      $('#resNear').textContent = 'Il était à bout : encore un coup et il tombait.';
     }
     if (session.mode === 'tower' && session.floor && session.floor.daily) {
       rollDaily();

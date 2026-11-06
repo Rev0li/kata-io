@@ -35,7 +35,15 @@ interface View {
   ghostT: number;
   full: boolean;
   partT: number;
+  sweatT: number;
+  puffT: number;
 }
+
+// Pourcentage caché (D3) : un signe en trois paliers, le même pour les deux combattants.
+//   1 (50 %)  gouttes de sueur ; 2 (100 %) clignote en rouge, vapeur, garde plus basse ; 3 (150 %) clignote vite,
+//   chancelle, l'anneau au sol pulse en rouge. Seuils réglables ici.
+export const PALIERS = [50, 100, 150];
+export const palier = (pct: number) => PALIERS.filter(p => pct >= p).length;
 
 export class Fighters {
   views: View[] = [];
@@ -77,6 +85,8 @@ export class Fighters {
         ghostT: 0,
         full: false,
         partT: 0,
+        sweatT: 0,
+        puffT: 0,
       };
     }
     return v;
@@ -125,6 +135,28 @@ export class Fighters {
       P = { x: lerp(reach * 0.9, rest.x, easeOut(p)), y: lerp(0, rest.y, p) };
     }
     return { P, side, kick, phase, useRear };
+  }
+
+  // Souffle du joueur, sous ses pieds : trois segments (clignotent en rouge quand il est épuisé) et le qi dessous.
+  drawSouffle(g: Phaser.GameObjects.Graphics, e: any, x: number, y: number, time: number, ga: number) {
+    const w = 11 * FIGHTER_K,
+      gap = 2,
+      h = 4,
+      x0 = x - (3 * w + 2 * gap) / 2,
+      tired = e.souffle < 1,
+      blink = tired && Math.sin(time * 0.02) > 0;
+    for (let k = 0; k < 3; k++) {
+      const f = clamp(e.souffle - k, 0, 1),
+        sx = x0 + k * (w + gap);
+      g.fillStyle(0x0a1012, 0.75 * ga).fillRect(sx - 1, y - 1, w + 2, h + 2);
+      g.fillStyle(blink ? C.red : f >= 1 ? 0xecdfc6 : 0xb7ad98, ga).fillRect(sx, y, w * f, h);
+    }
+    if (e.abil && e.abil.dragon) {
+      const W = 3 * w + 2 * gap,
+        full = e.qi >= 100;
+      g.fillStyle(0x0a1012, 0.75 * ga).fillRect(x0 - 1, y + h + 2, W + 2, 4);
+      g.fillStyle(full ? C.gold : C.jade, ga).fillRect(x0, y + h + 3, W * clamp(e.qi / 100, 0, 1), 2);
+    }
   }
 
   // Annonce au sol du coup chargé (pendant la charge, puis pendant le coup). Les coups blancs ne sont pas annoncés.
@@ -256,6 +288,8 @@ export class Fighters {
       return;
     }
 
+    const tier = st === 'falling' || st === 'ledge' ? 0 : palier(e.pct || 0),
+      hot = tier >= 3 ? 0.5 + 0.5 * Math.sin(time * 0.012) : 0; // pulsation du dernier palier
     let scale = 1,
       rot = 0,
       ga = 1;
@@ -279,8 +313,14 @@ export class Fighters {
       g.fillStyle(0x1e180c, 0.34 * ga);
       g.fillEllipse(G.x, G.y + 2, 32 * FIGHTER_K * (1 - dp * 0.5), 14 * FIGHTER_K * (1 - dp * 0.5));
       const ringCol = i === myIdx ? C.ochre : hex(e.belt || beltOf(e.kos)[2]);
-      g.lineStyle(2, ringCol, (i === myIdx ? 0.9 : 0.65) * ga);
+      g.lineStyle(2, tier >= 3 ? mix(ringCol, C.red, hot) : ringCol, (i === myIdx ? 0.9 : 0.65) * ga);
       g.strokeEllipse(G.x, G.y + 2, 44 * FIGHTER_K, 21 * FIGHTER_K);
+      if (tier >= 3) {
+        // au bord : un second anneau rouge qui bat
+        g.lineStyle(2, C.red, 0.55 * hot * ga);
+        g.strokeEllipse(G.x, G.y + 2, (48 + 8 * hot) * FIGHTER_K, (23 + 4 * hot) * FIGHTER_K);
+      }
+      if (i === myIdx) this.drawSouffle(g, e, G.x, G.y + 2 + 10.5 * FIGHTER_K + 7, time, ga);
     }
     if (st === 'charge') {
       const p = clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1),
@@ -380,6 +420,13 @@ export class Fighters {
     }
     sx *= 1 + 0.22 * v.squash;
     sy *= 1 - 0.18 * v.squash;
+    if (tier >= 2 && (st === 'idle' || st === 'frozen')) sy *= 0.95; // garde plus basse
+    let sway = 0;
+    if (tier >= 3 && st !== 'dodge') {
+      // chancelle
+      rot += Math.sin(time * 0.007 + i) * 0.07;
+      sway = Math.sin(time * 0.0035 + i * 2) * 1.6 * FIGHTER_K;
+    }
     if (st === 'tumble') rot += e.stateT * 0.022;
     if (st === 'stun' || st === 'recover') rot += Math.sin(e.stateT * 0.03) * 0.16;
     const jit = st === 'charge' && v.full ? Math.sin(time * 0.09) * 1.2 : 0;
@@ -387,7 +434,7 @@ export class Fighters {
     spr
       .setVisible(true)
       .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-      .setPosition(G.x + jit, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
+      .setPosition(G.x + jit + sway, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
       .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy)
       .setRotation(rot)
       .setAlpha(ga)
@@ -398,9 +445,38 @@ export class Fighters {
       if (st === 'charge') {
         const k = 0.35 + 0.35 * Math.sin(time * 0.035);
         spr.setTint(mix(0xffffff, e.qi >= 100 ? 0xffd25a : 0xff5a46, k));
-      } else if (twin)
+      } else if (tier >= 2 && time % (tier >= 3 ? 620 : 1500) < (tier >= 3 ? 170 : 200))
+        spr.setTint(mix(0xffffff, 0xff3a2a, tier >= 3 ? 0.75 : 0.6)); // clignote en rouge
+      else if (twin)
         spr.setTint(0xffa890); // même personnage des deux côtés : le second est teinté
       else spr.clearTint();
+    }
+    // sueur (palier 1 et plus) et vapeur (palier 2 et plus), au-dessus de la tête
+    if (tier >= 1 && st !== 'dead') {
+      const head = G.y + 6 - 13 * FIGHTER_PX;
+      v.sweatT -= dt * 1000;
+      if (v.sweatT <= 0) {
+        v.sweatT = [0, 1100, 750, 450][tier] * (0.8 + 0.4 * Math.random());
+        for (const s of [-1, 1])
+          fx.parts.push({
+            x: G.x + s * 5 * FIGHTER_PX,
+            y: head + 2 * FIGHTER_PX,
+            vx: s * (90 + 60 * Math.random()),
+            vy: -60 - 50 * Math.random(),
+            life: 650,
+            t: 0,
+            col: 0x7cc8ff,
+            s: 3.4,
+            kind: 'drop',
+          });
+      }
+      if (tier >= 2) {
+        v.puffT -= dt * 1000;
+        if (v.puffT <= 0) {
+          v.puffT = (tier >= 3 ? 520 : 950) * (0.8 + 0.4 * Math.random());
+          fx.fx('smoke', G.x + (Math.random() - 0.5) * 6 * FIGHTER_PX, head, 0, 1.4, 0xf2f2f2, 0.8);
+        }
+      }
     }
 
     // arme : suit le coup (estoc ou balayage), se pose sur le côté au repos. Calcul dans le monde, puis projection.

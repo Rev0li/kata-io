@@ -44,7 +44,7 @@ export const MINI_TUTO: TutoStep[] = [
     goal: 1,
     dummy: 'idle',
     dummyPct: 130,
-    text: 'Il est à 130 %. Pousse-le vers le bord et envoie-le à l’eau !',
+    text: 'Il fume et clignote en rouge : il est fragile. Pousse-le vers le bord et envoie-le à l’eau !',
     me: [40, 0],
     foe: [140, 0],
   },

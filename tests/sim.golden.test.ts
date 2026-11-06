@@ -208,14 +208,14 @@ describe('entrées humaines', () => {
     );
     expect(summary).toMatchSnapshot();
   });
-  test('martèlement contre bot : le bot s’adapte (D9)', () => {
+  test('martèlement contre bot : le souffle s’épuise et le bot s’adapte (D9)', () => {
     const { st, summary } = run(
       [human('Joueur', { abil: FULL_ABIL }), bot('Bot', LEVELS[0].skill, 5)],
       { seed: 3002 },
       [masher, null],
       60 * 30,
     );
-    expect(summary.events.spam).toBeGreaterThan(0);
+    expect(summary.events.tired).toBeGreaterThan(0); // chaque coup coûte du souffle : le martèlement s'arrête tout seul
     expect(st.f[1].bot.adapt).toBeGreaterThan(0);
     expect(summary).toMatchSnapshot();
   });

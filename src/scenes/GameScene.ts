@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Renderer, THEMES, WORLDS, iso2, unIso } from '../game/render';
+import { palier } from '../game/render/fighters';
 import { session } from '../net/session';
 import { controls, updateControls } from '../ui/controls';
 import { updateActionBar, actionEvent } from '../ui/actionbar';
@@ -186,6 +187,13 @@ export class GameScene extends Phaser.Scene {
         this.heartT = hot ? 620 : 900;
         sfx('heart', hot ? 1 : 0.75);
         document.body.style.setProperty('--beat', hot ? '.62s' : '.9s');
+      }
+    } else if (me && st.duel && st.duel.phase === 'fight' && palier(me.pct) >= 3 && me.state !== 'falling') {
+      // pourcentage caché : au dernier palier, ton cœur bat (pour toi seul)
+      this.heartT -= delta;
+      if (this.heartT <= 0) {
+        this.heartT = 760;
+        sfx('heart', 0.6);
       }
     }
 

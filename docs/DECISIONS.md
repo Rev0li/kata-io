@@ -18,7 +18,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
  
 | Valeur | Rôle | Statut |
 |---|---|---|
-| `souffle` (3 segments) | Endurance. Limite le spam d'actions. Insuffisant : épuisé, vulnérable au one-shot. | DÉCIDÉ, intégré |
+| `souffle` (3 segments) | Endurance. Frapper (0,3), parer (0,4), esquiver (1) et le coup chargé (1) en coûtent (prototype du 2026-11-06, `whiteCost`, `parryCost`) ; regain d'un segment en 1,6 s. Insuffisant : l'action ne part pas ; sous 1 segment, épuisé, vulnérable au one-shot. | DÉCIDÉ, intégré ; coûts en prototype |
 | `pct` (stabilité, en %) | Plus il est élevé, plus le recul et la projection reçus sont grands. | DÉCIDÉ, déjà dans le jeu |
 | `dodgeCount` (équilibre) | Compteur d'esquives parfaites d'affilée, remis à zéro quand on est touché. Donne un bonus (nature à définir). | OUVERT, compteur intégré, bonus désactivé (`balanceEnabled: false`) |
  
@@ -30,7 +30,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D3. Visibilité de l'état
 - **Décision :** l'état de l'adversaire **n'est pas communiqué** au joueur. **Statut : DÉCIDÉ (adversaire), intégré.**
 - **Intégré :** le pourcentage de l'adversaire n'est plus affiché (`showOpponentPct: false`). Il reste visible avec `?debug` dans l'adresse.
-- **OUVERT :** le joueur voit-il sa propre stabilité ? Aujourd'hui son pourcentage et son souffle sont visibles.
+- **Prototype (2026-11-06) :** son propre pourcentage est caché aussi (`showOwnPct: false`). À la place, un signe en trois paliers, le même sur les deux combattants (`PALIERS` dans `src/game/render/fighters.ts`) : 50 % gouttes de sueur ; 100 % clignote en rouge, vapeur, garde plus basse ; 150 % clignote vite, chancelle, anneau au sol rouge qui bat, et battement de cœur pour soi seul. Le souffle et le qi restent visibles, sous son propre combattant. **À valider en jouant.**
 - **Test :** 5 joueurs sans explication. Critère : au moins 4 sur 5 expliquent pourquoi ils sont en danger.
  
 ## D4. Sensation de combat (animé)
