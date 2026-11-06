@@ -66,7 +66,8 @@ export function setupUI() {
       b.querySelector('small')!.textContent = 'Bientôt';
     }
   $('#tutoHomeBtn').addEventListener('click', () => startTuto(null));
-  $('#rankBtn').addEventListener('click', async () => {
+  // classement complet (top 20) : depuis l'en-tête du top 10 de l'accueil
+  const openRanking = async () => {
     show('ranking');
     const st = $('#rankStatus'),
       ol = $('#rankList');
@@ -78,7 +79,14 @@ export function setupUI() {
     } catch (e) {
       st.textContent = (e as Error).message;
     }
-  });
+  };
+  $('#rankBtn').addEventListener('click', openRanking);
+  $('#rankAllBtn').addEventListener('click', openRanking);
+  $('#persoBtn').addEventListener('click', openShop);
+  // mode test et mention « version de développement » : seulement en développement, ou avec ?debug ou ?test
+  const devOn = import.meta.env.DEV || /[?&](debug|test)\b/.test(location.search);
+  $('#devPanel').hidden = !devOn;
+  $('#devVer').hidden = !devOn;
   $('#rankClose').addEventListener('click', () => show('home'));
   // vestiaire : par le bouton, ou en touchant son combattant sur la plateforme
   $('#lockerBtn').addEventListener('click', openShop);

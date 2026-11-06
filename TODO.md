@@ -44,6 +44,7 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [x] Prototype énergie et lisibilité : frapper et parer coûtent du souffle (l'anti-spam n'agit plus), souffle et qi sous son combattant, pourcentages cachés pour les deux, remplacés par trois paliers visibles (sueur, rouge et vapeur, chancelle). À régler en jouant.
 - [x] Prototype d'éjection en l'air (D15) : vol avec ombre, moins de freinage en l'air, plouf loin, « étoile » pour les plus gros coups, un seul rattrapage au bord par manche et jamais après une projection.
 - [x] Styles de combat (D16) : arme fondue dans le personnage, 4 styles (jeu de coups et profil), gardiens au style de leur personnage.
+- [x] Accueil simplifié : Jouer (avec ton record), ton combattant (choisir son personnage remplace le vestiaire), Tutoriel et Entraînement, top 10 en cascade, défi du jour et duel grisés en bas ; mode test caché en production (visible en développement, avec ?debug ou ?test).
 - [ ] Après les premiers retours : faut-il un temps limite, des étages plus courts au début, un classement de la semaine ?
 
 ## Phase 2b : assets remplaçables (après le retest)

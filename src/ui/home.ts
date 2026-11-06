@@ -24,6 +24,8 @@ import { show } from './nav';
 import { profile, save, myRank, myAbil, myLook, nextFloor, rollDaily } from './profile';
 import { viewState } from './viewstate';
 import { MINI } from './edition';
+import { styleOf } from '../sim/styles';
+import { lireClassement, rendreClassement } from '../net/classement';
 
 // Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
 // et les 12 étages de la Tour gagnés (towerMax = prochain étage à jouer, donc 13 après le 12e).
@@ -136,7 +138,35 @@ export function renderCoins() {
   $('#homeCoins').textContent = String(profile.coins);
   $('#shopCoins').textContent = String(profile.coins);
 }
+// Accueil (version minimale) : ton combattant et son style, et le top 10 rechargé au plus toutes les 30 s.
+let topT = 0;
+function renderHomeMini() {
+  const id = myLook().perso,
+    s = styleOf(id);
+  setFace($('#homeFace'), id);
+  $('#homePerso').textContent = PERSOS[id].name;
+  $('#homeStyle').textContent = `Style ${s.name.toLowerCase()}`;
+  if (Date.now() - topT < 30000) return;
+  topT = Date.now();
+  const ol = $('#homeTopList'),
+    st = $('#homeTopStatus');
+  st.textContent = ol.children.length ? '' : 'Chargement…';
+  lireClassement()
+    .then(c => {
+      rendreClassement(ol, c, 10);
+      st.textContent = '';
+    })
+    .catch(e => {
+      topT = 0;
+      ol.innerHTML = '';
+      st.textContent = (e as Error).message;
+    });
+}
+export const rechargerTop = () => {
+  topT = 0;
+};
 export function renderHome() {
+  if (MINI) renderHomeMini();
   ($('#nameIn') as HTMLInputElement).value = profile.name;
   $('#heroName').textContent = profile.name;
   $('#heroName').hidden = !profile.name;
@@ -164,7 +194,7 @@ export function renderHome() {
     : 'Pas encore de record';
   $('#towerSub').textContent = MINI
     ? b.floors
-      ? `Va plus haut que l'étage ${b.floors}`
+      ? `Ton record : étage ${b.floors} · va plus haut`
       : 'Va le plus haut possible'
     : !profile.tutoDone
       ? 'Commence par le tutoriel (1 min)'
