@@ -35,6 +35,7 @@ export function setupUI() {
       show(null);
     },
     onEnd,
+    onLeave: cancelEnd, // quitter juste après la fin du match : pas d'écran de résultat ni d'XP
     onRematch,
     onDisconnect() {
       if (nav.current === 'home') return;

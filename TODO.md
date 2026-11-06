@@ -50,8 +50,8 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 
 ## Phase 3 : bugs, tests, typage
 
-- [ ] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).
-- [ ] **Bug** : après une déconnexion, les dernières entrées de l'invité restent appliquées côté hôte (`lost()` dans `src/net/session.ts`).
+- [x] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).
+- [x] **Bug** : après une déconnexion, les dernières entrées de l'invité restent appliquées côté hôte (`lost()` dans `src/net/session.ts`).
 - [ ] Masquer le **mode test** en production (visible avec `?debug` ou en développement seulement).
 - [ ] `/api/e` : limiter la taille des propriétés et le nombre d'événements.
 - [ ] Tests unitaires : progression et XP, `sanitizeLook`, chargement du profil, compactage des entrées et des instantanés réseau, règles de combat (épuisé, parade, anti-spam).

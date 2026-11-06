@@ -41,6 +41,7 @@ export interface Hooks {
   onStart?(): void;
   onEnd?(winner: number, score: number[]): void;
   onDisconnect?(): void;
+  onLeave?(): void; // la partie est quittée : l'interface annule ce qu'elle préparait (écran de résultat)
   onRematch?(me: boolean, them: boolean): void;
   onPing?(ms: number): void;
   onStatus?(msg: string): void;
@@ -767,6 +768,9 @@ class Session {
     if (this.mode === 'idle') return;
     const was = this.mode;
     this.conn = null;
+    // l'adversaire parti ne tient plus aucune touche (les compteurs restent, sinon l'hôte croirait à une nouvelle action)
+    const r = this.remote;
+    this.remote = { ...emptyInput(), parryN: r.parryN, dodgeN: r.dodgeN, emoteN: r.emoteN };
     if (was === 'host' || was === 'guest') {
       track('disconnect', { mode: was, ended: this.ended });
       this.hooks.onDisconnect?.();
@@ -784,6 +788,7 @@ class Session {
       });
     }
     if (silent === false || this.mode === 'idle' || this.mode === 'menu') this.matches = 0;
+    this.hooks.onLeave?.();
     const c = this.conn;
     this.conn = null;
     if (c) c.close();
