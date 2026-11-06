@@ -13,6 +13,7 @@ import {
   DAILY_COINS,
   DAILY_XP,
   rankProgress,
+  towerFloor,
 } from '../sim/progression';
 import { PERSOS, ARMES } from '../sim/data';
 import { session } from '../net/session';
@@ -21,7 +22,9 @@ import { $, confetti, restartAnim } from './dom';
 import { show } from './nav';
 import { profile, save, addXp, addCoins, myRank, rollDaily, PK, AK } from './profile';
 import { setFace, setWico, renderCoins, SCROLLS } from './home';
-import { startTower, startDaily, startTuto, practice } from './launch';
+import { startTower, startDaily, startTuto, practice, startRun, montee } from './launch';
+import { MINI } from './edition';
+import { envoyerMontee, rendreClassement } from '../net/classement';
 
 const nth = (n: number) => (n === 1 ? '1er' : n + 'e');
 
@@ -114,6 +117,7 @@ export function onEnd(winner: number, score: number[]) {
     $('#resUnlock').hidden = true;
     $('#resPerso').hidden = true;
     $('#resStreak').hidden = true;
+    $('#resRun').hidden = true;
     let coins = 0;
     const starsEl = $('#resStars');
     starsEl.hidden = true;
@@ -157,6 +161,23 @@ export function onEnd(winner: number, score: number[]) {
         setResultButtons('Réessayer', () => startDaily(), null, null);
       }
       save();
+    } else if (MINI && session.mode === 'tower' && session.floor) {
+      // montée de la Tour : on enchaîne les étages jusqu'à la première défaite, puis le pseudo pour le classement
+      const f = session.floor;
+      montee.secondes += session.seconds;
+      $('#resKicker').textContent = `Étage ${f.n} · ${f.name}`;
+      $('#resScore').textContent = `${sMe} – ${sOp}` + (win ? ` en ${session.seconds} s` : '');
+      if (win) {
+        montee.etages = f.n;
+        $('#resTitle').textContent = 'Étage réussi';
+        $('#resStatus').textContent = `Prochain gardien : ${towerFloor(f.n + 1).name}`;
+        setResultButtons(
+          `Étage ${f.n + 1}`,
+          () => startTower(f.n + 1),
+          'M’arrêter là',
+          () => finMontee(false),
+        );
+      } else finMontee(true);
     } else if (session.mode === 'tower' && session.floor) {
       const f = session.floor,
         stars = starsFor(win, session.roundsLost, session.seconds, f.par);
@@ -223,8 +244,8 @@ export function onEnd(winner: number, score: number[]) {
         setResultButtons('Réessayer', () => startTower(f.n), null, null);
       }
     } else if (session.mode === 'practice') {
-      gain = win ? XP_PRACTICE_WIN : 5;
-      coins = COINS_PRACTICE[win ? 1 : 0];
+      gain = MINI ? 0 : win ? XP_PRACTICE_WIN : 5;
+      coins = MINI ? 0 : COINS_PRACTICE[win ? 1 : 0];
       $('#resKicker').textContent = 'Entraînement';
       $('#resTitle').textContent = win ? 'Victoire' : 'Défaite';
       $('#resScore').textContent = `${sMe} – ${sOp} contre ${op ? op.name : 'le bot'}`;
@@ -240,13 +261,14 @@ export function onEnd(winner: number, score: number[]) {
     }
     const b = session.bonus,
       bc = b.saves * 2 + b.perfects * 5;
-    $('#resBonus').hidden = !bc;
-    if (bc) {
+    $('#resBonus').hidden = !bc || MINI;
+    if (bc && !MINI) {
       coins += bc;
       $('#resBonus').textContent =
         [b.perfects ? `Parfait ×${b.perfects}` : '', b.saves ? `Sauvé ×${b.saves}` : ''].filter(Boolean).join(' · ') +
         ` : +${bc} pièces`;
     }
+    if (MINI) gain = coins = 0; // version minimale : ni XP, ni pièces, ni ceinture
     const newRank = addXp(gain);
     addCoins(coins);
     renderCoins();
@@ -258,6 +280,62 @@ export function onEnd(winner: number, score: number[]) {
     if (win) confetti();
   }, 1300);
 }
+/* ---------- fin de la montée (version minimale) : record, pseudo, classement ---------- */
+function finMontee(defaite: boolean) {
+  const n = montee.etages,
+    t = montee.secondes,
+    b = profile.best;
+  const record = n > b.floors || (n === b.floors && n > 0 && t < b.seconds);
+  if (record) {
+    profile.best = { floors: n, seconds: t };
+    save();
+  }
+  $('#resTitle').className = defaite ? 'lose' : 'win';
+  $('#resTitle').textContent = defaite ? 'Fin de la montée' : 'Montée terminée';
+  $('#resKicker').textContent = n ? `${n} étage${n > 1 ? 's' : ''} gravi${n > 1 ? 's' : ''} en ${duree(t)}` : 'La Tour';
+  if (!defaite) $('#resScore').textContent = '';
+  $('#resStatus').textContent = record
+    ? 'Nouveau record personnel !'
+    : b.floors
+      ? `Ton record : ${b.floors} étage${b.floors > 1 ? 's' : ''}.`
+      : '';
+  setResultButtons('Recommencer', () => startRun(), null, null);
+  $('#resRun').hidden = false;
+  const form = $('#runForm') as HTMLFormElement,
+    input = $('#runName') as HTMLInputElement,
+    st = $('#runStatus'),
+    ol = $('#runTop');
+  ol.innerHTML = '';
+  form.hidden = n === 0;
+  st.textContent =
+    n === 0 ? 'Gagne au moins un étage pour entrer au classement.' : 'Inscris ton pseudo au classement :';
+  input.value = profile.name.startsWith('Disciple ') ? '' : profile.name;
+  (form.querySelector('button') as HTMLButtonElement).disabled = false;
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const pseudo = input.value.trim();
+    if (pseudo.length < 2) {
+      st.textContent = 'Choisis un pseudo d’au moins 2 caractères.';
+      return;
+    }
+    profile.name = pseudo.slice(0, 16);
+    save();
+    const btn = form.querySelector('button') as HTMLButtonElement;
+    btn.disabled = true;
+    st.textContent = 'Envoi…';
+    try {
+      const c = await envoyerMontee(profile.name, n, t);
+      form.hidden = true;
+      st.textContent = c.moi ? `Tu es ${c.moi.rang}${c.moi.rang === 1 ? 'er' : 'e'} du classement.` : 'Envoyé.';
+      rendreClassement(ol, c);
+    } catch (err) {
+      btn.disabled = false;
+      st.textContent = (err as Error).message;
+    }
+  };
+}
+const duree = (s: number) => (s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')}`);
+
 // Demande de revanche en duel : état de chacun des deux joueurs.
 export function onRematch(me: boolean, them: boolean) {
   const st = session.state;

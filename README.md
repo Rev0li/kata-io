@@ -4,6 +4,10 @@ Duel de kung-fu en 1 contre 1, sur invitation. On frappe, on pare, on esquive, e
 
 Version de développement : Phaser 4, TypeScript et Vite, avec une connexion pair à pair (WebRTC via PeerJS). Le site est entièrement statique et se déploie tel quel sur Vercel.
 
+## Version minimale (en ligne)
+
+Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1, on enchaîne les gardiens jusqu'à la première défaite (ou « M'arrêter là »), puis on inscrit son pseudo au **classement**. Toutes les techniques, combattants et armes sont disponibles dès le départ ; le tutoriel est facultatif. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
+
 ## Progression
 
 On commence ceinture blanche avec seulement **Frapper** et **Esquiver**. Chaque ceinture, gagnée avec l'XP, débloque une technique, avec un exercice de 20 secondes contre le mannequin :
@@ -222,7 +226,7 @@ Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écr
 2. Vercel détecte Vite : commande `npm run build`, dossier `dist` (déjà fixés dans `vercel.json`). Cliquer sur **Deploy**.
 3. Chaque push sur `main` redéploie la production ; chaque branche ou pull request obtient une adresse de prévisualisation.
 
-Aucune variable d'environnement n'est nécessaire.
+Classement de la montée (`api/classement.js`) : ajouter une base **Upstash Redis** depuis l'onglet *Storage* (ou *Marketplace*) du projet Vercel et la relier au projet ; Vercel crée lui-même les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN`. Sans elles, le jeu marche et le classement affiche « pas encore ouvert ».
 
 ## Limites de cette version
 

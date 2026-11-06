@@ -100,6 +100,14 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Précisions :** invitation à protéger son compte dès l'étage 3 gagné ; duel public et classement du défi du jour réservés aux comptes protégés ; progression locale actuelle reprise automatiquement.
 - **Détails :** [COMPTES.md](COMPTES.md).
 
+## D14. Version minimale : la montée de la Tour et son classement
+- **Question :** que sortir en premier, sans connexion entre joueurs ni comptes ?
+- **Décision (2026-11-06) :** un seul défi, **monter la Tour le plus haut possible** en une montée (de l'étage 1 jusqu'à la première défaite, ou « M'arrêter là »), puis inscrire son **pseudo** au classement. **Statut : codé** (`MINI` dans `src/ui/edition.ts`).
+- **Mis de côté** (code gardé, boutons grisés « Bientôt ») : défi du jour, duel entre amis, boutique d'effets et pièces.
+- **Retirés :** ceintures, XP et déblocages ; toutes les techniques, combattants et armes dès le départ. Tutoriel facultatif.
+- **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; Redis Upstash via Vercel (`api/classement.js`). Le combat tournant chez le joueur, la triche reste possible : on refuse l'impossible (moins de 8 s par étage) et on nettoie à la main. Les comptes de D13 reprendront cet identifiant (invité silencieux).
+- **Pourquoi pas pseudo + mot de passe :** plus de travail (mots de passe, sessions, pseudos uniques), mot de passe oublié = compte perdu sans e-mail, et n'empêche pas la triche.
+
 ## Ordre de production retenu
 1. **Vanilla fun et complet** : combat, souffle, stabilité, ring-out, anti-stalemate, anti-spam, sensation "animé", boucle manche/victoire/revanche.
 2. **Duel privé** et multijoueur.

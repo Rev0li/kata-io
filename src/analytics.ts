@@ -18,7 +18,7 @@ const t0 = performance.now();
 let queue: Ev[] = [];
 const counts: Record<string, number> = {}; // compteurs de la session, visibles avec ?debug : window.__kata.stats
 
-function aid(): string {
+export function aid(): string {
   try {
     let a = localStorage.getItem(AID_KEY);
     if (!a) {

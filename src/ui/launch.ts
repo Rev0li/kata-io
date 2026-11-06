@@ -9,6 +9,15 @@ import { nav } from './nav';
 import { profile, myRank, myAbil, rollDaily } from './profile';
 import { myName, mySpec } from './home';
 import { viewState } from './viewstate';
+import { MINI } from './edition';
+
+// Montée de la Tour (version minimale) : de l'étage 1 jusqu'à la première défaite ; le temps de combat s'additionne.
+export const montee = { etages: 0, secondes: 0 };
+export function startRun() {
+  montee.etages = 0;
+  montee.secondes = 0;
+  startTower(1);
+}
 
 // Parties locales : le mode test peut rendre le joueur invincible (jamais en duel).
 const local = (spec: MeSpec): MeSpec => (profile.god ? { ...spec, god: true } : spec);
@@ -17,14 +26,14 @@ export function startTower(n: number) {
   track('play_clicked', { kind: 'tower', floor: n });
   wake();
   myName();
-  if (!profile.tutoDone) {
+  if (!MINI && !profile.tutoDone) {
     startTuto(null);
     return;
   }
   nav.lastMode = { kind: 'tower', floor: n };
   const f = towerFloor(n);
   setLocks(myAbil());
-  session.startTower(local(mySpec()), f, towerExtra(f, profile.tries[n] || 0));
+  session.startTower(local(mySpec()), f, towerExtra(f, MINI ? 0 : profile.tries[n] || 0));
   if (f.twist) setTimeout(() => toast(f.twist), 400);
 }
 // Gardien : ses techniques, plus la prochaine que tu vas débloquer (avant-goût) ; il nargue si tu reviens après une défaite.
@@ -32,7 +41,7 @@ function towerExtra(f: Floor, tries: number) {
   const abil = abilFor(f.tier),
     next = RANKS[myRank() + 1];
   let teaser = '';
-  if (next && next.unlock && !f.daily) {
+  if (!MINI && next && next.unlock && !f.daily) {
     const k = next.unlock.key,
       before = JSON.stringify(abil);
     if (k === 'chain2') abil.chain = Math.max(abil.chain, 2);

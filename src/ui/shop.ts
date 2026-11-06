@@ -14,14 +14,19 @@ import { $, toast, wake } from './dom';
 import { show } from './nav';
 import { profile, save, myLook, owns, CATALOG, ShopKind, PK, AK, persoOpen, armeOpen } from './profile';
 import { mySpec, renderCoins, goHome, setFace, setWico } from './home';
+import { MINI } from './edition';
 
 export type LockerTab = 'perso' | 'arme' | ShopKind;
 let tab: LockerTab = 'perso',
   sel = '';
 const isEffect = (t: LockerTab): t is ShopKind => t === 'trainee' || t === 'ejection';
 const HINTS: Record<LockerTab, string> = {
-  perso: 'Bats le gardien d’un étage de la Tour pour gagner son apparence.',
-  arme: 'Chaque nouvelle ceinture apporte une arme. Elles ne changent que l’apparence.',
+  perso: MINI
+    ? 'Tous les combattants sont à toi. Ils ne changent que l’apparence.'
+    : 'Bats le gardien d’un étage de la Tour pour gagner son apparence.',
+  arme: MINI
+    ? 'Toutes les armes sont à toi. Elles ne changent que l’apparence.'
+    : 'Chaque nouvelle ceinture apporte une arme. Elles ne changent que l’apparence.',
   trainee: 'Traînée de tes coups. Gagne des pièces dans la Tour, en entraînement et en duel.',
   ejection: 'Effet quand tu envoies ton adversaire à l’eau. Lui aussi le voit.',
 };
