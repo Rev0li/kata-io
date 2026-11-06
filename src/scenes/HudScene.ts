@@ -220,7 +220,7 @@ export class HudScene extends Phaser.Scene {
               ? `Ping ${session.ping} ms`
               : 'Connexion…',
     );
-    this.myName.setText(me.name);
+    this.myName.setText(me.name === 'Toi' ? '' : me.name); // pas encore de pseudo : rien d'affiché
     // D3 : pourcentages cachés pour les deux (sauf ?debug) ; on lit son état aux signes sur le combattant
     const debug = new URLSearchParams(location.search).has('debug');
     this.myPct
