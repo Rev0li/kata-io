@@ -21,7 +21,8 @@ import {
   alive,
 } from '../sim/sim';
 import { Conn } from './transport';
-import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo } from '../sim/data';
+import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo, cloneDeck } from '../sim/data';
+import { lookStyle, styleDeck } from '../sim/styles';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 import { track } from '../analytics';
@@ -291,7 +292,9 @@ class Session {
     const me = S.f[0],
       foe = S.f[1],
       H = S.H;
-    me.look = { ...look };
+    // aperçu d'un autre combattant : son arme et son jeu de coups suivent son style (D16)
+    me.look = lookStyle(sanitizeLook(look));
+    me.deck = cloneDeck(styleDeck(me.look.perso));
     const place = (e: any, x: number, y: number) => {
       respawn(S, e, x, y);
       e.dropT = 0;
