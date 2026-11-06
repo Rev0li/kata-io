@@ -74,7 +74,7 @@ Le **Mode test**, replié dans les paramètres (roue en haut à droite), permet 
 | Action | Clavier et souris | Tactile |
 |---|---|---|
 | Se déplacer | ZQSD, WASD ou flèches | Joystick à gauche |
-| Viser | Automatique vers l'adversaire (comme sur mobile) ; souris si on désactive la visée automatique dans les réglages | Automatique vers l'adversaire |
+| Viser | Automatique vers l'adversaire | Automatique vers l'adversaire |
 | Frapper (coup blanc) | Clic gauche ou J, appui court | Frapper |
 | Coup chargé rouge | Maintenir clic gauche ou J | Maintenir Frapper |
 | Parer | Clic droit ou K | Parer |

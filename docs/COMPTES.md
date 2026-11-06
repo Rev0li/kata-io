@@ -48,7 +48,7 @@ Le duel privé (avec un code) reste ouvert à tous, invités compris.
 
 ## Ce qui est sauvegardé
 
-Le profil actuel (`src/ui/profile.ts`), à l'identique : nom, apparence, XP, étages débloqués, étoiles, pièces, effets possédés, série, essais par étage, défi du jour, réglages (son, musique, visée automatique).
+Le profil actuel (`src/ui/profile.ts`), à l'identique : nom, apparence, XP, étages débloqués, étoiles, pièces, effets possédés, série, essais par étage, défi du jour, réglages (son, musique).
 
 - **Format** : un document JSON par joueur, avec un numéro de version et une date de mise à jour. Pas de table par champ tant que le profil change souvent.
 - **Synchronisation** : le jeu garde le profil en local (le jeu marche hors ligne) et l'envoie au serveur après chaque partie et à chaque achat. Au lancement, il récupère la version du serveur.
