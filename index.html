@@ -112,7 +112,7 @@
         </header>
 
         <!-- ton combattant est dans la scène, sur la plateforme ; ici : nom, ceinture, prochaine technique -->
-        <div class="mhero hcard">
+        <div class="mhero hcard nomini">
           <b class="mname" id="heroName"></b>
           <p class="mrecord onlymini" id="heroRecord"></p>
           <div class="mrank nomini">
@@ -140,31 +140,54 @@
           <button id="towerBtn" class="btn-gold mbig" type="button">
             <span class="mtitle">Jouer</span><small id="towerSub">Étage 1</small>
           </button>
+          <button id="persoBtn" class="mperso onlymini" type="button" aria-label="Choisir ton combattant">
+            <i class="face" id="homeFace"></i><span><b id="homePerso"></b><small id="homeStyle"></small></span
+            ><em>Changer</em>
+          </button>
+          <div class="mduo">
+            <button id="tutoHomeBtn" class="mside onlymini" type="button">
+              <img class="px" src="/assets/items/scroll-empty.png" alt="" /><span
+                ><b>Tutoriel</b><small>1 min, facultatif</small></span
+              >
+            </button>
+            <button id="trainBtn" class="mside" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="12" cy="12" r="0.8" /></svg
+              ><span><b>Entraînement</b><small>contre un bot</small></span>
+            </button>
+          </div>
+          <p class="mhint onlymini">
+            <span class="pc-only">ZQSD bouger · J frapper · K parer · Espace esquiver</span
+            ><span class="touch-only">Touche la plateforme pour bouger, le mannequin pour frapper</span>
+          </p>
+        </nav>
+
+        <!-- version minimale : le top 10 de la montée, qui se déroule en cascade -->
+        <section class="mtop hcard onlymini" id="homeTop">
+          <button id="rankAllBtn" class="mtophd" type="button">
+            <b>Classement</b><small>top 10 · tout voir</small>
+          </button>
+          <ol class="ranklist cascade" id="homeTopList"></ol>
+          <p class="status" id="homeTopStatus"></p>
+        </section>
+
+        <!-- à venir : grisé, tout en bas -->
+        <div class="msoon">
           <button id="dailyBtn" class="mside" type="button">
             <img class="px" src="/assets/items/scroll-thunder.png" alt="" /><span
               ><b>Défi du jour</b><small id="dailySub"></small
             ></span>
-          </button>
-          <button id="tutoHomeBtn" class="mside onlymini" type="button">
-            <img class="px" src="/assets/items/scroll-empty.png" alt="" /><span
-              ><b>Tutoriel</b><small>facultatif : les commandes en une minute</small></span
-            >
-          </button>
-          <button id="trainBtn" class="mside" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="12" cy="12" r="0.8" /></svg
-            ><span><b>Entraînement</b><small>contre un bot, dans le monde de ton choix</small></span>
           </button>
           <button id="duelBtn" class="mside" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
             ><span><b>Duel</b><small>contre un ami, avec un code</small></span>
           </button>
-        </nav>
+        </div>
       </div>
-      <p class="ver">Version de développement</p>
+      <p class="ver" id="devVer">Version de développement</p>
     </section>
 
     <section id="training" class="screen side" hidden>
@@ -242,7 +265,7 @@
             ><span>Emotes</span> <span><kbd>Échap</kbd></span
             ><span>Quitter le combat</span>
           </div>
-          <details class="dev">
+          <details class="dev" id="devPanel">
             <summary>Mode test <small>version de dev</small></summary>
             <div class="inner">
               <label class="drow"
@@ -290,7 +313,7 @@
     <section id="shop" class="screen side" hidden>
       <div class="col card shop">
         <div class="shophead">
-          <h2>Vestiaire</h2>
+          <h2><span class="nomini">Vestiaire</span><span class="onlymini">Ton combattant</span></h2>
           <span class="coins big nomini"
             ><img class="px" src="/assets/items/gold-coin.png" alt="" /><b id="shopCoins">0</b></span
           >
@@ -299,7 +322,7 @@
           <label for="nameIn" class="lbl">Nom</label>
           <input id="nameIn" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Grue d'acier" />
         </div>
-        <div class="tabs" role="tablist">
+        <div class="tabs nomini" role="tablist">
           <button class="tab on" data-tab="perso" type="button" role="tab">Combattant</button>
           <button class="tab" data-tab="arme" type="button" role="tab" hidden>Arme</button>
           <button class="tab nomini" data-tab="trainee" type="button" role="tab">Traînée</button>

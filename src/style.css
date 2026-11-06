@@ -2816,3 +2816,219 @@ body:not(.mini) .onlymini {
   line-height: 1.1;
   opacity: 0.85;
 }
+
+/* ---------- accueil de la version minimale : Jouer, ton combattant, tutoriel et entraînement, top 10, à venir ---------- */
+.mperso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--slate);
+  border-radius: 9px;
+  background: rgba(17, 24, 32, 0.9);
+  color: var(--cream);
+  text-align: left;
+  transition:
+    transform 0.12s,
+    border-color 0.12s;
+}
+.mperso:hover {
+  transform: translateX(-3px);
+  border-color: var(--gold-2);
+}
+.mperso .face {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+.mperso span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.mperso b {
+  font-family: var(--f-disp);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+.mperso small {
+  color: var(--gold-1);
+  font-size: 12px;
+}
+.mperso em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--mist);
+  border: 1px solid var(--slate);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.mduo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.mduo .mside {
+  padding: 8px 10px;
+  gap: 8px;
+}
+.mduo .mside img,
+.mduo .mside svg {
+  width: 24px;
+  height: 24px;
+}
+.mduo .mside b {
+  font-size: 16px;
+}
+.mplay .mhint {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(236, 223, 198, 0.82);
+  text-shadow:
+    0 1px 2px #0b1117,
+    0 0 6px rgba(11, 17, 23, 0.9);
+}
+/* top 10 : en-tête cliquable (classement complet), lignes qui tombent en cascade */
+.mtop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  width: min(320px, 38vw);
+}
+.mtophd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--cream);
+  cursor: pointer;
+}
+.mtophd b {
+  font-family: var(--f-disp);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-1);
+}
+.mtophd small {
+  font-size: 11px;
+  color: var(--mist);
+}
+.mtophd:hover small {
+  color: var(--gold-1);
+}
+.mtop .ranklist {
+  max-height: none;
+  gap: 2px;
+}
+.mtop .ranklist li {
+  padding: 2px 8px;
+  font-size: 13px;
+}
+.mtop .status:empty {
+  display: none;
+}
+.mtop .status {
+  margin: 0;
+  font-size: 12px;
+}
+.ranklist.cascade li {
+  animation: cascade 0.42s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes cascade {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ranklist.cascade li {
+    animation: none;
+  }
+}
+/* à venir : petits boutons grisés, tout en bas */
+.msoon {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  width: min(300px, 34vw);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.msoon .mside {
+  padding: 6px 10px;
+  gap: 8px;
+}
+.msoon .mside img,
+.msoon .mside svg {
+  width: 20px;
+  height: 20px;
+}
+.msoon .mside b {
+  font-size: 14px;
+}
+.msoon .mside small {
+  font-size: 11px;
+}
+body.mini .mplay {
+  top: 46%;
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  .mperso {
+    padding: 5px 10px;
+  }
+  .mperso .face {
+    width: 30px;
+    height: 30px;
+  }
+  .mperso b {
+    font-size: 16px;
+  }
+  .mplay .mhint {
+    display: none;
+  }
+  .mtop {
+    padding: 7px 10px;
+    width: min(270px, 36vw);
+  }
+  .mtop .ranklist li:nth-child(n + 6):not(.moi) {
+    display: none;
+  }
+  .mtop .ranklist li {
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  .msoon .mside small {
+    display: none;
+  }
+}
+@media (min-width: 1000px) and (min-height: 600px) {
+  .mpanel .mtop,
+  .mpanel .msoon {
+    position: static;
+    width: auto;
+  }
+  /* la colonne tient dans l'écran : le top 10 défile s'il manque de place */
+  .mpanel .mtop .ranklist {
+    max-height: calc(100vh - 500px);
+    min-height: 80px;
+    overflow-y: auto;
+  }
+}

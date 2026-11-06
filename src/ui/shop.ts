@@ -94,7 +94,7 @@ function renderShop() {
     b.type = 'button';
     b.className = 'sitem' + (open ? ' owned' : '') + (on ? ' on' : '') + (id === sel ? ' sel' : '');
     let st: string;
-    if (on) st = '<span class="st">Équipé</span>';
+    if (on) st = `<span class="st">${MINI ? 'Choisi' : 'Équipé'}</span>`;
     else if (open) st = isEffect(tab) ? '<span class="st">Possédé</span>' : '';
     else if (isEffect(tab)) {
       const price = CATALOG[tab][id].price;
@@ -121,9 +121,9 @@ function renderShop() {
   act.disabled = false;
   act.classList.remove('short');
   if (cur === sel) {
-    lbl.textContent = 'Équipé';
+    lbl.textContent = MINI ? 'C’est ton combattant' : 'Équipé';
     act.disabled = true;
-  } else if (unlocked(sel)) lbl.textContent = 'Équiper';
+  } else if (unlocked(sel)) lbl.textContent = MINI ? 'Choisir' : 'Équiper';
   else if (!isEffect(tab)) {
     lbl.textContent = tab === 'perso' ? `Bats le gardien de l’étage ${PERSOS[sel].floor}` : RANKS[ARMES[sel].rank].name;
     act.disabled = true;

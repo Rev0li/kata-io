@@ -21,7 +21,7 @@ import { sfx } from '../game/audio';
 import { $, confetti, restartAnim } from './dom';
 import { show } from './nav';
 import { profile, save, addXp, addCoins, myRank, rollDaily, PK, AK } from './profile';
-import { setFace, setWico, renderCoins, SCROLLS } from './home';
+import { setFace, setWico, renderCoins, SCROLLS, rechargerTop } from './home';
 import { startTower, startDaily, startTuto, practice, startRun, montee } from './launch';
 import { MINI } from './edition';
 import { envoyerMontee, rendreClassement } from '../net/classement';
@@ -328,6 +328,7 @@ function finMontee(defaite: boolean) {
       form.hidden = true;
       st.textContent = c.moi ? `Tu es ${c.moi.rang}${c.moi.rang === 1 ? 'er' : 'e'} du classement.` : 'Envoyé.';
       rendreClassement(ol, c);
+      rechargerTop(); // l'accueil affichera le classement à jour
     } catch (err) {
       btn.disabled = false;
       st.textContent = (err as Error).message;
