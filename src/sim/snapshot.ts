@@ -47,6 +47,8 @@ export function snapshot(st: Sim) {
         e.ledge ? [e.ledge.nx, e.ledge.ny] : 0,
         e.deck.heavy[e.stance],
         nextWhite(e).id,
+        r1(e.z || 0),
+        e.star ? 1 : 0,
       ];
     }),
   };
@@ -77,6 +79,8 @@ export function createMirror(specs: Spec[]) {
       elanT: 0,
       spawnInv: 0,
       fallT: 0,
+      z: 0,
+      star: false,
       dropT: 0,
       kos: 0,
       chargeT: 0,
@@ -125,6 +129,8 @@ export function applySnapshot(m: any, s: any) {
       ledge,
       heavyId,
       nextId,
+      z,
+      star,
     ] = p;
     const jump = Math.hypot(x - e.x, y - e.y) > 160 || e.fresh || (state === 'frozen' && e.state !== 'frozen');
     e.tx = x;
@@ -164,6 +170,8 @@ export function applySnapshot(m: any, s: any) {
     e.ledge = ledge ? { nx: ledge[0], ny: ledge[1] } : null;
     e.heavyId = heavyId;
     e.nextId = nextId;
+    e.z = z || 0;
+    e.star = !!star;
   });
 }
 export function advanceMirror(m: any, dt: number) {

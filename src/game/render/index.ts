@@ -131,6 +131,14 @@ export class Renderer {
           fx.after(d, () => fx.burst(S.x, S.y, n, 60, len, col, 6, 420));
         break;
       }
+      case 'star': {
+        // éjection « étoile » : il disparaît dans le ciel dans un éclat doré
+        const S = iso(ev.x, ev.y, ev.z);
+        fx.burst(S.x, S.y, 16, 10, 120, C.gold, 4, 420);
+        fx.fx('sparkle', S.x, S.y, 0, 3, C.gold);
+        fx.addFloat(S.x, S.y + 30, ev.word, '#f2c14e', 28);
+        break;
+      }
       case 'splash': {
         this.lake.scare(ev.x, ev.y, 460, 230);
         fx.splash(ev.x, ev.y, ev.fx, 1);

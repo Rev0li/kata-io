@@ -37,6 +37,7 @@ interface View {
   partT: number;
   sweatT: number;
   puffT: number;
+  prevZ: number;
 }
 
 // Pourcentage caché (D3) : un signe en trois paliers, le même pour les deux combattants.
@@ -87,6 +88,7 @@ export class Fighters {
         partT: 0,
         sweatT: 0,
         puffT: 0,
+        prevZ: 0,
       };
     }
     return v;
@@ -217,7 +219,7 @@ export class Fighters {
     const red = a.kind === 'red',
       col = red ? (a.dragon ? C.gold : C.red) : 0xffffff,
       f = e.facing,
-      p = iso(e.x + Math.cos(f) * 4, e.y + Math.sin(f) * 4, 46),
+      p = iso(e.x + Math.cos(f) * 4, e.y + Math.sin(f) * 4, 46 + (e.z || 0)),
       L = (red ? 14 : 11) * (0.6 + 0.4 * k) * (1 + 0.08 * Math.sin(time * 0.05)),
       rot = time * 0.004;
     const star = (len: number) => {
@@ -295,10 +297,11 @@ export class Fighters {
       ga = 1;
     if (st === 'falling') {
       const p = clamp(e.fallT / 560, 0, 1);
-      scale = 1 - 0.5 * p;
-      rot = p * 5;
+      scale = 1 - (e.star ? 0.75 : 0.5) * p;
+      rot = p * (e.star ? 14 : 5); // l'étoile tourne vite en s'éloignant dans le ciel
       ga = 1 - 0.35 * p;
     }
+    const zs = e.z || 0; // hauteur de vol : le sprite monte, l'ombre reste au sol
     if (e.spawnInv > 0 && st !== 'climb' && st !== 'falling' && !(e.dropT > 0))
       ga *= 0.55 + 0.3 * Math.sin(time * 0.02);
     const dp = e.dropT > 0 ? e.dropT / 500 : 0;
@@ -310,8 +313,9 @@ export class Fighters {
     // sol : ombre, anneau du joueur ou couleur de ceinture de l'adversaire (posés à plat sur le dojo)
     const G = iso(e.x, e.y);
     if (st !== 'falling' && st !== 'ledge') {
-      g.fillStyle(0x1e180c, 0.34 * ga);
-      g.fillEllipse(G.x, G.y + 2, 32 * FIGHTER_K * (1 - dp * 0.5), 14 * FIGHTER_K * (1 - dp * 0.5));
+      const sh = 1 / (1 + zs / 160); // ombre plus petite et plus pâle quand il est haut
+      g.fillStyle(0x1e180c, 0.34 * ga * (0.4 + 0.6 * sh));
+      g.fillEllipse(G.x, G.y + 2, 32 * FIGHTER_K * (1 - dp * 0.5) * sh, 14 * FIGHTER_K * (1 - dp * 0.5) * sh);
       const ringCol = i === myIdx ? C.ochre : hex(e.belt || beltOf(e.kos)[2]);
       g.lineStyle(2, tier >= 3 ? mix(ringCol, C.red, hot) : ringCol, (i === myIdx ? 0.9 : 0.65) * ga);
       g.strokeEllipse(G.x, G.y + 2, 44 * FIGHTER_K, 21 * FIGHTER_K);
@@ -434,7 +438,7 @@ export class Fighters {
     spr
       .setVisible(true)
       .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-      .setPosition(G.x + jit + sway, G.y + 6 - 8 * FIGHTER_PX) // pieds au sol : le bas de l'image est 6 px sous le point au sol
+      .setPosition(G.x + jit + sway, G.y + 6 - 8 * FIGHTER_PX - zs) // pieds au sol : le bas de l'image est 6 px sous le point au sol
       .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy)
       .setRotation(rot)
       .setAlpha(ga)
@@ -453,7 +457,7 @@ export class Fighters {
     }
     // sueur (palier 1 et plus) et vapeur (palier 2 et plus), au-dessus de la tête
     if (tier >= 1 && st !== 'dead') {
-      const head = G.y + 6 - 13 * FIGHTER_PX;
+      const head = G.y + 6 - 13 * FIGHTER_PX - zs;
       v.sweatT -= dt * 1000;
       if (v.sweatT <= 0) {
         v.sweatT = [0, 1100, 750, 450][tier] * (0.8 + 0.4 * Math.random());
@@ -515,7 +519,7 @@ export class Fighters {
       wang = f + side * 0.3;
     }
     if (W.idx >= 0 && hand) {
-      const hs = iso(hand.x, hand.y, 14 * FIGHTER_K),
+      const hs = iso(hand.x, hand.y, 14 * FIGHTER_K + zs),
         wsa = worldAngleToScreen(wang),
         behind = !S && hs.y + 14 * FIGHTER_K < G.y - 2;
       wpn
@@ -581,6 +585,16 @@ export class Fighters {
         fx.ghost(spr, depth - 1e-5, C.jade);
       }
     }
+    // projeté : images fantômes blanches derrière lui tant qu'il vole ; poussière à l'atterrissage
+    if (zs > 4 || (st === 'falling' && e.star)) {
+      v.ghostT -= dt * 1000;
+      if (v.ghostT <= 0) {
+        v.ghostT = 45;
+        fx.ghost(spr, depth - 1e-5, e.star ? C.gold : 0xffffff);
+      }
+    }
+    if (v.prevZ > 4 && zs <= 0 && st !== 'falling') fx.fx('dust', G.x, G.y, 0, 2);
+    v.prevZ = zs;
     if (st === 'ledge' && v.prevState !== 'ledge') fx.fx('dust', G.x, G.y, 0, 1.6);
     if (v.prevDrop > 0 && !(e.dropT > 0)) fx.fx('dust', G.x, G.y, 0, 2.2);
     v.prevDrop = e.dropT || 0;
@@ -617,7 +631,7 @@ export class Fighters {
         emo
           .setVisible(true)
           .setText(EMOTES[e.emote.id])
-          .setPosition(G.x, G.y - 52 * FIGHTER_K)
+          .setPosition(G.x, G.y - 52 * FIGHTER_K - (e.z || 0))
           .setAlpha(clamp(al, 0, 1));
       } else emo.setVisible(false);
     });

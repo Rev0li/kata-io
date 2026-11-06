@@ -18,7 +18,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
  
 | Valeur | Rôle | Statut |
 |---|---|---|
-| `souffle` (3 segments) | Endurance. Frapper (0,3), parer (0,4), esquiver (1) et le coup chargé (1) en coûtent (prototype du 2026-11-06, `whiteCost`, `parryCost`) ; regain d'un segment en 1,6 s. Insuffisant : l'action ne part pas ; sous 1 segment, épuisé, vulnérable au one-shot. | DÉCIDÉ, intégré ; coûts en prototype |
+| `souffle` (3 segments) | Endurance. Frapper (0,4), parer (0,4), esquiver (1) et le coup chargé (1) en coûtent (prototype du 2026-11-06, `whiteCost`, `parryCost`) ; regain d'un segment en 1,8 s. Insuffisant : l'action ne part pas ; sous 1 segment, épuisé, vulnérable au one-shot. | DÉCIDÉ, intégré ; coûts en prototype |
 | `pct` (stabilité, en %) | Plus il est élevé, plus le recul et la projection reçus sont grands. | DÉCIDÉ, déjà dans le jeu |
 | `dodgeCount` (équilibre) | Compteur d'esquives parfaites d'affilée, remis à zéro quand on est touché. Donne un bonus (nature à définir). | OUVERT, compteur intégré, bonus désactivé (`balanceEnabled: false`) |
  
@@ -99,6 +99,11 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Technique :** BetterAuth + PostgreSQL sur le VPS, **instance séparée de rev0auth**. Le jeu et l'API servis sur un seul domaine (`kata.rev0li.duckdns.org`, à créer) par Caddy.
 - **Précisions :** invitation à protéger son compte dès l'étage 3 gagné ; duel public et classement du défi du jour réservés aux comptes protégés ; progression locale actuelle reprise automatiquement.
 - **Détails :** [COMPTES.md](COMPTES.md).
+
+## D15. Éjection en l'air (prototype du 2026-11-06)
+- **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
+- **Prototype :** un coup au-delà de `TUMBLE_V` **soulève** le combattant (hauteur `z`, gravité, ombre au sol) ; il freine **moins en l'air** (`airDamp` 0,6), et rien ne se décide tant qu'il vole : s'il atterrit dans l'eau, c'est plouf, loin du bord. Au-delà de `starV` il part dans le ciel (**« ÉTOILE ! »**). **Rattrapage au bord** : jamais après une projection, et une fois par manche. Réglages : `LAUNCH` dans `src/sim/data.ts`.
+- **Mesures** (40 duels de bots) : rattrapages 56 → 19, 12 éjections « étoile » sur 161, plouf jusqu'à 470 unités du bord (412 avant) ; manches de la Tour environ 15 % plus courtes. **À valider en jouant.**
 
 ## D14. Version minimale : la montée de la Tour et son classement
 - **Question :** que sortir en premier, sans connexion entre joueurs ni comptes ?

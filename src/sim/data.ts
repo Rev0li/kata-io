@@ -13,6 +13,10 @@ export const WHITE_KB: [number, number] = [110, 3.0]; // vitesse de recul = base
 export const RED_KB: [number, number] = [300, 7.5];
 export const TUMBLE_V = 420;
 export const LEDGE_MAX = 55;
+// Éjection en l'air (2026-11-06) : un coup au-delà de TUMBLE_V soulève le combattant (z, en unités du monde).
+//   vz0 + vzK × (vitesse - TUMBLE_V) : vitesse verticale au départ ; grav : gravité ; airDamp : freinage en l'air
+//   (part du freinage au sol) ; au-delà de starV, il part dans le ciel (« étoile ») et sort à la hauteur starZ.
+export const LAUNCH = { vz0: 140, vzK: 0.55, grav: 1500, airDamp: 0.6, starV: 1400, starVz: 950, starZ: 520 };
 export const PARRY_WIN = 240,
   PARRY_PERFECT = 80,
   PARRY_MISS = 300;
@@ -23,7 +27,7 @@ export const DODGE_T = 300,
 export const CHARGE_START = 120,
   CHARGE_FULL = 800,
   CHARGE_MAX = 1600;
-export const SOUFFLE_REGEN = 1.6, // secondes pour regagner un segment (1,3 avant que frapper et parer coûtent)
+export const SOUFFLE_REGEN = 1.8, // secondes pour regagner un segment (1,3 avant que frapper et parer coûtent)
   MOVE_SPEED = 210;
 export const FIRST_TO = 3;
 // Les quatre mondes (docs/DIRECTION-ARTISTIQUE.md, section 5), dans l'ordre de la Tour ; ils remplaceront les dojos.
@@ -58,7 +62,7 @@ export const RULES = {
   parryPerfectSouffle: 1,
   // Énergie (prototype du 2026-11-06) : frapper et parer coûtent du souffle, comme l'esquive (1) et le coup chargé (1).
   // Sans assez de souffle, l'action ne part pas. 0 = gratuit, et l'ancien anti-spam reprend la main.
-  whiteCost: 0.3,
+  whiteCost: 0.4,
   parryCost: 0.4,
   // D2 : équilibre = nombre d'esquives parfaites d'affilée. Le bonus n'est pas encore décidé : désactivé.
   balanceEnabled: false,

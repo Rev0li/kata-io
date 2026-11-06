@@ -1,5 +1,5 @@
 // Résolution des coups : touche, parade, esquive parfaite, recul, rattrapage au bord, chute et éjection.
-import { RAD, R, WHITE_KB, RED_KB, TUMBLE_V, PARRY_PERFECT, DODGE_IF0, DODGE_IF1, RULES } from './data';
+import { RAD, R, WHITE_KB, RED_KB, TUMBLE_V, PARRY_PERFECT, DODGE_IF0, DODGE_IF1, RULES, LAUNCH } from './data';
 import { clamp, angDiff, alive, emit, fx } from './core';
 import type { Fighter, Sim } from './core';
 import { toIdle } from './fighter';
@@ -113,6 +113,10 @@ function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
   if (v > TUMBLE_V) {
     tgt.state = 'tumble';
     tgt.stateT = 0;
+    // projeté en l'air : plus le coup est fort, plus il monte ; au-delà de starV, il part dans le ciel
+    tgt.star = v >= LAUNCH.starV;
+    tgt.vz = tgt.star ? LAUNCH.starVz : LAUNCH.vz0 + (v - TUMBLE_V) * LAUNCH.vzK;
+    tgt.z = Math.max(tgt.z || 0, 0.01);
   } else {
     tgt.state = 'stun';
     tgt.stateT = 0;
@@ -192,6 +196,7 @@ export function grabLedge(S: Sim, e: Fighter) {
   e.state = 'ledge';
   e.stateT = 0;
   e.ledge = { nx, ny, t: 0 };
+  e.ledgeUsed = true; // un seul rattrapage par manche
   e.vx = e.vy = 0;
   e.atk = null;
   e.buffer = null;
@@ -222,7 +227,13 @@ export function startFall(S: Sim, e: Fighter) {
 function koFighter(S: Sim, v: Fighter, killer: Fighter) {
   const pct = Math.round(v.pct);
   v.splashFx = killer ? killer.look.ejection || 'plouf' : 'plouf';
-  v.koWord = pct >= 180 || v.lastHitDragon ? 'DÉCOLLAGE !' : pct >= 120 ? 'GRAND PLOUF !' : 'PLOUF !';
+  v.koWord = v.star
+    ? 'ÉTOILE !'
+    : pct >= 180 || v.lastHitDragon
+      ? 'DÉCOLLAGE !'
+      : pct >= 120
+        ? 'GRAND PLOUF !'
+        : 'PLOUF !';
   if (killer) addQi(killer, 15);
   const D = S.duel,
     final = D && D.phase === 'fight' && D.score[1 - v.idx] + 1 >= D.firstTo;
@@ -231,7 +242,7 @@ function koFighter(S: Sim, v: Fighter, killer: Fighter) {
     S.slow = Math.max(S.slow, 1100);
     emit(S, { t: 'cine', id: v.idx, ms: 1500 });
     emit(S, { t: 'final', to: v.idx });
-  } else if (pct >= 120 || v.lastHitDragon) {
+  } else if (pct >= 120 || v.lastHitDragon || v.star) {
     S.slow = Math.max(S.slow, 700);
     emit(S, { t: 'cine', id: v.idx, ms: 900 });
   }

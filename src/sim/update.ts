@@ -11,6 +11,7 @@ import {
   MOVE_SPEED,
   LEDGE_MAX,
   RULES,
+  LAUNCH,
 } from './data';
 import { clamp, lerp, easeOut, angDiff, alive, emit, fx } from './core';
 import type { Fighter, Sim } from './core';
@@ -127,9 +128,15 @@ function updFall(S: Sim, e: Fighter, dt: number) {
   const k = Math.exp(-2.5 * dt);
   e.vx *= k;
   e.vy *= k;
+  if (e.star) e.z += e.vz * dt; // éjection « étoile » : il continue de monter jusqu'à disparaître
   if (e.fallT >= 560) {
-    emit(S, { t: 'splash', x: e.x, y: e.y, fx: e.splashFx, word: e.koWord });
-    fx.sfx(S, 'splash', e.x, e.y);
+    if (e.star) {
+      emit(S, { t: 'star', x: e.x, y: e.y, z: e.z, word: e.koWord });
+      fx.sfx(S, 'perfect', e.x, e.y);
+    } else {
+      emit(S, { t: 'splash', x: e.x, y: e.y, fx: e.splashFx, word: e.koWord });
+      fx.sfx(S, 'splash', e.x, e.y);
+    }
     e.state = 'dead';
   }
 }
@@ -198,7 +205,7 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
       updDodge(S, e);
       break;
     case 'tumble':
-      if (e.stateT > 200 && Math.hypot(e.vx, e.vy) < 130) {
+      if (e.stateT > 200 && !(e.z > 0) && Math.hypot(e.vx, e.vy) < 130) {
         e.state = 'stun';
         e.stateT = 0;
         e.stunDur = 120;
@@ -224,14 +231,33 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
   if (mm > 0) moveSafe(S, e, e.move.x * MOVE_SPEED * mm * dt, e.move.y * MOVE_SPEED * mm * dt);
   e.x += e.vx * dt;
   e.y += e.vy * dt;
-  const k = Math.exp(-S.damp * dt);
+  // en l'air : gravité, et moins de freinage qu'au sol (les gros coups portent loin)
+  const air = e.z > 0;
+  let landed = false;
+  if (air) {
+    if (!e.star) e.vz -= LAUNCH.grav * dt;
+    e.z += e.vz * dt;
+    if (e.star && e.z >= LAUNCH.starZ) {
+      startFall(S, e);
+      return;
+    }
+    if (e.z <= 0) {
+      e.z = 0;
+      e.vz = 0;
+      landed = true;
+      fx.sfx(S, 'thud', e.x, e.y, 0.5);
+    }
+  }
+  const k = Math.exp(-S.damp * (air ? LAUNCH.airDamp : 1) * dt);
   e.vx *= k;
   e.vy *= k;
   const H = S.H;
-  if (Math.abs(e.x) > H || Math.abs(e.y) > H) {
+  // au-dessus de l'eau en plein vol : rien ne se décide avant l'atterrissage
+  if (!(e.z > 0) && (Math.abs(e.x) > H || Math.abs(e.y) > H)) {
     const sp = Math.hypot(e.vx, e.vy);
-    if (sp > 30 && !e.god) {
-      if (sp / S.damp < LEDGE_MAX) grabLedge(S, e);
+    if ((sp > 30 || landed) && !e.god) {
+      // rattrapage au bord : jamais après une projection, et une fois par manche
+      if (e.state !== 'tumble' && !e.ledgeUsed && sp / S.damp < LEDGE_MAX) grabLedge(S, e);
       else startFall(S, e);
     } else {
       e.x = clamp(e.x, -H + 2, H - 2);

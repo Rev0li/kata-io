@@ -211,7 +211,7 @@ describe('entrées humaines', () => {
   test('martèlement contre bot : le souffle s’épuise et le bot s’adapte (D9)', () => {
     const { st, summary } = run(
       [human('Joueur', { abil: FULL_ABIL }), bot('Bot', LEVELS[0].skill, 5)],
-      { seed: 3002 },
+      { seed: 3002, firstTo: 9 }, // duel long : avec l'éjection en l'air, le marteleur tombait avant de s'épuiser
       [masher, null],
       60 * 30,
     );
