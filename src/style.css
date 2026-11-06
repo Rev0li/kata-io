@@ -1082,8 +1082,9 @@ body.touch .atk b {
   height: 34px;
   flex: none;
   background: url(/assets/armes.png) no-repeat;
-  background-size: 700% 100%;
-  background-position: calc(var(--i) * 100% / 6) 0;
+  /* planche de 7 cases de 16 px écartées : 1 px de marge, 18 px d'une case à l'autre (scripts/espacer.py) */
+  background-size: calc(34px * 126 / 16) calc(34px * 18 / 16);
+  background-position: calc((1px + var(--i) * 18px) * -34 / 16) calc(-34px / 16);
   image-rendering: pixelated;
 }
 .wico.none {
