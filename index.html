@@ -106,7 +106,7 @@
               /></svg
             >KATA<span>.io</span>
           </h1>
-          <span class="coins chipc" title="Pièces"
+          <span class="coins chipc nomini" title="Pièces"
             ><img class="px" src="/assets/items/gold-coin.png" alt="pièces" /><b id="homeCoins">0</b></span
           >
         </header>
@@ -114,12 +114,13 @@
         <!-- ton combattant est dans la scène, sur la plateforme ; ici : nom, ceinture, prochaine technique -->
         <div class="mhero hcard">
           <b class="mname" id="heroName"></b>
-          <div class="mrank">
+          <p class="mrecord onlymini" id="heroRecord"></p>
+          <div class="mrank nomini">
             <span class="beltsw" id="rankBelt"></span><b id="rankName">Ceinture blanche</b
             ><small id="rankXpTxt"></small>
           </div>
-          <div class="xpbar"><i id="rankXp"></i></div>
-          <div class="mnext">
+          <div class="xpbar nomini"><i id="rankXp"></i></div>
+          <div class="mnext nomini">
             <img class="px" id="rankNextIco" src="/assets/items/scroll-plant.png" alt="" /><span
               ><small id="rankNextLbl">Prochaine technique :</small> <b id="rankNext"></b
             ></span>
@@ -130,7 +131,8 @@
           </p>
           <div class="mrow">
             <button id="lockerBtn" class="btn-ghost" type="button">Vestiaire</button
-            ><button id="floorsBtn" class="btn-ghost" type="button">Étages</button>
+            ><button id="floorsBtn" class="btn-ghost nomini" type="button">Étages</button
+            ><button id="rankBtn" class="btn-ghost onlymini" type="button">Classement</button>
           </div>
         </div>
 
@@ -142,6 +144,11 @@
             <img class="px" src="/assets/items/scroll-thunder.png" alt="" /><span
               ><b>Défi du jour</b><small id="dailySub"></small
             ></span>
+          </button>
+          <button id="tutoHomeBtn" class="mside onlymini" type="button">
+            <img class="px" src="/assets/items/scroll-empty.png" alt="" /><span
+              ><b>Tutoriel</b><small>facultatif : les commandes en une minute</small></span
+            >
           </button>
           <button id="trainBtn" class="mside" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -284,7 +291,7 @@
       <div class="col card shop">
         <div class="shophead">
           <h2>Vestiaire</h2>
-          <span class="coins big"
+          <span class="coins big nomini"
             ><img class="px" src="/assets/items/gold-coin.png" alt="" /><b id="shopCoins">0</b></span
           >
         </div>
@@ -295,8 +302,8 @@
         <div class="tabs" role="tablist">
           <button class="tab on" data-tab="perso" type="button" role="tab">Combattant</button>
           <button class="tab" data-tab="arme" type="button" role="tab">Arme</button>
-          <button class="tab" data-tab="trainee" type="button" role="tab">Traînée</button>
-          <button class="tab" data-tab="ejection" type="button" role="tab">Plouf</button>
+          <button class="tab nomini" data-tab="trainee" type="button" role="tab">Traînée</button>
+          <button class="tab nomini" data-tab="ejection" type="button" role="tab">Plouf</button>
         </div>
         <p class="sub" id="shopHint"></p>
         <div class="shopgrid" id="shopGrid"></div>
@@ -313,6 +320,16 @@
         </p>
         <ol id="floorList"></ol>
         <button id="floorsClose" class="ghost" type="button">Fermer</button>
+      </div>
+    </section>
+
+    <section id="ranking" class="screen dim" hidden>
+      <div class="col card floors">
+        <h2>Classement</h2>
+        <p class="sub">Les plus hautes montées de la Tour, de l'étage 1 jusqu'à la première défaite.</p>
+        <p class="status" id="rankStatus"></p>
+        <ol class="ranklist" id="rankList"></ol>
+        <button id="rankClose" class="ghost" type="button">Fermer</button>
       </div>
     </section>
 
@@ -371,6 +388,20 @@
           </div>
         </div>
         <div class="rcol">
+          <div class="runend" id="resRun" hidden>
+            <p class="status" id="runStatus"></p>
+            <form id="runForm" class="joinrow">
+              <label for="runName" class="sr">Pseudo</label>
+              <input
+                id="runName"
+                maxlength="16"
+                autocomplete="nickname"
+                spellcheck="false"
+                placeholder="Ton pseudo"
+              /><button class="btn-gold" type="submit">Envoyer</button>
+            </form>
+            <ol class="ranklist" id="runTop"></ol>
+          </div>
           <div class="unlock" id="resUnlock" hidden>
             <div class="uhead">
               <img class="px scroll" id="unlockScroll" src="/assets/items/scroll-fire.png" alt="" />

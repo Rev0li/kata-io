@@ -19,7 +19,9 @@ import { nav, show } from './nav';
 import { viewState } from './viewstate';
 import { profile, save, nextFloor } from './profile';
 import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining } from './home';
-import { startTower, startDaily, startTuto, practice } from './launch';
+import { startTower, startDaily, startTuto, practice, startRun } from './launch';
+import { MINI } from './edition';
+import { lireClassement, rendreClassement } from '../net/classement';
 import { renderFloors } from './floors';
 import { openShop, closeShop, selectTab, shopAction, LockerTab } from './shop';
 import { net, inviteCode, createRoom, join, leave, closeHost } from './lobby';
@@ -54,6 +56,30 @@ export function setupUI() {
 
   setupButtonFx();
   setupDevPanel();
+  document.body.classList.toggle('mini', MINI);
+  // version minimale : défi du jour et duel grisés (« Bientôt »), la Tour se monte d'une traite depuis l'étage 1
+  if (MINI)
+    for (const id of ['#dailyBtn', '#duelBtn']) {
+      const b = $(id) as HTMLButtonElement;
+      b.disabled = true;
+      b.classList.add('soon');
+      b.querySelector('small')!.textContent = 'Bientôt';
+    }
+  $('#tutoHomeBtn').addEventListener('click', () => startTuto(null));
+  $('#rankBtn').addEventListener('click', async () => {
+    show('ranking');
+    const st = $('#rankStatus'),
+      ol = $('#rankList');
+    st.textContent = 'Chargement…';
+    ol.innerHTML = '';
+    try {
+      rendreClassement(ol, await lireClassement());
+      st.textContent = '';
+    } catch (e) {
+      st.textContent = (e as Error).message;
+    }
+  });
+  $('#rankClose').addEventListener('click', () => show('home'));
   // vestiaire : par le bouton, ou en touchant son combattant sur la plateforme
   $('#lockerBtn').addEventListener('click', openShop);
   viewState.onHero = () => {
@@ -70,7 +96,7 @@ export function setupUI() {
   audioPrefs.sfx = profile.sfx;
   audioPrefs.music = profile.music;
   // accueil
-  $('#towerBtn').addEventListener('click', () => startTower(nextFloor()));
+  $('#towerBtn').addEventListener('click', () => (MINI ? startRun() : startTower(nextFloor())));
   $('#floorsBtn').addEventListener('click', () => {
     renderFloors();
     show('floors');
@@ -152,13 +178,14 @@ export function setupUI() {
     if (e.code === 'Escape') {
       if (current === '' && session.active) show('quit');
       else if (current === 'quit') show(null);
-      else if (['floors', 'settings', 'training', 'duel'].includes(current)) show('home');
+      else if (['floors', 'ranking', 'settings', 'training', 'duel'].includes(current)) show('home');
       else if (current === 'shop') closeShop();
       return;
     }
     // relance instantanée depuis l'écran de résultat
     if (
       current === 'result' &&
+      !(e.target instanceof HTMLInputElement) && // le pseudo de fin de montée peut contenir des espaces
       (e.code === 'Space' || e.code === 'Enter') &&
       !($('#resMain') as HTMLButtonElement).disabled
     ) {

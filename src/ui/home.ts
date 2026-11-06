@@ -23,6 +23,7 @@ import { $, toast } from './dom';
 import { show } from './nav';
 import { profile, save, myRank, myAbil, myLook, nextFloor, rollDaily } from './profile';
 import { viewState } from './viewstate';
+import { MINI } from './edition';
 
 // Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
 // et les 12 étages de la Tour gagnés (towerMax = prochain étage à jouer, donc 13 après le 12e).
@@ -116,7 +117,7 @@ export function myName() {
   return profile.name;
 }
 export function mySpec(abil: Abil = myAbil()): MeSpec {
-  return { name: myName(), look: myLook(), abil, belt: RANKS[myRank()].belt };
+  return { name: myName(), look: myLook(), abil, belt: RANKS[MINI ? RANKS.length - 1 : myRank()].belt };
 }
 
 /* ---------- vignettes du combattant et de l'arme ---------- */
@@ -148,17 +149,26 @@ export function renderHome() {
     `/assets/items/${(rp.next && SCROLLS[rp.next.unlock!.key]) || 'scroll-fire'}.png`;
   rollDaily();
   const dly = profile.daily;
-  $('#dailySub').textContent = dly.won
-    ? `Record du jour : ${dly.best} s · tu peux faire mieux`
-    : `${dailyFloor(dly.day).name} · gagne-le : +${DAILY_COINS} pièces` +
-      (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
+  if (!MINI)
+    $('#dailySub').textContent = dly.won
+      ? `Record du jour : ${dly.best} s · tu peux faire mieux`
+      : `${dailyFloor(dly.day).name} · gagne-le : +${DAILY_COINS} pièces` +
+        (dly.tries ? ` · ${dly.tries} essai${dly.tries > 1 ? 's' : ''}` : '');
   const f = towerFloor(nextFloor());
   renderTraining();
-  $('#towerSub').textContent = !profile.tutoDone
-    ? 'Commence par le tutoriel (1 min)'
-    : profile.streak >= 2
-      ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}`
-      : `Étage ${f.n} · ${f.name}`;
+  const b = profile.best;
+  $('#heroRecord').textContent = b.floors
+    ? `Record : ${b.floors} étage${b.floors > 1 ? 's' : ''} gravi${b.floors > 1 ? 's' : ''}`
+    : 'Pas encore de record';
+  $('#towerSub').textContent = MINI
+    ? b.floors
+      ? `Va plus haut que l'étage ${b.floors}`
+      : 'Va le plus haut possible'
+    : !profile.tutoDone
+      ? 'Commence par le tutoriel (1 min)'
+      : profile.streak >= 2
+        ? `Étage ${f.n} · série de ${profile.streak} · prochain gain ×${streakMult(profile.streak + 1)}`
+        : `Étage ${f.n} · ${f.name}`;
   // partie publique : verrouillée tant que la Tour n'est pas finie et toutes les techniques acquises
   const got = techsGot(),
     won = floorsWon(),

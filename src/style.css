@@ -2727,3 +2727,84 @@ details.dev .inner {
 body.touch .touch-only {
   display: inline;
 }
+
+/* ---------- version minimale (src/ui/edition.ts) : montée de la Tour et classement ---------- */
+body.mini .nomini,
+body:not(.mini) .onlymini {
+  display: none !important;
+}
+.mside.soon {
+  opacity: 0.45;
+  cursor: default;
+  filter: grayscale(0.6);
+}
+.mside.soon:hover {
+  transform: none;
+  border-color: var(--slate);
+}
+.mrecord {
+  margin: 2px 0 6px;
+  color: var(--gold-1);
+  font-family: var(--f-disp);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.runend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.runend .status {
+  margin: 0;
+}
+.ranklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-height: 46vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ranklist li {
+  display: grid;
+  grid-template-columns: 2.2em 1fr auto 3.4em;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+.ranklist li b {
+  font-family: var(--f-disp);
+  color: var(--mist);
+}
+.ranklist li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.ranklist li em {
+  font-style: normal;
+  color: var(--gold-1);
+}
+.ranklist li small {
+  color: var(--mist);
+  text-align: right;
+}
+.ranklist li.moi {
+  background: rgba(242, 193, 78, 0.16);
+  outline: 1px solid var(--gold-2);
+}
+.ranklist li.vide {
+  display: block;
+  color: var(--mist);
+  text-align: center;
+}

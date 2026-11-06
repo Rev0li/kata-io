@@ -35,6 +35,13 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [ ] Tester le jeu et lister ce qu'il faut enlever ou simplifier.
 - [ ] Retirer ce qui a été listé.
 
+## Version minimale (D14, 2026-11-06)
+
+- [x] Un seul défi : montée de la Tour depuis l'étage 1 jusqu'à la défaite, classement par pseudo (`api/classement.js`).
+- [x] Tout débloqué dès le départ, tutoriel facultatif ; défi du jour, duel et boutique grisés « Bientôt ».
+- [ ] Brancher la base Upstash Redis sur Vercel (à faire par l'utilisateur).
+- [ ] Après les premiers retours : faut-il un temps limite, des étages plus courts au début, un classement de la semaine ?
+
 ## Phase 2b : assets remplaçables (après le retest)
 
 Règle : chaque élément visible est décrit dans un fichier de données ; **si l'image existe, le jeu l'affiche, sinon il le dessine en code comme aujourd'hui**. Remplacer = déposer un fichier, supprimer = retirer une ligne. Aucun changement visuel tant qu'aucune image n'est déposée.

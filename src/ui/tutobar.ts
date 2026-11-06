@@ -9,6 +9,7 @@ import { profile, save, addXp, addCoins, nextFloor } from './profile';
 import { renderCoins } from './home';
 import { startTower } from './launch';
 import { leave } from './lobby';
+import { MINI } from './edition';
 
 export function onTuto(step: TutoStep | null, i: number, n: number, count: number) {
   const bar = $('#tutoBar'),
@@ -38,6 +39,13 @@ export function onTutoDone() {
   }
   const first = !profile.tutoDone;
   profile.tutoDone = true;
+  if (MINI) {
+    // version minimale : le tutoriel est facultatif et ne rapporte rien, on revient à l'accueil
+    save();
+    toast('Tutoriel terminé · à toi de monter la Tour');
+    leave();
+    return;
+  }
   if (first) {
     addXp(XP_TUTO);
     addCoins(COINS_TUTO);
@@ -52,6 +60,7 @@ export function skipTuto() {
   if (!nav.lastMode.drill) {
     profile.tutoDone = true;
     save();
-    startTower(nextFloor());
+    if (MINI) leave();
+    else startTower(nextFloor());
   } else leave();
 }

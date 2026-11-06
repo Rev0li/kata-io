@@ -9,6 +9,7 @@ const SCREENS = [
   'training',
   'duel',
   'floors',
+  'ranking',
   'shop',
   'lobby',
   'joining',

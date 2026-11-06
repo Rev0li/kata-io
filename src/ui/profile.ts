@@ -1,7 +1,8 @@
 // Profil du joueur, gardé dans le navigateur : nom, apparence, XP, étages, pièces, effets achetés, réglages.
 // Aucun accès au DOM ici : les écrans relisent le profil pour s'afficher.
 import { PERSOS, ARMES, TRAINEES, EJECTIONS, DEFAULT_LOOK, sanitizeLook, Look } from '../sim/data';
-import { rankIndex, abilFor, Abil, dayKey } from '../sim/progression';
+import { rankIndex, abilFor, Abil, dayKey, FULL_ABIL } from '../sim/progression';
+import { MINI } from './edition';
 
 const PROFILE_KEY = 'kata-io-dev-profile';
 
@@ -21,6 +22,7 @@ export interface Profile {
   god: boolean; // mode test : invincible dans les parties locales
   tries: Record<string, number>;
   daily: { day: string; best: number; won: boolean; tries: number };
+  best: { floors: number; seconds: number }; // meilleure montée de la Tour (version minimale)
 }
 function loadProfile(): Profile {
   let p: any = null;
@@ -49,6 +51,10 @@ function loadProfile(): Profile {
       p.daily && typeof p.daily === 'object' && typeof p.daily.day === 'string'
         ? { day: p.daily.day, best: +p.daily.best || 0, won: !!p.daily.won, tries: +p.daily.tries || 0 }
         : { day: '', best: 0, won: false, tries: 0 },
+    best:
+      p.best && Number.isFinite(p.best.floors) && p.best.floors > 0
+        ? { floors: Math.floor(p.best.floors), seconds: Math.max(0, Math.floor(+p.best.seconds || 0)) }
+        : { floors: 0, seconds: 0 },
   };
 }
 export const profile = loadProfile();
@@ -62,7 +68,7 @@ export function save() {
 
 /* ---------- ceinture et XP ---------- */
 export const myRank = () => rankIndex(profile.xp);
-export const myAbil = (): Abil => abilFor(myRank());
+export const myAbil = (): Abil => (MINI ? { ...FULL_ABIL } : abilFor(myRank()));
 // Ajoute de l'XP et renvoie la ceinture gagnée, s'il y en a une.
 export function addXp(n: number) {
   const before = myRank();
@@ -79,8 +85,8 @@ export function addCoins(n: number) {
 /* ---------- apparence : personnages gagnés dans la Tour, armes gagnées avec les ceintures, effets achetés ---------- */
 export const PK = Object.keys(PERSOS),
   AK = Object.keys(ARMES);
-export const persoOpen = (id: string) => PERSOS[id].floor === 0 || profile.towerMax > PERSOS[id].floor;
-export const armeOpen = (id: string) => myRank() >= ARMES[id].rank;
+export const persoOpen = (id: string) => MINI || PERSOS[id].floor === 0 || profile.towerMax > PERSOS[id].floor;
+export const armeOpen = (id: string) => MINI || myRank() >= ARMES[id].rank;
 export type ShopKind = 'trainee' | 'ejection';
 export const CATALOG = { trainee: TRAINEES, ejection: EJECTIONS } as Record<
   ShopKind,
