@@ -75,6 +75,10 @@ export class HudScene extends Phaser.Scene {
     }
     if (ev.t === 'hit' && ev.to === session.myIdx) this.bump = 1;
     if (ev.t === 'spam' && ev.idx === session.myIdx) this.warnT = 3500;
+    if (ev.t === 'tired' && ev.idx === session.myIdx && bumpHint('tired') <= 3) {
+      this.tip = 'À bout de souffle : frapper, parer et esquiver en coûtent. Avance vers lui pour en regagner.';
+      this.tipT = 4000;
+    }
     if (ev.t === 'spamblock' && ev.idx === session.myIdx && bumpHint('spamblock') <= 3) {
       this.tip = 'Tu martèles l’attaque : chaque coup coûte du souffle. Alterne avec parade, esquive ou coup chargé.';
       this.tipT = 4000;
@@ -84,7 +88,7 @@ export class HudScene extends Phaser.Scene {
       this.cause = ev.exh
         ? 'ÉPUISÉ : sans souffle, un seul coup t’a envoyé à l’eau. Avance ou pare pour en regagner.'
         : ev.pct >= 100
-          ? `Éjecté à ${ev.pct} % : plus ton pourcentage monte, plus tu voles loin.`
+          ? 'Éjecté : tu clignotais en rouge. Plus tu encaisses, plus tu voles loin : recule ou pare.'
           : 'Poussé hors du dojo : garde un œil sur le bord.';
       this.causeT = 3800;
     }
@@ -217,12 +221,16 @@ export class HudScene extends Phaser.Scene {
               : 'Connexion…',
     );
     this.myName.setText(me.name);
-    this.myPct.setText(Math.round(me.pct) + '%').setColor(heatCss(me.pct));
+    // D3 : pourcentages cachés pour les deux (sauf ?debug) ; on lit son état aux signes sur le combattant
+    const debug = new URLSearchParams(location.search).has('debug');
+    this.myPct
+      .setVisible(RULES.showOwnPct || debug)
+      .setText(Math.round(me.pct) + '%')
+      .setColor(heatCss(me.pct));
     this.bump = Math.max(0, this.bump - delta / 300);
     this.myPct.setScale(1 + this.bump * 0.35);
     this.opName.setText(op.name);
-    // D3 : l'état de l'adversaire n'est pas montré (sauf ?debug)
-    const showOp = RULES.showOpponentPct || new URLSearchParams(location.search).has('debug');
+    const showOp = RULES.showOpponentPct || debug;
     this.opPct
       .setVisible(showOp)
       .setText(Math.round(op.pct) + '%')
@@ -268,24 +276,6 @@ export class HudScene extends Phaser.Scene {
         this.g.fillStyle(0x0a1012, 0.34).fillRoundedRect(this.scale.width / 2 - pw / 2, py, pw, ph, 12);
       for (const o of [this.score, this.sub, this.ping]) o.setAlpha(0.82);
     }
-    // jauges : souffle (3 segments) et qi
-    const touch = controls.isTouch,
-      W = this.scale.width,
-      H = this.scale.height;
-    const x0 = touch ? 16 + this.safe.l : 20,
-      y0 = touch ? 94 + this.safe.t : H - 46,
-      w = touch ? 104 : 168;
-    const seg = (w - 8) / 3;
-    for (let i = 0; i < 3; i++) {
-      const v = Math.max(0, Math.min(1, me.souffle - i));
-      this.g.fillStyle(0x0a1012, 0.9).fillRect(x0 + i * (seg + 4), y0, seg, 9);
-      this.g.fillStyle(0xecdfc6, 1).fillRect(x0 + i * (seg + 4), y0, seg * v, 9);
-    }
-    if (ab.dragon) {
-      const ready = me.qi >= 100;
-      this.g.fillStyle(0x0a1012, 0.9).fillRect(x0, y0 + 13, w, 6);
-      this.g.fillStyle(ready ? 0xf2c14e : 0x62c2a2, 1).fillRect(x0, y0 + 13, w * Math.min(1, me.qi / 100), 6);
-    }
-    void W;
+    // souffle et qi : dessinés sous le combattant du joueur (render/fighters.ts, drawSouffle)
   }
 }

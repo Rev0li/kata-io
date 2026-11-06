@@ -59,9 +59,21 @@ function startAttack(S: Sim, e: Fighter, d: AttackDef, o: any) {
   if (o.kind === 'red') fx.sfx(S, 'heavy', e.x, e.y, 0.8);
   if (o.kind === 'white' && e.atkSlow > 1) e.atk.su = d.su * e.atkSlow;
 }
+// Pas assez de souffle pour l'action : elle ne part pas, et le joueur le voit.
+function tired(S: Sim, e: Fighter) {
+  fx.float(S, e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14);
+  emit(S, { t: 'tired', idx: e.idx });
+}
 export function startWhite(S: Sim, e: Fighter) {
-  // Anti-spam : en dessous du seuil, aucun coût. Au-dessus, le coup coûte du souffle et se bloque sans souffle.
-  if (e.spam >= RULES.spamThreshold) {
+  if (RULES.whiteCost > 0) {
+    // chaque coup blanc coûte du souffle : c'est lui qui limite le spam
+    if (e.souffle < RULES.whiteCost) {
+      tired(S, e);
+      return;
+    }
+    e.souffle -= RULES.whiteCost;
+  } else if (e.spam >= RULES.spamThreshold) {
+    // ancien anti-spam : en dessous du seuil, aucun coût ; au-dessus, le coup coûte du souffle et se bloque sans souffle
     if (e.souffle < RULES.spamAttackCost) {
       fx.float(S, e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14);
       emit(S, { t: 'spamblock', idx: e.idx });
@@ -70,8 +82,9 @@ export function startWhite(S: Sim, e: Fighter) {
     e.souffle -= RULES.spamAttackCost;
   }
   const before = e.spam;
-  e.spam += RULES.spamPerAttack;
-  if (before < RULES.spamThreshold && e.spam >= RULES.spamThreshold) emit(S, { t: 'spam', idx: e.idx });
+  e.spam += RULES.spamPerAttack; // compteur gardé : le bot s'adapte toujours à un joueur qui martèle
+  if (!RULES.whiteCost && before < RULES.spamThreshold && e.spam >= RULES.spamThreshold)
+    emit(S, { t: 'spam', idx: e.idx });
   const ch = e.deck.chain;
   if (e.comboT <= 0 || e.combo.idx >= Math.min(3, e.abil.chain) || !ch[e.combo.stance][e.combo.idx])
     e.combo = { stance: e.stance, idx: 0 };
@@ -155,6 +168,11 @@ export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
     case 'parry':
       if (!e.abil.parry) return;
       if (st === 'idle' || st === 'charge') {
+        if (e.souffle < RULES.parryCost) {
+          tired(S, e);
+          return;
+        }
+        e.souffle -= RULES.parryCost;
         e.spam = Math.max(0, e.spam - RULES.spamDefend);
         e.state = 'parry';
         e.stateT = 0;
@@ -175,7 +193,7 @@ export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
       const recov = st === 'attack' && e.atk.kind === 'white' && e.atk.t >= e.atk.su + e.atk.ac;
       if (st === 'idle' || st === 'charge' || recov) {
         if (e.souffle < 1) {
-          fx.float(S, e.x, e.y - 50, 'À BOUT DE SOUFFLE', '#93a59f', 14);
+          tired(S, e);
           return;
         }
         startDodge(S, e, arg);

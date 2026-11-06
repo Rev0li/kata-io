@@ -191,7 +191,9 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
         rnd(S) < 0.3 + s * 0.6
       )
         botPress(S, e, T.state === 'parry' ? rand(S, 160, 260) : rand(S, 200, 500));
-      else if (dist < wr) {
+      else if (dist < wr && RULES.whiteCost > 0 && s > 0.4 && e.souffle < 1 + RULES.whiteCost && T.state !== 'stun') {
+        // bot habile : garde de quoi ne pas tomber épuisé (un bot faible frappe quand même et s'épuise)
+      } else if (dist < wr) {
         if (e.souffle >= 1 && rnd(S) < 0.22) botPress(S, e, rand(S, 260, 820));
         else {
           botPress(S, e, 0);
@@ -206,7 +208,15 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       b.waited = true;
     }
     if (e.state !== 'charge') b.waited = false;
-    if (e.state === 'attack' && e.atk.kind === 'white' && e.atk.t > e.atk.su && !e.buffer && b.chain > 0 && dist < 95) {
+    if (
+      e.state === 'attack' &&
+      e.atk.kind === 'white' &&
+      e.atk.t > e.atk.su &&
+      !e.buffer &&
+      b.chain > 0 &&
+      dist < 95 &&
+      (!RULES.whiteCost || s <= 0.4 || e.souffle >= 1 + RULES.whiteCost)
+    ) {
       doAction(S, e, 'pressAtk');
       b.holdFor = 0;
       b.chain--;

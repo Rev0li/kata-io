@@ -41,6 +41,7 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [x] Tout débloqué dès le départ, tutoriel facultatif ; défi du jour, duel et boutique grisés « Bientôt ».
 - [ ] Brancher la base Upstash Redis sur Vercel (à faire par l'utilisateur).
 - [ ] Contrôle anti-triche souple pour l'instant (8 s par étage au moins). Vraie validation prévue : la simulation est à graine (phase 0), donc le jeu peut envoyer la graine et les entrées de chaque combat, et le serveur rejoue la montée avec `src/sim` pour vérifier le résultat au lieu de croire le score envoyé.
+- [x] Prototype énergie et lisibilité : frapper et parer coûtent du souffle (l'anti-spam n'agit plus), souffle et qi sous son combattant, pourcentages cachés pour les deux, remplacés par trois paliers visibles (sueur, rouge et vapeur, chancelle). À régler en jouant.
 - [ ] Après les premiers retours : faut-il un temps limite, des étages plus courts au début, un classement de la semaine ?
 
 ## Phase 2b : assets remplaçables (après le retest)

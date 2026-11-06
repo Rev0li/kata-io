@@ -23,7 +23,7 @@ export const DODGE_T = 300,
 export const CHARGE_START = 120,
   CHARGE_FULL = 800,
   CHARGE_MAX = 1600;
-export const SOUFFLE_REGEN = 1.3,
+export const SOUFFLE_REGEN = 1.6, // secondes pour regagner un segment (1,3 avant que frapper et parer coûtent)
   MOVE_SPEED = 210;
 export const FIRST_TO = 3;
 // Les quatre mondes (docs/DIRECTION-ARTISTIQUE.md, section 5), dans l'ordre de la Tour ; ils remplaceront les dojos.
@@ -56,11 +56,16 @@ export const RULES = {
   // D6.3 : une parade réussie rend du souffle (en segments, sur 3).
   parrySouffle: 0.5,
   parryPerfectSouffle: 1,
+  // Énergie (prototype du 2026-11-06) : frapper et parer coûtent du souffle, comme l'esquive (1) et le coup chargé (1).
+  // Sans assez de souffle, l'action ne part pas. 0 = gratuit, et l'ancien anti-spam reprend la main.
+  whiteCost: 0.3,
+  parryCost: 0.4,
   // D2 : équilibre = nombre d'esquives parfaites d'affilée. Le bonus n'est pas encore décidé : désactivé.
   balanceEnabled: false,
   balanceDodgesRequired: 3,
   // D3 : l'état de l'adversaire (pourcentage) n'est pas montré. Visible avec ?debug.
   showOpponentPct: false,
+  showOwnPct: false, // prototype du 2026-11-06 : son propre pourcentage est caché aussi, remplacé par des signes
   // Anti-spam : le « spam » monte à chaque coup blanc et retombe vite. Il baisse quand on pare, esquive ou charge.
   spamPerAttack: 0.2,
   spamDecay: 0.3,
