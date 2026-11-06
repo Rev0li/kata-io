@@ -2808,3 +2808,11 @@ body:not(.mini) .onlymini {
   color: var(--mist);
   text-align: center;
 }
+
+/* ---------- styles de combat (D16) : le style sous le nom de chaque combattant du vestiaire ---------- */
+.sitem .sty {
+  color: var(--gold-1);
+  font-size: 11px;
+  line-height: 1.1;
+  opacity: 0.85;
+}

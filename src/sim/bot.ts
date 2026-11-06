@@ -1,5 +1,6 @@
 // Adversaires pilotés par la simulation : bot d'entraînement (et gardiens de la Tour), mannequin du tutoriel.
-import { RAD, HA, RULES } from './data';
+import { RAD, RULES } from './data';
+import { attaque } from './styles';
 import { lerp, angDiff, alive, rnd, rand, pick, fx } from './core';
 import type { Fighter, Sim } from './core';
 import { doAction, climb, startWhite, nextWhite } from './actions';
@@ -181,7 +182,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
     const tOk = T.spawnInv <= 0 && T.state !== 'climb';
     if (e.state === 'idle' && !b.plan && b.atkCd <= 0 && tOk) {
       const wr = nextWhite(e).rg + 12,
-        hv = HA[e.deck.heavy[e.stance]];
+        hv = attaque(e, e.deck.heavy[e.stance]);
       if (T.state === 'ledge' && dist < wr + 20) botPress(S, e, 0);
       else if (T.state === 'charge' && dist < wr + 18 && rnd(S) < 0.35 + s * 0.55) botPress(S, e, 0);
       else if (

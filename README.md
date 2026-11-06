@@ -44,7 +44,7 @@ L'accueil est un écran de jeu, pas un site à onglets : **ton combattant en gra
 
 ## Vestiaire
 
-Tout ce qui change l'apparence au même endroit : **combattant** (gagné en battant le gardien d'un étage), **arme** (gagnée avec une ceinture), **traînée** et **plouf** (achetés avec les pièces). On y entre par le bouton Vestiaire ou en touchant son combattant sur la plateforme.
+Tout ce qui change l'apparence au même endroit : **combattant** (gagné en battant le gardien d'un étage), **traînée** et **plouf** (achetés avec les pièces). Chaque combattant a **son style de combat et son arme** : Équilibré, Rapide, Puissant ou Allonge (D16, `src/sim/styles.ts`) ; il n'y a plus de choix d'arme séparé. On y entre par le bouton Vestiaire ou en touchant son combattant sur la plateforme.
 
 
 Les **pièces** se gagnent en jouant : Tour (plus avec les étoiles, la première victoire et la série), défi du jour, entraînement et duels. Rien ne s'achète en euros.

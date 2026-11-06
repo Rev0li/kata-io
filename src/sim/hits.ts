@@ -1,5 +1,6 @@
 // Résolution des coups : touche, parade, esquive parfaite, recul, rattrapage au bord, chute et éjection.
 import { RAD, R, WHITE_KB, RED_KB, TUMBLE_V, PARRY_PERFECT, DODGE_IF0, DODGE_IF1, RULES, LAUNCH } from './data';
+import { styleOf } from './styles';
 import { clamp, angDiff, alive, emit, fx } from './core';
 import type { Fighter, Sim } from './core';
 import { toIdle } from './fighter';
@@ -98,6 +99,7 @@ function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
     emit(S, { t: 'exhausted', to: tgt.idx });
   }
   tgt.dodgeCount = 0;
+  mult *= styleOf(tgt.look?.perso).poids; // style lourd : recule moins (D16)
   const K = red ? RED_KB : WHITE_KB;
   const v = (K[0] + K[1] * tgt.pct) * mult;
   const dist = Math.hypot(tgt.x - att.x, tgt.y - att.y);

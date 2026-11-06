@@ -11,7 +11,8 @@
 //   update.ts    avancée d'un combattant d'un pas, collisions
 //   bot.ts       bot d'entraînement et mannequin
 //   snapshot.ts  instantanés réseau et miroir de l'invité
-import { DUEL_H, KB_DAMP, FIRST_TO, DEFAULT_DECK, cloneDeck, sanitizeLook } from './data';
+import { DUEL_H, KB_DAMP, FIRST_TO, cloneDeck, sanitizeLook } from './data';
+import { lookStyle, styleDeck } from './styles';
 import { FULL_ABIL } from './progression';
 import { emptyInput, seededRng } from './core';
 import type { Ev, Fighter, Input, Sim, SimOpts, Spec } from './core';
@@ -48,8 +49,8 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
     const e = makeFighter(st, {
       idx: i,
       name: String(sp.name || 'Combattant').slice(0, 24),
-      look: sanitizeLook(sp.look),
-      deck: sp.deck ? cloneDeck(sp.deck) : cloneDeck(DEFAULT_DECK),
+      look: lookStyle(sanitizeLook(sp.look)), // l'arme suit le personnage (D16)
+      deck: cloneDeck(sp.deck || styleDeck(sp.look?.perso)), // sans jeu imposé : celui du style du personnage
       abil: { ...(sp.abil || FULL_ABIL) },
       belt: sp.belt || null,
       atkSlow: sp.atkSlow || 1,

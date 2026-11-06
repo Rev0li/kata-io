@@ -1,5 +1,6 @@
 // Instantanés réseau : l'hôte compacte l'état de la partie, l'invité l'applique à sa copie locale (miroir).
-import { DUEL_H, FIRST_TO, ATTACK_BY_ID, sanitizeLook } from './data';
+import { DUEL_H, FIRST_TO, sanitizeLook } from './data';
+import { attaque, lookStyle } from './styles';
 import { FULL_ABIL } from './progression';
 import type { Fighter, Sim, Spec } from './core';
 import { nextWhite } from './actions';
@@ -62,7 +63,7 @@ export function createMirror(specs: Spec[]) {
     f: specs.map((sp, i) => ({
       idx: i,
       name: sp.name,
-      look: sanitizeLook(sp.look),
+      look: lookStyle(sanitizeLook(sp.look)),
       belt: sp.belt || null,
       abil: { ...(sp.abil || FULL_ABIL) },
       x: i ? 110 : -110,
@@ -153,10 +154,10 @@ export function applySnapshot(m: any, s: any) {
     e.dropT = dropT;
     e.kos = kos;
     e.chargeT = chargeT;
-    e.chargeDef = chargeId ? ATTACK_BY_ID[chargeId] : null;
+    e.chargeDef = chargeId ? attaque(e, chargeId) : null;
     e.atk = a
       ? {
-          def: ATTACK_BY_ID[a[0]],
+          def: attaque(e, a[0]),
           kind: a[1] ? 'red' : 'white',
           t: a[2],
           su: a[3],

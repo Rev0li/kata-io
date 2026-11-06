@@ -1,5 +1,6 @@
 // Actions d'un combattant : entrées du joueur, coups blancs et chargés, parade, esquive, remontée au bord.
-import { RAD, R, CHARGE_START, CHARGE_FULL, TF, WA, HA, RULES } from './data';
+import { RAD, R, CHARGE_START, CHARGE_FULL, TF, RULES } from './data';
+import { attaque } from './styles';
 import type { AttackDef } from './data';
 import { clamp, angDiff, alive, emit, fx } from './core';
 import type { Fighter, Input, Sim } from './core';
@@ -89,7 +90,7 @@ export function startWhite(S: Sim, e: Fighter) {
   if (e.comboT <= 0 || e.combo.idx >= Math.min(3, e.abil.chain) || !ch[e.combo.stance][e.combo.idx])
     e.combo = { stance: e.stance, idx: 0 };
   const idx = e.combo.idx,
-    d = WA[ch[e.combo.stance][idx]];
+    d = attaque(e, ch[e.combo.stance][idx]);
   e.combo.idx++;
   startAttack(S, e, d, { kind: 'white', idx, finisher: idx === 2 });
 }
@@ -97,22 +98,22 @@ export function startWhite(S: Sim, e: Fighter) {
 export function nextWhite(e: Fighter) {
   const ch = e.deck.chain;
   if (e.comboT > 0 && e.combo.idx < Math.min(3, e.abil.chain) && ch[e.combo.stance][e.combo.idx])
-    return WA[ch[e.combo.stance][e.combo.idx]];
-  return WA[ch[e.stance][0]];
+    return attaque(e, ch[e.combo.stance][e.combo.idx]);
+  return attaque(e, ch[e.stance][0]);
 }
 export function startCharge(S: Sim, e: Fighter) {
   e.spam = Math.max(0, e.spam - RULES.spamDefend);
   e.state = 'charge';
   e.stateT = 0;
   e.chargeT = 0;
-  e.chargeDef = HA[e.deck.heavy[e.stance]];
+  e.chargeDef = attaque(e, e.deck.heavy[e.stance]);
   e.atk = null;
   e.combo = { stance: e.stance, idx: 0 };
   e.comboT = 0;
   fx.sfx(S, 'charge', e.x, e.y, 0.6);
 }
 export function releaseCharge(S: Sim, e: Fighter) {
-  const d = e.chargeDef || HA[e.deck.heavy[e.stance]];
+  const d = e.chargeDef || attaque(e, e.deck.heavy[e.stance]);
   const power = 0.65 + 0.35 * clamp(e.chargeT / (CHARGE_FULL - CHARGE_START), 0, 1);
   const dragon = e.qi >= 100;
   if (dragon) e.qi = 0;

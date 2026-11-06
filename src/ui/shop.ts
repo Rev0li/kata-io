@@ -15,6 +15,7 @@ import { show } from './nav';
 import { profile, save, myLook, owns, CATALOG, ShopKind, PK, AK, persoOpen, armeOpen } from './profile';
 import { mySpec, renderCoins, goHome, setFace, setWico } from './home';
 import { MINI } from './edition';
+import { styleOf, PERSO_STYLE } from '../sim/styles';
 
 export type LockerTab = 'perso' | 'arme' | ShopKind;
 let tab: LockerTab = 'perso',
@@ -22,7 +23,7 @@ let tab: LockerTab = 'perso',
 const isEffect = (t: LockerTab): t is ShopKind => t === 'trainee' || t === 'ejection';
 const HINTS: Record<LockerTab, string> = {
   perso: MINI
-    ? 'Tous les combattants sont à toi. Ils ne changent que l’apparence.'
+    ? 'Tous les combattants sont à toi. Chacun a son style de combat et son arme.'
     : 'Bats le gardien d’un étage de la Tour pour gagner son apparence.',
   arme: MINI
     ? 'Toutes les armes sont à toi. Elles ne changent que l’apparence.'
@@ -76,6 +77,12 @@ function renderShop() {
   renderCoins();
   document.querySelectorAll<HTMLElement>('#shop .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
   $('#shopHint').textContent = HINTS[tab];
+  if (tab === 'perso' && sel && PERSOS[sel]) {
+    // chaque combattant a son style et son arme (D16)
+    const s = styleOf(sel),
+      a = ARMES[PERSO_STYLE[sel]?.arme || 'mains'];
+    $('#shopHint').textContent = `${PERSOS[sel].name} · ${s.name}, ${a.name.toLowerCase()} : ${s.desc}`;
+  }
   const grid = $('#shopGrid');
   grid.innerHTML = '';
   grid.classList.toggle('looks', !isEffect(tab));
@@ -94,7 +101,7 @@ function renderShop() {
       st = `<span class="st price${profile.coins < price ? ' short' : ''}"><img class="px" src="/assets/items/gold-coin.png" alt="">${price}</span>`;
     } else st = `<span class="st need">${need(id)}</span>`;
     if (tab === 'perso') {
-      b.innerHTML = `<i class="face${open ? '' : ' mystery'}"></i><b>${open ? name : '???'}</b>${st}`;
+      b.innerHTML = `<i class="face${open ? '' : ' mystery'}"></i><b>${open ? name : '???'}</b><small class="sty">${styleOf(id).name}</small>${st}`;
       setFace(b.querySelector('i')!, id);
     } else if (tab === 'arme') {
       b.innerHTML = `<i class="wico"></i><b>${name}</b>${st}`;
