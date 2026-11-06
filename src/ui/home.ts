@@ -109,12 +109,13 @@ export function renderTraining() {
 }
 
 /* ---------- nom et combattant du joueur ---------- */
+// Version minimale : pas de nom d'office, le pseudo se choisit à la fin de la montée (« Toi » en attendant).
 export function myName() {
   const v = ($('#nameIn') as HTMLInputElement).value.trim().slice(0, 16);
-  profile.name = v || profile.name || 'Disciple ' + ((Math.random() * 900 + 100) | 0);
+  profile.name = v || profile.name || (MINI ? '' : 'Disciple ' + ((Math.random() * 900 + 100) | 0));
   ($('#nameIn') as HTMLInputElement).value = profile.name;
   save();
-  return profile.name;
+  return profile.name || 'Toi';
 }
 export function mySpec(abil: Abil = myAbil()): MeSpec {
   return { name: myName(), look: myLook(), abil, belt: RANKS[MINI ? RANKS.length - 1 : myRank()].belt };
@@ -138,6 +139,7 @@ export function renderCoins() {
 export function renderHome() {
   ($('#nameIn') as HTMLInputElement).value = profile.name;
   $('#heroName').textContent = profile.name;
+  $('#heroName').hidden = !profile.name;
   const rp = rankProgress(profile.xp);
   $('#rankBelt').style.background = rp.cur.belt;
   $('#rankName').textContent = rp.cur.name;

@@ -33,7 +33,8 @@ function loadProfile(): Profile {
   }
   p = p && typeof p === 'object' ? p : {};
   return {
-    name: typeof p.name === 'string' ? p.name.slice(0, 16) : '',
+    // « Disciple 123 » : nom donné d'office par les anciennes versions, ce n'est pas un pseudo choisi
+    name: typeof p.name === 'string' && !/^Disciple \d+$/.test(p.name) ? p.name.slice(0, 16) : '',
     look: sanitizeLook(p.look),
     level: [0, 1, 2].includes(p.level) ? p.level : 1,
     sfx: p.sfx !== false,

@@ -309,7 +309,7 @@ function finMontee(defaite: boolean) {
   form.hidden = n === 0;
   st.textContent =
     n === 0 ? 'Gagne au moins un étage pour entrer au classement.' : 'Inscris ton pseudo au classement :';
-  input.value = profile.name.startsWith('Disciple ') ? '' : profile.name;
+  input.value = profile.name;
   (form.querySelector('button') as HTMLButtonElement).disabled = false;
   form.onsubmit = async e => {
     e.preventDefault();
