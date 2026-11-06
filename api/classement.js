@@ -13,9 +13,22 @@ const MAX_ETAGES = 500;
 
 const note = (etages, secondes) => etages * 1e6 - Math.min(secondes, 999999);
 
+// Vercel peut préfixer les variables de la base (ex. STORAGE_KV_REST_API_URL) : on accepte n'importe quel préfixe.
+const finir = (env, fins) => {
+  const k = Object.keys(env)
+    .filter(n => fins.some(f => n.endsWith(f)) && !n.includes('READ_ONLY') && env[n])
+    .sort((a, b) => a.length - b.length)[0];
+  return k ? env[k] : '';
+};
+// Noms (jamais les valeurs) des variables qui ressemblent à une base, pour comprendre un classement fermé.
+export const variablesBase = (env = process.env) =>
+  Object.keys(env)
+    .filter(n => /KV|REDIS|UPSTASH/.test(n))
+    .sort();
+
 export function redisDepuisEnv(env = process.env) {
-  const url = env.KV_REST_API_URL || env.UPSTASH_REDIS_REST_URL;
-  const token = env.KV_REST_API_TOKEN || env.UPSTASH_REDIS_REST_TOKEN;
+  const url = finir(env, ['KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL']);
+  const token = finir(env, ['KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN']);
   if (!url || !token) return null;
   // Plusieurs commandes en un aller-retour (API REST d'Upstash, /pipeline).
   return async cmds => {
@@ -70,7 +83,7 @@ async function lire(redis, id) {
 }
 
 export async function traiter(req, redis) {
-  if (!redis) return [503, { erreur: 'Le classement n’est pas encore ouvert.' }];
+  if (!redis) return [503, { erreur: 'Le classement n’est pas encore ouvert.', variables: variablesBase() }];
   if (req.method === 'GET') return [200, await lire(redis, req.query && req.query.id)];
   if (req.method !== 'POST') return [405, { erreur: 'Méthode non prise en charge.' }];
   let b = req.body;

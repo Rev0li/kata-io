@@ -1,6 +1,6 @@
 // Classement de la montée de la Tour (api/classement.js), avec un faux Redis en mémoire.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { traiter, nettoyerPseudo } from '../api/classement.js';
+import { traiter, nettoyerPseudo, redisDepuisEnv } from '../api/classement.js';
 
 function fauxRedis() {
   const z = new Map<string, number>(),
@@ -89,6 +89,17 @@ describe('classement', () => {
     const [, c] = await traiter({ method: 'GET', query: { id: 'id021' } }, r.redis);
     expect(c.top).toHaveLength(20);
     expect(c.moi).toMatchObject({ rang: 22, pseudo: 'J21' });
+  });
+
+  it('trouve les variables de la base même avec un préfixe Vercel', () => {
+    expect(redisDepuisEnv({})).toBeNull();
+    expect(redisDepuisEnv({ STORAGE_KV_REST_API_URL: 'https://x', STORAGE_KV_REST_API_TOKEN: 't' })).toBeTypeOf(
+      'function',
+    );
+    expect(redisDepuisEnv({ UPSTASH_REDIS_REST_URL: 'https://x', UPSTASH_REDIS_REST_TOKEN: 't' })).toBeTypeOf(
+      'function',
+    );
+    expect(redisDepuisEnv({ KV_REST_API_URL: 'https://x', KV_REST_API_READ_ONLY_TOKEN: 't' })).toBeNull(); // lecture seule : non
   });
 
   it('nettoie les pseudos', () => {
