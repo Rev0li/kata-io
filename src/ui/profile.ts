@@ -37,8 +37,9 @@ function loadProfile(): Profile {
     name: typeof p.name === 'string' && !/^Disciple \d+$/.test(p.name) ? p.name.slice(0, 16) : '',
     look: sanitizeLook(p.look),
     level: [0, 1, 2].includes(p.level) ? p.level : 1,
-    sfx: p.sfx !== false,
-    music: p.music !== false,
+    // coupés par défaut : le joueur les active dans les paramètres
+    sfx: p.sfx === true,
+    music: p.music === true,
     xp: Number.isFinite(p.xp) && p.xp >= 0 ? p.xp : 0,
     towerMax: Number.isFinite(p.towerMax) && p.towerMax >= 1 ? Math.floor(p.towerMax) : 1,
     stars: p.stars && typeof p.stars === 'object' ? p.stars : {},

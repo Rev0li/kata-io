@@ -2316,6 +2316,7 @@ body.touch .atk b {
   z-index: 5;
   width: 40px;
   height: 40px;
+  padding: 0; /* sinon la marge d'un bouton sur iPhone décale la roue vers la droite */
   display: grid;
   place-items: center;
   border: 1px solid var(--slate);

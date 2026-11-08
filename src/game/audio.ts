@@ -1,7 +1,7 @@
 // Sons synthétisés en direct (WebAudio) : aucun fichier audio à charger.
 let AC: AudioContext | null = null,
   NOISE: AudioBuffer | null = null;
-export const audioPrefs = { sfx: true, music: true };
+export const audioPrefs = { sfx: false, music: false };
 const listener = { x: 0, y: 0 };
 export function setListener(x: number, y: number) {
   listener.x = x;
