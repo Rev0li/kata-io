@@ -24,6 +24,7 @@ import { Effects } from './effects';
 import { Fighters } from './fighters';
 import { World } from './world';
 import { WORLDS } from './worlds';
+import { impactDuStyle } from './stylefx';
 
 export { THEMES } from './themes';
 export type { Theme } from './themes';
@@ -158,6 +159,7 @@ export class Renderer {
         {
           // sensation animé : éclat radial et traînées dans le sens du recul
           const S = iso(x, y, 14);
+          impactDuStyle(fx, A, T, S.x, S.y, !!(ev.dragon || ev.red));
           if (ev.dragon) {
             fx.burst(S.x, S.y, 22, 40, 240, C.gold, 6, 360);
             fx.streaks(S.x, S.y, ang, 10, 300, 0xffffff, 4, 340);

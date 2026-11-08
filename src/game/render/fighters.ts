@@ -18,6 +18,7 @@ import { clamp, lerp, easeOut, angDiff } from '../../sim/sim';
 import { FIGHTER_PX, FIGHTER_K } from '../assets';
 import { iso, worldAngleToScreen, fillC, strokeC, cone } from './iso';
 import { C, FONT_BODY, hex, mix } from './palette';
+import { corpsDuStyle, coupDuStyle, fantomeDuStyle } from './stylefx';
 import type { Renderer } from './index';
 
 interface View {
@@ -422,6 +423,17 @@ export class Fighters {
       row = 6;
       col = 0;
     }
+    const phaseCoup = S ? S.phase : '',
+      corps = corpsDuStyle(
+        e,
+        phaseCoup,
+        (st === 'idle' || st === 'frozen') && !moving,
+        time,
+        i,
+        Math.abs(c) >= Math.abs(sn) * 0.85,
+      );
+    sx *= corps.sx;
+    sy *= corps.sy;
     sx *= 1 + 0.22 * v.squash;
     sy *= 1 - 0.18 * v.squash;
     if (tier >= 2 && (st === 'idle' || st === 'frozen')) sy *= 0.95; // garde plus basse
@@ -438,7 +450,10 @@ export class Fighters {
     spr
       .setVisible(true)
       .setFrame(row * PERSO_COUNT * 4 + P.idx * 4 + col)
-      .setPosition(G.x + jit + sway, G.y + 6 - 8 * FIGHTER_PX - zs) // pieds au sol : le bas de l'image est 6 px sous le point au sol
+      .setPosition(
+        G.x + jit + sway + c * corps.avance + corps.decale,
+        G.y + 6 - 8 * FIGHTER_PX - zs + sn * corps.avance * 0.5 - corps.saut,
+      ) // pieds au sol : le bas de l'image est 6 px sous le point au sol
       .setScale(FIGHTER_PX * scale * sx, FIGHTER_PX * scale * sy)
       .setRotation(rot)
       .setAlpha(ga)
@@ -546,7 +561,16 @@ export class Fighters {
       }
     }
     const phase = S ? S.phase : '';
+    const fantome = fantomeDuStyle(e, phase);
+    if (fantome !== null) {
+      v.ghostT -= dt * 1000;
+      if (v.ghostT <= 0) {
+        v.ghostT = 32;
+        fx.ghost(spr, depth - 1e-5, fantome);
+      }
+    }
     if (phase === 'ac' && v.prevPhase !== 'ac') {
+      coupDuStyle(fx, e, G, sa);
       const d = e.atk.def,
         red = e.atk.kind === 'red',
         drag = e.atk.dragon,

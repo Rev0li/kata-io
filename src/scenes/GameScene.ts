@@ -23,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   view = new Phaser.Geom.Rectangle();
   lastW = 0;
   lastH = 0;
+  lastShop = false;
   frames = 0;
 
   constructor() {
@@ -132,12 +133,16 @@ export class GameScene extends Phaser.Scene {
     const W = this.scale.width,
       H = this.scale.height;
     // première image et changement de taille (rotation, fenêtre) : la caméra se place d'un coup au lieu de glisser
-    const snap = W !== this.lastW || H !== this.lastH;
+    const snap = W !== this.lastW || H !== this.lastH || viewState.shop !== this.lastShop;
     this.lastW = W;
     this.lastH = H;
+    this.lastShop = viewState.shop;
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
+    // vitrine du vestiaire : gros plan sur les deux combattants, dans la place laissée par le panneau
+    if (viewState.shop && session.show?.kind === 'trainee')
+      z = clamp(Math.min((W > H ? W - Math.min(420, W * 0.5) : W) / 300, H / 230), 1.2, 2.8);
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;

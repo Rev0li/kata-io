@@ -174,6 +174,7 @@ export function renderHome() {
   ($('#nameIn') as HTMLInputElement).value = profile.name;
   $('#heroName').textContent = profile.name;
   $('#heroName').hidden = !profile.name;
+  $('#wallHero').style.setProperty('--i', String(PERSOS[myLook().perso].idx)); // sur le fond : ton combattant, de dos
   const rp = rankProgress(profile.xp);
   $('#rankBelt').style.background = rp.cur.belt;
   $('#rankName').textContent = rp.cur.name;
