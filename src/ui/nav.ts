@@ -17,6 +17,8 @@ const SCREENS = [
   'lost',
   'quit',
 ];
+// Écrans posés sur le fond de la Tour ; les autres laissent voir le dojo (aperçus du vestiaire, monde de l'entraînement, fin de partie).
+const WALL = ['home', 'settings', 'floors', 'ranking'];
 export type LastMode = {
   kind: 'tower' | 'practice' | 'duel' | 'tuto' | 'daily';
   floor?: number;
@@ -32,6 +34,7 @@ export const nav = {
 export function show(id: string | null) {
   nav.current = id || '';
   for (const s of SCREENS) $('#' + s).hidden = s !== id;
+  $('#wall').hidden = !WALL.includes(id || '');
   const inGame = !id && session.active;
   $('#quitBtn').hidden = !inGame;
   document.body.classList.toggle('ingame', inGame);

@@ -38,10 +38,7 @@ Ce qui donne envie de rejouer :
 
 ## Accueil
 
-L'accueil est un écran de jeu, pas un site à onglets : **ton combattant en grand sur la plateforme** du monde choisi (il salue en arrivant), un gros bouton **Jouer** (étage suivant de la Tour, ou le tutoriel la première fois), puis **Défi du jour**, **Entraînement** et **Duel**. En bas à gauche : nom, ceinture, XP, prochaine technique, **Vestiaire** et **Étages**. La roue en haut à droite ouvre les paramètres (commandes, son, plein écran, mode test). Entraînement et Duel s'ouvrent dans un panneau à droite, le décor reste visible.
-
-**On s'échauffe à l'accueil** : un mannequin d'entraînement se tient à côté de ton combattant. Sur ordinateur, ZQSD ou flèches pour bouger, J frapper, K parer, Espace esquiver, 1 à 4 pour les emotes (le clavier ne marche qu'à l'accueil, pas dans les autres écrans). Au toucher ou à la souris : toucher la plateforme, le combattant y marche ; toucher le mannequin, il va le frapper ; toucher son combattant ouvre le Vestiaire. Le mannequin encaisse sans tomber et revient à sa place.
-
+L'accueil est un écran de jeu, pas un site à onglets : en fond, **un combattant de dos regarde la Tour** au coucher du soleil (`scripts/build-accueil-svg.py`), un gros bouton **Jouer** (étage suivant de la Tour, ou le tutoriel la première fois), puis **Défi du jour**, **Entraînement** et **Duel**. En bas à gauche : nom, ceinture, XP, prochaine technique, **Vestiaire** et **Étages**. La roue en haut à droite ouvre les paramètres (commandes, son, plein écran, mode test). Entraînement et Duel s'ouvrent dans un panneau à droite, le décor reste visible.
 ## Vestiaire
 
 Tout ce qui change l'apparence au même endroit : **combattant** (gagné en battant le gardien d'un étage), **traînée** et **plouf** (achetés avec les pièces). Chaque combattant a **son style de combat et son arme** : Équilibré, Rapide, Puissant ou Allonge (D16, `src/sim/styles.ts`) ; il n'y a plus de choix d'arme séparé. On y entre par le bouton Vestiaire ou en touchant son combattant sur la plateforme.

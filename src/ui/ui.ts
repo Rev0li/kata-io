@@ -18,7 +18,6 @@ import { controls } from './controls';
 import { audioPrefs, setMusicLevel } from '../game/audio';
 import { $, toast, wake, setupButtonFx } from './dom';
 import { nav, show } from './nav';
-import { viewState } from './viewstate';
 import { profile, save, nextFloor } from './profile';
 import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining } from './home';
 import { startTower, startDaily, startTuto, practice, startRun } from './launch';
@@ -31,7 +30,7 @@ import { onEnd, onRematch, cancelEnd, runMain, runAlt } from './result';
 import { onTuto, onTutoDone, skipTuto } from './tutobar';
 
 export function setupUI() {
-  controls.blockedFn = () => nav.current !== '' && nav.current !== 'home'; // à l'accueil, on s'échauffe au clavier
+  controls.blockedFn = () => nav.current !== '';
   session.hooks = {
     onStart() {
       cancelEnd();
@@ -90,11 +89,7 @@ export function setupUI() {
   $('#devPanel').hidden = !devOn;
   $('#devVer').hidden = !devOn;
   $('#rankClose').addEventListener('click', () => show('home'));
-  // vestiaire : par le bouton, ou en touchant son combattant sur la plateforme
   $('#lockerBtn').addEventListener('click', openShop);
-  viewState.onHero = () => {
-    if (nav.current === 'home') openShop();
-  };
   $('#dailyBtn').addEventListener('click', startDaily);
   $('#shopClose').addEventListener('click', closeShop);
   $('#shopAct').addEventListener('click', shopAction);
@@ -192,7 +187,7 @@ export function setupUI() {
       else if (current === 'shop') closeShop();
       return;
     }
-    // accueil : Entrée lance la montée (Espace sert à esquiver pendant l'échauffement)
+    // accueil : Entrée lance la montée
     if (current === 'home' && e.code === 'Enter' && !(e.target instanceof HTMLInputElement)) {
       e.preventDefault();
       if (MINI) startRun();
