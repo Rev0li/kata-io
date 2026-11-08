@@ -8,6 +8,12 @@ let fsTried = false;
 const keys = new Set<string>();
 const stick = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
 const EMOTE_KEYS: Record<string, string> = { Digit1: 'salut', Digit2: 'rire', Digit3: 'gg', Digit4: 'viens' };
+// Lancé depuis l'icône de l'écran d'accueil ? Lu une seule fois, au démarrage : plus tard, le plein écran demandé
+// au premier toucher ferait aussi répondre « fullscreen » à un simple onglet de navigateur.
+export const installed =
+  matchMedia('(display-mode: standalone)').matches ||
+  matchMedia('(display-mode: fullscreen)').matches ||
+  !!(navigator as any).standalone;
 
 export const controls = {
   isTouch: matchMedia('(pointer: coarse)').matches,
@@ -93,12 +99,7 @@ export function setupControls() {
   const fsb = document.getElementById('fsBtn');
   fsb?.addEventListener('click', () => toggleFullscreen());
   const de: any = document.documentElement; // pas de réglage si déjà installé (écran d'accueil) ou si le navigateur ne sait pas (iPhone)
-  if (
-    matchMedia('(display-mode: standalone)').matches ||
-    matchMedia('(display-mode: fullscreen)').matches ||
-    (navigator as any).standalone
-  )
-    document.body.classList.add('standalone');
+  if (installed) document.body.classList.add('standalone');
   if (!(de.requestFullscreen || de.webkitRequestFullscreen)) document.body.classList.add('nofs');
   document.addEventListener('fullscreenchange', () =>
     document.body.classList.toggle('fs', !!document.fullscreenElement),
@@ -144,8 +145,8 @@ export function setupControls() {
       initAudio();
       startMusic();
       const t = ev.pointerType === 'touch';
-      if (t && !fsTried) {
-        // premier toucher : plein écran et verrou en paysage quand le navigateur le permet (Android)
+      if (t && !fsTried && !(ev.target as Element).closest?.('#install')) {
+        // premier toucher hors de la pop-up d'installation : plein écran et verrou en paysage quand le navigateur le permet (Android)
         fsTried = true;
         try {
           document.documentElement

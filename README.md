@@ -216,7 +216,7 @@ Les visuels de référence sont dans `art/reference/` : fiche du personnage (gi 
 
 ## Mobile : paysage uniquement
 
-Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écran « Tourne ton téléphone » prend la place. En paysage court (hauteur de 540 px ou moins), l'interface se compacte : accueil resserré, vestiaire en panneau à droite, commandes réduites, HUD en haut. Le plein écran (réglage « Plein écran », touche F, ou premier toucher sur Android) masque la barre du navigateur ; sur iPhone il faut « Sur l'écran d'accueil » (le manifeste demande plein écran et paysage).
+Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écran « Tourne ton téléphone » prend la place. En paysage court (hauteur de 540 px ou moins), l'interface se compacte : accueil resserré, vestiaire en panneau à droite, commandes réduites, HUD en haut. Le plein écran (réglage « Plein écran », touche F, ou premier toucher sur Android) masque la barre du navigateur ; sur iPhone il faut « Sur l'écran d'accueil » (le manifeste demande plein écran et paysage). À chaque ouverture dans un navigateur mobile, une pop-up propose d'ajouter le jeu à l'écran d'accueil ; elle n'apparaît pas si le jeu est lancé depuis son icône.
 
 ## Déploiement sur Vercel
 

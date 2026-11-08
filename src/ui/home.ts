@@ -26,6 +26,7 @@ import { viewState } from './viewstate';
 import { MINI } from './edition';
 import { styleOf } from '../sim/styles';
 import { lireClassement, rendreClassement } from '../net/classement';
+import { bootAttendre, voileLeve } from './boot';
 
 // Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
 // et les 12 étages de la Tour gagnés (towerMax = prochain étage à jouer, donc 13 après le 12e).
@@ -151,8 +152,11 @@ function renderHomeMini() {
   const ol = $('#homeTopList'),
     st = $('#homeTopStatus');
   st.textContent = ol.children.length ? '' : 'Chargement…';
-  lireClassement()
-    .then(c => {
+  const lecture = lireClassement();
+  bootAttendre(lecture); // au démarrage, le voile attend le top 10 : sinon son arrivée ferait sauter la colonne de l'accueil
+  lecture
+    .then(async c => {
+      await voileLeve; // la cascade se joue une fois l'écran découvert
       rendreClassement(ol, c, 10);
       st.textContent = '';
     })
