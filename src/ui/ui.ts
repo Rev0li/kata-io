@@ -10,6 +10,8 @@
 //   lobby.ts    duel privé (salle, invitation) et retour à l'accueil
 //   result.ts   écran de fin de partie
 //   tutobar.ts  barre du tutoriel
+//   boot.ts     voile de démarrage, levé quand l'accueil est en place
+//   install.ts  pop-up d'ajout à l'écran d'accueil (mobile, dans un navigateur)
 import { session } from '../net/session';
 import { cleanCode } from '../net/transport';
 import { controls } from './controls';

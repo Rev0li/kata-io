@@ -9,6 +9,7 @@ import { clamp } from '../sim/sim';
 import { isDojo } from '../sim/data';
 import { preloadAssets, setupAssets } from '../game/assets';
 import { viewState } from '../ui/viewstate';
+import { bootProgres, bootScenePrete } from '../ui/boot';
 
 // Scène de combat : avance la partie, applique les effets et suit le joueur avec la caméra.
 export class GameScene extends Phaser.Scene {
@@ -20,12 +21,16 @@ export class GameScene extends Phaser.Scene {
   cineZ = 1.25;
   themeOverride: string | null = null;
   view = new Phaser.Geom.Rectangle();
+  lastW = 0;
+  lastH = 0;
+  frames = 0;
 
   constructor() {
     super('game');
   }
 
   preload() {
+    this.load.on('progress', bootProgres);
     preloadAssets(this);
   }
 
@@ -141,23 +146,16 @@ export class GameScene extends Phaser.Scene {
       tx = p.x;
       ty = p.y;
     } // vitrine de la boutique
+    const W = this.scale.width,
+      H = this.scale.height;
+    // première image et changement de taille (rotation, fenêtre) : la caméra se place d'un coup au lieu de glisser
+    const snap = W !== this.lastW || H !== this.lastH;
+    this.lastW = W;
+    this.lastH = H;
     // accueil : le combattant en grand, un peu à gauche ; la colonne des modes de jeu est à droite
     const menu = session.mode === 'menu' && !viewState.shop;
     // ordinateur (≥ 1000 × 600) : la colonne commence juste à droite du centre ; téléphone : elle est collée au bord droit
-    const wide = this.scale.width >= 1000 && this.scale.height >= 600;
-    if (menu && this.scale.width > this.scale.height) tx += (wide ? 190 : this.scale.width * 0.13) / cam.zoom;
-    // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
-    if (viewState.shop) {
-      const W0 = this.scale.width,
-        H0 = this.scale.height;
-      if (W0 > H0) tx += Math.min(420, W0 * 0.5) / 2 / cam.zoom;
-      else ty += (H0 * 0.3) / cam.zoom;
-    }
-    const k = 1 - Math.exp(-5 * dt);
-    const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k,
-      cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
-    const W = this.scale.width,
-      H = this.scale.height;
+    const wide = W >= 1000 && H >= 600;
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
@@ -165,6 +163,16 @@ export class GameScene extends Phaser.Scene {
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
+    if (snap) cam.setZoom(z); // avant les décalages ci-dessous, qui dépendent du zoom
+    if (menu && W > H) tx += (wide ? 190 : W * 0.13) / cam.zoom;
+    // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
+    if (viewState.shop) {
+      if (W > H) tx += Math.min(420, W * 0.5) / 2 / cam.zoom;
+      else ty += (H * 0.3) / cam.zoom;
+    }
+    const k = snap ? 1 : 1 - Math.exp(-5 * dt);
+    const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k,
+      cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
     cam.setZoom(cam.zoom + (z - cam.zoom) * (1 - Math.exp(-3.5 * dt)));
     cam.centerOn(cx, cy);
     {
@@ -201,5 +209,6 @@ export class GameScene extends Phaser.Scene {
     this.r.update(dt, time, st, session.myIdx, this.view, session.marker);
     if (st) updateActionBar(st.f[session.myIdx]);
     musicTick();
+    if (++this.frames === 2) bootScenePrete(); // la première image est affichée, caméra en place
   }
 }
