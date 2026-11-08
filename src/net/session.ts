@@ -19,6 +19,7 @@ import {
   respawn,
   setDummy,
   alive,
+  clamp,
 } from '../sim/sim';
 import { Conn } from './transport';
 import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo, cloneDeck } from '../sim/data';
@@ -28,6 +29,11 @@ import { TutoStep } from '../game/tutorial';
 import { track } from '../analytics';
 
 export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
+// Vitrine du vestiaire : le long de la diagonale (x, -y), les deux combattants sont côte à côte à l'écran.
+const VITRINE_MANNEQUIN: [number, number] = [46, -46];
+const VITRINE_DEPART: [number, number] = [-14, 14]; // assez près pour que les coups portent
+const VITRINE_ECART: [number, number] = [-92, 92]; // position finale, par rapport au mannequin
+const VITRINE_COMBO_MAX = 3200; // ms : au-delà, le combo s'arrête même incomplet
 const STEP = 1 / 60,
   SNAP_MS = 33;
 
@@ -138,6 +144,7 @@ class Session {
     presses: number[];
     dir: [number, number];
     focus: { x: number; y: number };
+    combo?: { coups: number; uid: number; appui: number };
   } | null = null;
   get marker() {
     const t = this.tuto;
@@ -216,15 +223,13 @@ class Session {
     ];
     this.opts = {
       free: true,
-      pos: [
-        [-50, 20],
-        [30, 20],
-      ],
+      pos: [VITRINE_DEPART, VITRINE_MANNEQUIN],
     };
     this.begin(true);
-    setDummy(this.sim, 1, 'idle', 30, 20);
+    setDummy(this.sim, 1, 'idle', VITRINE_MANNEQUIN[0], VITRINE_MANNEQUIN[1]);
   }
-  // Joue une démonstration : trois coups pour une traînée, une éjection pour un plouf (dans la direction dir).
+  // Joue une démonstration : le combo de trois coups du combattant, puis il se place à côté du mannequin ;
+  // pour un plouf, une éjection dans la direction dir.
   showcase(kind: 'trainee' | 'ejection', look: Look, dir: [number, number]) {
     const S = this.sim;
     if (this.mode !== 'showcase' || !S) return;
@@ -241,10 +246,17 @@ class Session {
       e.vx = e.vy = 0;
     };
     if (kind === 'trainee') {
-      place(me, -50, 20);
-      place(foe, 30, 20);
+      place(me, VITRINE_DEPART[0], VITRINE_DEPART[1]);
+      place(foe, VITRINE_MANNEQUIN[0], VITRINE_MANNEQUIN[1]);
       foe.pct = 0;
-      this.show = { kind, t: 0, presses: [150, 430, 710], dir, focus: { x: -10, y: 20 } };
+      this.show = {
+        kind,
+        t: 0,
+        presses: [],
+        dir,
+        focus: { x: 0, y: 0 },
+        combo: { coups: 0, uid: -1, appui: 0 },
+      };
     } else {
       const ex = dir[0] * (H - 60),
         ey = dir[1] * (H - 60) + (dir[1] ? 0 : 20);
@@ -265,11 +277,48 @@ class Session {
       inp = this.input;
     inp.mx = inp.my = 0;
     inp.aim = Math.atan2(foe.y - me.y, foe.x - me.x);
-    inp.atk = sh.presses.some(p => sh.t >= p && sh.t < p + 70);
+    if (sh.combo) this.vitrineCombo(sh.combo, sh.t, dt, me, foe, S.H);
+    else inp.atk = sh.presses.some(p => sh.t >= p && sh.t < p + 70);
     if (foe.state === 'dead' && sh.t > 2600) {
-      respawn(S, foe, 30, 20);
+      respawn(S, foe, VITRINE_MANNEQUIN[0], VITRINE_MANNEQUIN[1]);
       foe.dropT = 0;
-      setDummy(S, 1, 'idle', 30, 20);
+      setDummy(S, 1, 'idle', VITRINE_MANNEQUIN[0], VITRINE_MANNEQUIN[1]);
+    }
+  }
+  // Un appui dès que le coup en cours le permet : chaque style enchaîne ses trois coups à son propre rythme.
+  // Ensuite, le combattant recule jusqu'à être bien visible à côté du mannequin.
+  private vitrineCombo(
+    c: { coups: number; uid: number; appui: number },
+    t: number,
+    dt: number,
+    me: any,
+    foe: any,
+    H: number,
+  ) {
+    const inp = this.input;
+    if (me.atk && me.atk.uid !== c.uid) {
+      c.uid = me.atk.uid;
+      c.coups++;
+    }
+    if (c.appui > 0) {
+      c.appui -= dt * 1000;
+      inp.atk = true;
+      return;
+    }
+    inp.atk = false;
+    const a = me.atk;
+    if (c.coups < 3 && t < VITRINE_COMBO_MAX) {
+      if (t >= 150 && !me.buffer && (me.state === 'idle' || (a && a.t >= a.su + a.ac))) c.appui = 50;
+      return;
+    }
+    if (me.state !== 'idle') return;
+    const borne = (v: number) => clamp(v, -(H - 40), H - 40),
+      dx = borne(foe.x + VITRINE_ECART[0]) - me.x,
+      dy = borne(foe.y + VITRINE_ECART[1]) - me.y,
+      d = Math.hypot(dx, dy);
+    if (d > 5) {
+      inp.mx = (dx / d) * 0.75;
+      inp.my = (dy / d) * 0.75;
     }
   }
   startTuto(me: MeSpec, steps: TutoStep[]) {

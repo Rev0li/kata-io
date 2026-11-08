@@ -17,7 +17,7 @@ const polices = [
   '700 15px Barlow',
 ];
 const fond = new Image();
-fond.src = '/assets/accueil/tour.svg';
+fond.src = '/assets/accueil/tour.webp';
 const attendus: Promise<unknown>[] = [...polices.map(p => document.fonts.load(p)), fond.decode()].map(p =>
   p.catch(() => {}),
 );

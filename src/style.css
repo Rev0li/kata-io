@@ -65,11 +65,61 @@ button[disabled] {
 body.rotation #game {
   visibility: hidden;
 }
-/* fond de l'accueil et de ses sous-écrans (scripts/build-accueil-svg.py) : il cache le jeu */
+/* fond de l'accueil et de ses sous-écrans (scripts/build-accueil-fond.py) : il cache le jeu.
+   La scène couvre l'écran et le combattant y est placé en pourcentage : il reste sur le même rocher à toutes les tailles.
+   Recadrage à droite et surtout en bas : la Tour reste visible. */
 #wall {
   position: fixed;
   inset: 0;
-  background: #141c33 url(/assets/accueil/tour.svg) 50% 30% / cover no-repeat; /* recadrage surtout par le bas : le sommet de la Tour reste visible */
+  overflow: hidden;
+  background: #111820;
+  container-type: size;
+}
+#wallScene {
+  position: absolute;
+  left: 0;
+  top: calc((100vh - max(100vw / 2.16, 100vh)) * 0.2);
+  top: calc((100cqh - max(100cqw / 2.16, 100cqh)) * 0.2);
+  width: max(100vw, 216vh);
+  width: max(100cqw, 216cqh);
+  aspect-ratio: 2160 / 1000;
+  background: url(/assets/accueil/tour.webp) 0 0 / 100% 100% no-repeat;
+}
+/* ton combattant, de dos, face à la Tour : image de persos.png (16 px, cases de 18, marge 1), agrandie d'un nombre entier */
+#wallHero {
+  --p: 4px;
+  position: absolute;
+  left: 31%;
+  top: 87%;
+  width: calc(16 * var(--p));
+  height: calc(16 * var(--p));
+  transform: translate(-50%, -100%);
+  background: url(/assets/persos.png) no-repeat;
+  background-size: calc(1008 * var(--p)) calc(126 * var(--p));
+  background-position: calc((1 + (var(--i, 0) * 4 + 1) * 18) * var(--p) * -1) calc(var(--p) * -1);
+  image-rendering: pixelated;
+}
+@supports (width: round(down, 1cqh, 16px)) {
+  #wallHero {
+    --p: calc(round(down, min(17cqh, 128px), 16px) / 16);
+  }
+}
+/* téléphone : le classement occupe le bas à gauche, le combattant se tient juste après */
+@media (max-height: 540px) {
+  #wallHero {
+    left: 45%;
+  }
+}
+#wallHero::before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -2%;
+  height: 12%;
+  border-radius: 50%;
+  background: rgba(8, 12, 18, 0.55);
+  z-index: -1;
 }
 #vig {
   position: fixed;
