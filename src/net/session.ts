@@ -27,14 +27,7 @@ import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 import { track } from '../analytics';
 
-export type Mode = 'idle' | 'menu' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
-// Accueil : le mannequin d'entraînement (moine de bois) se tient à gauche du combattant (la colonne du menu est à droite).
-const MANNEQUIN: Spec = {
-  name: 'Mannequin',
-  look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'plouf' },
-  dummy: true,
-};
-const MENU_DUMMY: [number, number] = [-80, 80];
+export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
 const STEP = 1 / 60,
   SNAP_MS = 33;
 
@@ -128,8 +121,6 @@ class Session {
     hintT: number;
   } | null = null;
   hooks: Hooks = {};
-  menuTarget: { x: number; y: number; strike: boolean } | null = null;
-  menuRelease = false;
 
   get state() {
     return this.mode === 'guest' ? this.mirror : this.sim;
@@ -205,62 +196,6 @@ class Session {
     this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp, quick: !!extra.quick };
     this.begin();
     if (extra.taunt && this.sim) this.sim.f[1].emote = { id: extra.taunt, t: -700 };
-  }
-  // Accueil : on s'échauffe sur la plateforme, au clavier ou en touchant la plateforme, avec un mannequin à frapper.
-  // Ni compté ni mesuré comme une partie.
-  startMenu(me: MeSpec) {
-    this.leave(true);
-    this.mode = 'menu';
-    this.myIdx = 0;
-    this.floor = null;
-    this.teaser = '';
-    this.attempt = 1;
-    this.specs = [me, { ...MANNEQUIN, abil: FULL_ABIL }];
-    this.opts = { free: true, pos: [[0, 0], MENU_DUMMY] };
-    this.begin(true);
-    setDummy(this.sim, 1, 'idle', MENU_DUMMY[0], MENU_DUMMY[1]);
-    this.sim.f[0].emote = { id: 'salut', t: -300 };
-  }
-  // Toucher ou cliquer la plateforme : le combattant y marche. Sur le mannequin : il va le frapper.
-  menuGo(x: number, y: number, strike: boolean) {
-    if (this.mode === 'menu') this.menuTarget = { x, y, strike };
-  }
-  // Le mannequin encaisse sans tomber ; s'il finit quand même à l'eau, il revient à sa place.
-  private menuTick() {
-    const S = this.sim,
-      me = S.f[0],
-      foe = S.f[1],
-      inp = this.input;
-    if (this.menuRelease) {
-      inp.atk = false;
-      this.menuRelease = false;
-    }
-    if (alive(foe)) foe.pct = Math.min(foe.pct, 30);
-    else if (foe.state === 'dead') {
-      respawn(S, foe, MENU_DUMMY[0], MENU_DUMMY[1]);
-      setDummy(S, 1, 'idle', MENU_DUMMY[0], MENU_DUMMY[1]);
-    }
-    const T = this.menuTarget;
-    if (!T) return;
-    if (inp.mx || inp.my || !alive(me)) {
-      this.menuTarget = null; // le clavier ou le joystick reprend la main
-      return;
-    }
-    const goal = T.strike && alive(foe) ? foe : T,
-      dx = goal.x - me.x,
-      dy = goal.y - me.y,
-      d = Math.hypot(dx, dy);
-    if (d > (T.strike ? 50 : 6)) {
-      inp.mx = dx / d;
-      inp.my = dy / d;
-      return;
-    }
-    inp.mx = inp.my = 0;
-    if (T.strike) {
-      inp.atk = true; // un appui bref : un coup blanc
-      this.menuRelease = true;
-    }
-    this.menuTarget = null;
   }
   startShowcase(me: MeSpec) {
     this.leave(true);
@@ -714,7 +649,6 @@ class Session {
     }
     // hôte ou mode local : pas fixe de 1/60 s
     if (this.mode === 'showcase') this.showcaseTick(dt);
-    if (this.mode === 'menu') this.menuTick();
     this.acc += Math.min(dt, 0.1);
     let n = 0;
     while (this.acc >= STEP && n < 6) {
@@ -783,7 +717,7 @@ class Session {
     }
   }
   leave(silent = false) {
-    if (this.active && !this.ended && this.mode !== 'showcase' && this.mode !== 'menu' && this.matches > 0) {
+    if (this.active && !this.ended && this.mode !== 'showcase' && this.matches > 0) {
       const D = this.state?.duel;
       track('match_abandoned', {
         mode: this.mode,
@@ -793,7 +727,7 @@ class Session {
         score_foe: D ? D.score[1 - this.myIdx] : null,
       });
     }
-    if (silent === false || this.mode === 'idle' || this.mode === 'menu') this.matches = 0;
+    if (silent === false || this.mode === 'idle') this.matches = 0;
     this.hooks.onLeave?.();
     const c = this.conn;
     this.conn = null;
@@ -808,8 +742,6 @@ class Session {
     this.ping = -1;
     this.notice = '';
     this.tuto = null;
-    this.menuTarget = null;
-    this.menuRelease = false;
     this.theme = null;
     if (!silent) this.hooks.onStatus?.('');
   }

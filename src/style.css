@@ -55,9 +55,21 @@ button[disabled] {
   position: fixed;
   inset: 0;
 }
+/* width et height forcés : pendant une rotation, l'image remplit l'écran avant même que Phaser la redimensionne */
 #game canvas {
   display: block;
   touch-action: none;
+  width: 100% !important;
+  height: 100% !important;
+}
+body.rotation #game {
+  visibility: hidden;
+}
+/* fond de l'accueil et de ses sous-écrans (scripts/build-accueil-svg.py) : il cache le jeu */
+#wall {
+  position: fixed;
+  inset: 0;
+  background: #141c33 url(/assets/accueil/tour.svg) 50% 30% / cover no-repeat; /* recadrage surtout par le bas : le sommet de la Tour reste visible */
 }
 #vig {
   position: fixed;
@@ -2809,19 +2821,6 @@ details.dev .inner {
   }
 }
 
-/* accueil : rappel des commandes pour s'échauffer, selon l'appareil */
-.mhint {
-  margin: 0;
-  font-size: 12px;
-  color: var(--mist);
-}
-.touch-only {
-  display: none;
-}
-body.touch .touch-only {
-  display: inline;
-}
-
 /* ---------- version minimale (src/ui/edition.ts) : montée de la Tour et classement ---------- */
 body.mini .nomini,
 body:not(.mini) .onlymini {
@@ -2978,14 +2977,6 @@ body:not(.mini) .onlymini {
 .mduo .mside b {
   font-size: 16px;
 }
-.mplay .mhint {
-  text-align: center;
-  font-size: 11px;
-  color: rgba(236, 223, 198, 0.82);
-  text-shadow:
-    0 1px 2px #0b1117,
-    0 0 6px rgba(11, 17, 23, 0.9);
-}
 /* top 10 : en-tête cliquable (classement complet), lignes qui tombent en cascade */
 .mtop {
   display: flex;
@@ -3094,9 +3085,6 @@ body.mini .mplay {
   }
   .mperso b {
     font-size: 16px;
-  }
-  .mplay .mhint {
-    display: none;
   }
   .mtop {
     padding: 7px 10px;

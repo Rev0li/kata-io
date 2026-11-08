@@ -42,23 +42,6 @@ export class GameScene extends Phaser.Scene {
     this.themeOverride = new URLSearchParams(location.search).get('theme');
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (session.mode === 'menu') {
-        // accueil : toucher son combattant ouvre le vestiaire, toucher le mannequin le frappe, toucher la plateforme y marche
-        const st = session.state;
-        if (!st) return;
-        const w = cam.getWorldPoint(p.x, p.y),
-          on = (e: any) => {
-            const g = iso2(e.x, e.y);
-            return Math.abs(w.x - g.x) < 30 && Math.abs(w.y - (g.y - 20)) < 36;
-          };
-        if (on(st.f[0])) viewState.onHero?.();
-        else if (st.f[1] && on(st.f[1])) session.menuGo(st.f[1].x, st.f[1].y, true);
-        else {
-          const t = unIso(w.x, w.y);
-          if (Math.abs(t.x) < st.H - 10 && Math.abs(t.y) < st.H - 10) session.menuGo(t.x, t.y, false);
-        }
-        return;
-      }
       if (!session.active || controls.blocked() || p.wasTouch) return;
       initAudio();
       if (p.rightButtonDown()) controls.parry();
@@ -85,7 +68,7 @@ export class GameScene extends Phaser.Scene {
     }
     if ((m === 'host' || m === 'guest') && isDojo(session.theme)) return session.theme;
     if (m === 'tuto') return 'coucher';
-    if (m === 'idle' || m === 'menu' || m === 'showcase')
+    if (m === 'idle' || m === 'showcase')
       return viewState.dojo && isDojo(viewState.dojo) ? viewState.dojo : viewState.world;
     if (m === 'practice') return viewState.world;
     return 'brume';
@@ -152,19 +135,13 @@ export class GameScene extends Phaser.Scene {
     const snap = W !== this.lastW || H !== this.lastH;
     this.lastW = W;
     this.lastH = H;
-    // accueil : le combattant en grand, un peu à gauche ; la colonne des modes de jeu est à droite
-    const menu = session.mode === 'menu' && !viewState.shop;
-    // ordinateur (≥ 1000 × 600) : la colonne commence juste à droite du centre ; téléphone : elle est collée au bord droit
-    const wide = W >= 1000 && H >= 600;
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
-    if (menu) z = wide ? clamp(H / 560, 1.3, 1.8) : clamp(H / 400, 1.3, 2.4); // gros plan sur le combattant, en gardant la plateforme et un peu de décor
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
-    if (snap) cam.setZoom(z); // avant les décalages ci-dessous, qui dépendent du zoom
-    if (menu && W > H) tx += (wide ? 190 : W * 0.13) / cam.zoom;
+    if (snap) cam.setZoom(z); // avant le décalage ci-dessous, qui dépend du zoom
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
     if (viewState.shop) {
       if (W > H) tx += Math.min(420, W * 0.5) / 2 / cam.zoom;

@@ -105,11 +105,7 @@ export function setupControls() {
     document.body.classList.toggle('fs', !!document.fullscreenElement),
   );
   window.addEventListener('keydown', ev => {
-    if (
-      ev.code === 'KeyF' &&
-      !(ev.target as HTMLElement)?.matches?.('input,textarea') &&
-      (!session.active || session.mode === 'menu')
-    )
+    if (ev.code === 'KeyF' && !(ev.target as HTMLElement)?.matches?.('input,textarea') && !session.active)
       toggleFullscreen();
   });
   window.addEventListener('keydown', ev => {

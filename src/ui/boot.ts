@@ -16,7 +16,11 @@ const polices = [
   '500 15px Barlow',
   '700 15px Barlow',
 ];
-const attendus: Promise<unknown>[] = polices.map(p => document.fonts.load(p).catch(() => {}));
+const fond = new Image();
+fond.src = '/assets/accueil/tour.svg';
+const attendus: Promise<unknown>[] = [...polices.map(p => document.fonts.load(p)), fond.decode()].map(p =>
+  p.catch(() => {}),
+);
 
 export const bootAttendre = (p: Promise<unknown>) => attendus.push(p.catch(() => {}));
 export const bootScenePrete = () => sceneOk();

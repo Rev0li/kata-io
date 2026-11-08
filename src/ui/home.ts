@@ -1,6 +1,6 @@
-// Écran d'accueil façon écran de jeu : ton combattant en grand sur la plateforme (dans la scène), un gros bouton
-// Jouer (étage suivant de la Tour) et les autres modes en boutons secondaires. Les sous-écrans s'ouvrent par-dessus :
-//   Vestiaire     combattant, arme, traînées, ploufs (shop.ts) ; on y entre aussi en touchant son combattant
+// Écran d'accueil : un combattant face à la Tour en fond d'écran (#wall), un gros bouton Jouer (étage suivant de
+// la Tour) et les autres modes en boutons secondaires. Les sous-écrans s'ouvrent par-dessus :
+//   Vestiaire     combattant, arme, traînées, ploufs (shop.ts)
 //   Étages        la Tour étage par étage (floors.ts)
 //   Entraînement  monde et niveau du bot
 //   Duel          duel privé (code), partie publique (verrouillée jusqu'à la fin de la Tour)
@@ -52,9 +52,9 @@ const WORLD_TILE: Record<string, [string, string, string]> = {
   forge: ['forge/tour-a', '#2b1713', '#e2561f'],
 };
 
-/* ---------- retour à l'accueil : ton combattant reprend sa place sur la plateforme ---------- */
+/* ---------- retour à l'accueil ---------- */
 export function goHome() {
-  session.startMenu(mySpec());
+  session.leave(true);
   renderHome();
   show('home');
 }
