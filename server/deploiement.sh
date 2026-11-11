@@ -25,4 +25,4 @@ docker compose -f server/compose.yml up -d --build >/dev/null 2>&1 || {
   exit 1
 }
 echo "$ici" >"$temoin"
-echo "$(date -Is) en service : $(curl -s --retry 5 --retry-connrefused --retry-delay 2 http://127.0.0.1:8787/api/jeu/sante)"
+echo "$(date -Is) en service : $(curl -s --retry 8 --retry-all-errors --retry-delay 2 http://127.0.0.1:8787/api/jeu/sante)"

@@ -26,7 +26,7 @@ import { attendreJeu } from './boot';
 import { lireClassement, rendreClassement } from '../net/classement';
 import { renderFloors } from './floors';
 import { openShop, closeShop, selectTab, shopAction, LockerTab } from './shop';
-import { net, inviteCode, createRoom, join, leave, closeHost } from './lobby';
+import { net, inviteCode, duelOuvert, createRoom, join, leave, closeHost } from './lobby';
 import { onEnd, onRematch, cancelEnd, runMain, runAlt } from './result';
 import { onTuto, onTutoDone, skipTuto } from './tutobar';
 
@@ -44,7 +44,9 @@ export function setupUI() {
     onRematch,
     onDisconnect() {
       if (nav.current === 'home') return;
-      $('#lostMsg').textContent = 'Ton adversaire s’est déconnecté.';
+      $('#lostMsg').textContent = session.state
+        ? 'Ton adversaire s’est déconnecté.'
+        : 'La connexion à la salle est perdue.';
       show('lost');
     },
     onStatus(msg) {
@@ -60,9 +62,10 @@ export function setupUI() {
   setupButtonFx();
   setupDevPanel();
   document.body.classList.toggle('mini', MINI);
-  // version minimale : défi du jour et duel grisés (« Bientôt »), la Tour se monte d'une traite depuis l'étage 1
+  // version minimale : défi du jour grisé (« Bientôt »), et le duel aussi tant qu'il n'y a pas de serveur de jeu
+  // pour l'arbitrer ; la Tour se monte d'une traite depuis l'étage 1
   if (MINI)
-    for (const id of ['#dailyBtn', '#duelBtn']) {
+    for (const id of duelOuvert ? ['#dailyBtn'] : ['#dailyBtn', '#duelBtn']) {
       const b = $(id) as HTMLButtonElement;
       b.disabled = true;
       b.classList.add('soon');

@@ -1,17 +1,19 @@
 # Backend - Kata.io
 
-Décision D19 de [DECISIONS.md](DECISIONS.md) (2026-11-11). Un seul service sur le VPS, derrière Caddy, construit en trois étapes. Seule l'étape 1 est codée.
+Décision D19 de [DECISIONS.md](DECISIONS.md) (2026-11-11). Un seul service sur le VPS, derrière Caddy, construit en trois étapes. Les étapes 1 et 3 sont codées.
 
 | Étape | Contenu | État |
 |---|---|---|
-| 1 | Classement vérifié par rejeu des combats, mesures de jeu en base | **codé, pas encore déployé** |
+| 1 | Classement vérifié par rejeu des combats, mesures de jeu en base | **en production** |
 | 2 | Comptes : invité silencieux, Google, Discord ([COMPTES.md](COMPTES.md)) | conçu |
-| 3 | Duels : salles autoritaires en WebSocket qui font tourner `src/sim` | à concevoir |
+| 3 | Duels entre amis : salles en WebSocket où le serveur fait tourner `src/sim` | **codé** (2026-11-12) ; duel public à faire |
 
 ```
 navigateur ── kata-io (Vercel) ──► /api/jeu/*  relais Vercel ──► Caddy (VPS) ──► serveur de jeu :8787 ──► PostgreSQL
               le jeu, fichiers statiques                                        server/ (Node)
 ```
+
+Seul le duel ne passe pas par le relais : Vercel ne transporte pas le temps réel (WebSocket), le jeu parle donc directement à `wss://kata.rev0li.duckdns.org/api/jeu/duel`.
 
 Vercel continue de servir le jeu. Le relais (`rewrites` de `vercel.json`) fait que le navigateur ne voit qu'un seul domaine : pas de CORS, et les cookies des futurs comptes resteront acceptés par Safari.
 
@@ -49,6 +51,29 @@ Le serveur doit retomber sur le même combat au bit près, sinon tout diverge en
 - **Pas encore vérifié sur Safari ni sur iPhone.** À faire sur le premier aperçu branché au serveur : une montée jouée sur iPhone doit être acceptée. Un refus se lit dans les journaux (`montée refusée`, raison `rejeu impossible`).
 - Le rejeu coûte du calcul (de l'ordre d'un dixième de seconde par combat). Le serveur rend la main entre deux combats et limite à 6 envois par minute et par joueur.
 
+## Étape 3 : le duel arbitré par le serveur
+
+Avant, un duel entre amis était pair à pair (PeerJS) : le navigateur du créateur faisait tourner le combat et arbitrait. Il pouvait donc tricher, il jouait sans délai contre un adversaire qui en avait, et la mise en relation dépendait d'un service public.
+
+Maintenant, **la salle vit sur le serveur** (`server/duel.ts`) :
+
+1. Le créateur ouvre un WebSocket ; le serveur lui donne un **code** de six caractères. Il peut choisir le dojo.
+2. L'ami ouvre le lien (`?salle=CODE`) ; son WebSocket rejoint la salle.
+3. Dès que les deux ont envoyé leur combattant, le serveur crée la simulation, la fait avancer à 60 pas par seconde et envoie **30 instantanés par seconde** aux deux. Chaque joueur n'envoie que ses entrées.
+4. À la fin, revanche si les deux la demandent. Si l'un part, la connexion de l'autre est fermée (« adversaire déconnecté »).
+
+Côté jeu, presque rien n'a changé : l'ancien rôle d'« invité » (envoyer ses entrées, afficher des instantanés) existait déjà. Les **deux** joueurs sont désormais invités, et le message `welcome` leur dit leur place (`moi` : 0 ou 1). Messages : en tête de `server/duel.ts`.
+
+Garde-fous : entrées bornées avant d'entrer dans la simulation, nom et apparence nettoyés, 2 ko par message, 200 messages par seconde et par joueur, 100 salles au plus, salle fermée après 15 min sans adversaire, 3 min de silence ou 1 h.
+
+Limites :
+
+- **Pas de compte** : qui a le code entre. Suffisant entre amis ; le duel public attend les comptes (étape 2).
+- **Le délai se voit** : le joueur voit son propre combattant avec un aller-retour de retard (pas de prédiction locale). À juger en jouant à deux.
+- **Un redéploiement du serveur coupe les duels en cours.**
+- L'adresse des joueurs n'arrive pas jusqu'au serveur en connexion directe (le bloc Caddy la recopie d'un en-tête que seul Vercel remplit) : la limite de connexions au duel est donc globale (240 par minute), pas par joueur.
+- `?net=peer` rejoue l'ancien pair à pair, `?net=local` relie deux onglets sans réseau.
+
 ## L'API
 
 Tout est sous `/api/jeu`. Réponses en JSON ; une erreur porte un champ `erreur`, en français, affiché tel quel au joueur.
@@ -60,6 +85,7 @@ Tout est sous `/api/jeu`. Réponses en JSON ; une erreur porte un champ `erreur`
 | `GET /api/jeu/classement?id=…` | | `{ top, moi, version }` : le top 20 et la ligne du joueur |
 | `POST /api/jeu/classement` | `{ id, pseudo, montee, combats }` | le classement, plus `record`, `etages`, `secondes` |
 | `POST /api/jeu/e` | `{ m, e }` (mesures de jeu, D12) | 204 |
+| `WS /api/jeu/duel` | `?salle=CODE` pour rejoindre, rien pour créer | messages du duel (`server/duel.ts`) |
 
 Limites : 600 ko par requête, 120 requêtes par minute et par adresse, 20 montées ouvertes et 6 envoyées par minute et par joueur.
 
@@ -71,10 +97,11 @@ server/
   classement.ts   les règles (ouvrir, envoyer, lire, mesures), sans réseau : c'est ce que les tests vérifient
   base.ts         stockage : PostgreSQL en production, mémoire pour les tests et le développement
   version.ts      empreinte de src/sim
+  duel.ts         salles de duel : la simulation tourne ici (le WebSocket est branché dans index.ts)
   Dockerfile, compose.yml, .env.example
 src/sim/rejeu.ts  enregistrement, rejeu d'un combat, vérification d'une montée (partagé par le jeu et le serveur)
 src/sim/dmath.ts  fonctions mathématiques reproductibles
-tests/serveur.test.ts, tests/rejeu.test.ts, tests/dmath.test.ts
+tests/serveur.test.ts, tests/duel.test.ts, tests/rejeu.test.ts, tests/dmath.test.ts
 ```
 
 Tables (créées au démarrage) : `montees` (ouvertes puis closes, avec leur résultat), `records` (la meilleure montée de chaque joueur), `evenements` (mesures de jeu, gardées 180 jours).
@@ -83,10 +110,10 @@ Tables (créées au démarrage) : `montees` (ouvertes puis closes, avec leur ré
 
 ```bash
 npm run serveur                       # serveur de jeu sur le port 8787, tout en mémoire
-VITE_API_JEU=/api/jeu npm run dev     # le jeu, branché dessus (Vite relaie /api/jeu vers le port 8787)
+VITE_API_JEU=/api/jeu npm run dev     # le jeu, branché dessus (Vite relaie /api/jeu vers le port 8787, duel compris)
 ```
 
-Sans `VITE_API_JEU`, le jeu utilise l'ancien classement et n'enregistre rien. Pour essayer avec une vraie base : `DATABASE_URL=postgres://… npm run serveur`.
+Sans `VITE_API_JEU`, pas de classement, et le duel reste grisé. Pour essayer un duel seul : créer la salle dans un onglet, ouvrir le lien dans un autre. Pour essayer avec une vraie base : `DATABASE_URL=postgres://… npm run serveur`.
 
 ## Déploiement sur le VPS
 
@@ -126,10 +153,28 @@ Sans `VITE_API_JEU`, le jeu utilise l'ancien classement et n'enregistre rien. Po
 4. `VITE_API_JEU=/api/jeu` est fixée par le fichier `.env.production` du dépôt : tout build Vercel (aperçu d'une PR comme production) parle au serveur de jeu. Pour essayer un changement risqué, jouer une montée sur l'aperçu de la PR avant de fusionner. Attention : un aperçu écrit dans le vrai classement.
 5. **Fait le 2026-11-11** : production branchée après une montée acceptée sur iPhone ; `api/classement.js`, `api/e.js` et leur test supprimés. Les anciens scores, non vérifiés et joués avec une seule vie, n'ont pas été repris. Reste à supprimer la base Upstash dans Vercel (onglet *Storage*).
 
-À chaque fusion qui touche `src/sim` ou `server/`, le serveur se redéploie **tout seul** : `server/deploiement.sh`, lancé chaque minute par le cron de l'utilisateur sur le VPS, récupère `main` et reconstruit le serveur si quelque chose le concerne. C'est le VPS qui vient chercher le code : aucune clé n'est confiée à GitHub.
+À chaque fusion qui touche `src/sim` ou `server/`, il faut redéployer le serveur : `server/deploiement.sh` récupère `main` et reconstruit le serveur si quelque chose le concerne. C'est le VPS qui vient chercher le code : aucune clé n'est confiée à GitHub. **Pour l'instant le script est lancé à la main** ; pour qu'il tourne tout seul chaque minute, installer un timer systemd de l'utilisateur (le VPS n'a pas cron) :
 
 ```bash
-crontab -l                                    # * * * * * $HOME/app/kata/server/deploiement.sh >> $HOME/app/kata-deploiement.log 2>&1
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/kata-deploiement.service <<'EOF'
+[Unit]
+Description=Kata.io : redéploie le serveur de jeu quand main change
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '%h/app/kata/server/deploiement.sh >> %h/app/kata-deploiement.log 2>&1'
+EOF
+cat > ~/.config/systemd/user/kata-deploiement.timer <<'EOF'
+[Unit]
+Description=Kata.io : vérifie main chaque minute
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+[Install]
+WantedBy=timers.target
+EOF
+systemctl --user daemon-reload && systemctl --user enable --now kata-deploiement.timer
+sudo loginctl enable-linger revovps           # le timer tourne même sans session ouverte
 tail ~/app/kata-deploiement.log               # une ligne par déploiement, « ÉCHEC » si la construction rate (retentée chaque minute)
 ```
 
@@ -159,5 +204,4 @@ select le::date as jour, count(distinct aid) from evenements group by 1 order by
 ## Ensuite
 
 - **Étape 2, comptes** : BetterAuth dans ce même service et cette même base ; le compte invité reprend l'identifiant anonyme, donc les records existants.
-- **Étape 3, duels** : salles autoritaires en WebSocket (Colyseus) qui font tourner `src/sim` ; PeerJS et le serveur relais ne sont plus nécessaires. `dmath` et `rejeu` servent déjà de base : même simulation, mêmes entrées arrondies.
-- Typage strict de `src/sim` (`Fighter` et `Sim` sont encore `any`), maintenant que le serveur en dépend.
+- **Duel, suite** : duel public (file d'attente, après les comptes), reconnexion après une coupure courte, prédiction locale de son propre combattant si le délai gêne, résultat des duels en base.

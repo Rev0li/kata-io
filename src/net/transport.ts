@@ -1,7 +1,14 @@
-// Transport réseau entre les deux joueurs d'un duel.
-// - "peer"  : WebRTC pair à pair via PeerJS (production, aucun serveur à héberger)
-// - "local" : BroadcastChannel entre deux onglets du même navigateur (tests et dev hors ligne)
-import Peer, { DataConnection } from 'peerjs';
+// Transport réseau d'un duel.
+// - "serveur" : WebSocket vers le serveur de jeu, qui fait tourner le combat (server/duel.ts) ; les deux joueurs
+//               sont « invités ». C'est le mode normal dès que le build connaît le serveur (VITE_API_JEU).
+// - "peer"    : WebRTC pair à pair via PeerJS (ancien mode, sans serveur de jeu ; chargé à la demande)
+// - "local"   : BroadcastChannel entre deux onglets du même navigateur (tests et dev hors ligne)
+import type { Peer as PeerT, DataConnection } from 'peerjs';
+type Peer = PeerT;
+let PeerJS: typeof PeerT;
+const chargerPeer = async () => {
+  PeerJS ||= (await import('peerjs')).default;
+};
 
 export interface Conn {
   send(msg: any): void;
@@ -13,7 +20,7 @@ export interface HostHandle {
   code: string;
   close(): void;
 }
-export type NetKind = 'peer' | 'local';
+export type NetKind = 'serveur' | 'peer' | 'local';
 
 const PREFIX = 'kata-io-v1-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -64,7 +71,7 @@ function wrapPeer(c: DataConnection, peer?: Peer): Conn {
 function peerHost(onGuest: (c: Conn) => void, onError: (msg: string) => void, attempt = 0): Promise<HostHandle> {
   return new Promise((resolve, reject) => {
     const code = newCode();
-    const peer = new Peer(PREFIX + code, { debug: 1 });
+    const peer = new PeerJS(PREFIX + code, { debug: 1 });
     let taken = false,
       opened = false;
     peer.on('open', () => {
@@ -102,7 +109,7 @@ function peerHost(onGuest: (c: Conn) => void, onError: (msg: string) => void, at
 }
 function peerJoin(code: string): Promise<Conn> {
   return new Promise((resolve, reject) => {
-    const peer = new Peer({ debug: 1 });
+    const peer = new PeerJS({ debug: 1 });
     let done = false;
     const fail = (m: string) => {
       if (done) return;
@@ -202,9 +209,96 @@ function localJoin(code: string): Promise<Conn> {
   });
 }
 
-export function hostRoom(kind: NetKind, onGuest: (c: Conn) => void, onError: (m: string) => void) {
-  return kind === 'local' ? localHost(onGuest) : peerHost(onGuest, onError);
+/* ---------- serveur de jeu (WebSocket) ---------- */
+// Adresse du duel : VITE_WS_DUEL (production : le relais Vercel ne transporte pas le temps réel, le jeu parle donc
+// directement au VPS), sinon le même hôte que la page, sous VITE_API_JEU (développement : Vite relaie).
+const API = ((import.meta.env.VITE_API_JEU as string | undefined) || '').replace(/\/+$/, '');
+const WS_DUEL =
+  (import.meta.env.VITE_WS_DUEL as string | undefined) ||
+  (API.startsWith('/') ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + API + '/duel' : '');
+export const duelServeur = !!WS_DUEL;
+
+// Ouvre le WebSocket et attend le premier message : « salle » (créateur), « ok » (invité) ou « refus ».
+function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
+  return new Promise((resolve, reject) => {
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(WS_DUEL + (code ? '?salle=' + encodeURIComponent(code) : ''));
+    } catch {
+      reject(new Error('Serveur de duel injoignable.'));
+      return;
+    }
+    let pret = false,
+      ferme = false,
+      msgCb: ((m: any) => void) | null = null,
+      closeCb: (() => void) | null = null;
+    const echec = (m: string) => {
+      if (pret || ferme) return;
+      ferme = true;
+      clearTimeout(delai);
+      try {
+        ws.close();
+      } catch {
+        /* déjà fermé */
+      }
+      reject(new Error(m));
+    };
+    const delai = setTimeout(() => echec('Le serveur de duel ne répond pas. Réessaie dans un instant.'), 10000);
+    const conn: Conn = {
+      send: m => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
+      },
+      onMessage: cb => {
+        msgCb = cb;
+      },
+      onClose: cb => {
+        closeCb = cb;
+      },
+      close: () => {
+        ferme = true;
+        ws.close();
+      },
+    };
+    ws.onmessage = ev => {
+      let m: any;
+      try {
+        m = JSON.parse(String(ev.data));
+      } catch {
+        return;
+      }
+      if (pret) {
+        msgCb && msgCb(m);
+        return;
+      }
+      if (m && m.t === 'refus') echec(String(m.msg || 'Salle refusée.'));
+      else if (m && (m.t === 'salle' || m.t === 'ok')) {
+        pret = true;
+        clearTimeout(delai);
+        resolve({ code: m.t === 'salle' ? String(m.code) : code || '', conn });
+      }
+    };
+    ws.onerror = () => echec('Serveur de duel injoignable. Réessaie dans un instant.');
+    ws.onclose = () => {
+      echec('Serveur de duel injoignable. Réessaie dans un instant.');
+      if (pret && !ferme) {
+        ferme = true;
+        closeCb && closeCb();
+      }
+    };
+  });
 }
-export function joinRoom(kind: NetKind, code: string) {
-  return kind === 'local' ? localJoin(code) : peerJoin(code);
+// Salle sur le serveur : le créateur est connecté dès l'ouverture, et sera prévenu (welcome) quand l'autre arrive.
+export const serveurOuvrir = () => ouvrir(null);
+export const serveurRejoindre = (code: string) => ouvrir(code).then(r => r.conn);
+
+export async function hostRoom(kind: NetKind, onGuest: (c: Conn) => void, onError: (m: string) => void) {
+  if (kind === 'local') return localHost(onGuest);
+  await chargerPeer();
+  return peerHost(onGuest, onError);
+}
+export async function joinRoom(kind: NetKind, code: string) {
+  if (kind === 'serveur') return serveurRejoindre(code);
+  if (kind === 'local') return localJoin(code);
+  await chargerPeer();
+  return peerJoin(code);
 }

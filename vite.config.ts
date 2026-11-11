@@ -9,6 +9,6 @@ export default defineConfig({
     target: 'es2022',
     chunkSizeWarningLimit: 2000,
   },
-  // en développement, /api/jeu va au serveur de jeu local (npm run serveur)
-  server: { host: true, proxy: { '/api/jeu': 'http://localhost:8787' } },
+  // en développement, /api/jeu va au serveur de jeu local (npm run serveur), WebSocket du duel compris
+  server: { host: true, proxy: { '/api/jeu': { target: 'http://localhost:8787', ws: true } } },
 });
