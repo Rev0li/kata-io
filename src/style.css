@@ -2269,7 +2269,7 @@ body.touch .atk b {
 /* entraînement : choix du monde */
 .worlds {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 .wtile {
@@ -2279,13 +2279,11 @@ body.touch .atk b {
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  height: 104px;
+  height: 84px;
   padding: 6px 4px 7px;
   border: 1px solid var(--slate);
   border-radius: 8px;
-  background:
-    radial-gradient(ellipse 70% 32% at 50% 78%, var(--p) 0 98%, transparent 100%),
-    linear-gradient(180deg, color-mix(in srgb, var(--g) 70%, #000) 0%, var(--g) 100%);
+  background: #111820;
   color: #fff;
   overflow: hidden;
   transition:
@@ -2294,13 +2292,11 @@ body.touch .atk b {
 }
 .wtile img {
   position: absolute;
-  left: 50%;
-  bottom: 22px;
-  height: 72px;
-  max-width: 90%;
-  object-fit: contain;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.35));
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 30% 60%;
 }
 .wtile span {
   position: relative;
@@ -2363,10 +2359,7 @@ body.touch .atk b {
     margin-bottom: 8px;
   }
   .wtile {
-    height: 84px;
-  }
-  .wtile img {
-    height: 54px;
+    height: 64px;
   }
 }
 

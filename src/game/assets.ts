@@ -1,5 +1,6 @@
 // Chargement des sprites du pack Ninja Adventure (Pixel-boy, CC0) : personnages, armes et effets.
 // Les planches sont assemblées par scripts/build-assets.py dans public/assets.
+import { MONDES } from '../sim/data';
 import Phaser from 'phaser';
 import { worldImages } from './render/worlds';
 import { LIFE } from './render/themes';
@@ -79,9 +80,10 @@ export function preloadAssets(scene: Phaser.Scene) {
     scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS))
     scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: w, frameHeight: h });
-  // Mondes : éléments provisoires découpés dans les planches (art/decoupe -> public/assets/mondes).
-  for (const k of worldImages(Object.values(LIFE).flatMap(l => l.floats)))
-    scene.load.image('m:' + k, BASE + 'mondes/' + k + '.png');
+  // Mondes dessinés (mis de côté) : leurs images ne sont chargées que si on en demande un avec ?theme=<monde>.
+  if (MONDES.some(m => m[0] === new URLSearchParams(location.search).get('theme')))
+    for (const k of worldImages(Object.values(LIFE).flatMap(l => l.floats)))
+      scene.load.image('m:' + k, BASE + 'mondes/' + k + '.png');
 }
 
 export function setupAssets(scene: Phaser.Scene) {

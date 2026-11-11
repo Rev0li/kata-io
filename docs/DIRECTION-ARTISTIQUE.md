@@ -23,6 +23,8 @@ Le pixel art est la couche qui jure : les décors et les références sont déj�
 - horizons, poissons et objets flottants : les mêmes dessins vectoriels, rastérisés en petit au chargement puis agrandis sans lissage (`src/game/assets.ts`) ;
 - plateforme du dojo : **lisse, dessinée en vectoriel comme avant** (`arena.ts`). Une plateforme en pixel art a été essayée le 2026-11-11 puis retirée le lendemain : des combattants en pixels sur un sol en pixels, c'était brouillon ; le sol lisse les détache.
 
+**Décidé le 2026-11-12 : les six dojos en pixel art partout** (Tour, entraînement, duel). Les quatre mondes dessinés de la section 5, lissés, ne sont plus proposés : ils juraient avec le reste. Leur code et leurs images restent dans le dépôt (`render/worlds.ts`, `public/assets/mondes`), visibles seulement avec `?theme=cerisiers` (ou `bambous`, `enneige`, `forge`). Les passages de ce document qui annoncent le remplacement des dojos par les mondes ne sont donc plus d'actualité.
+
 C'est une conversion automatique, pas du pixel art dessiné à la main : elle donne la cohérence, pas le détail. Restent à convertir : l'eau (ronds, reflets), les lanternes sur pied, les particules d'ambiance, et les quatre mondes peints (entraînement), encore lissés.
 
 ### Décision à prendre : le style cible

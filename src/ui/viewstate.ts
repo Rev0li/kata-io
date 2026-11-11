@@ -2,5 +2,5 @@
 export const viewState = {
   shop: false, // la boutique est ouverte : la caméra décale le dojo pour laisser voir les aperçus
   dojo: null as string | null, // dojo prévisualisé derrière le salon d'invitation
-  world: 'cerisiers', // monde de l'entraînement, montré derrière son écran
+  world: 'coucher', // dojo de l'entraînement, montré derrière son écran
 };

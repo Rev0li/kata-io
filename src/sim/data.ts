@@ -30,16 +30,16 @@ export const CHARGE_START = 120,
 export const SOUFFLE_REGEN = 1.8, // secondes pour regagner un segment (1,3 avant que frapper et parer coûtent)
   MOVE_SPEED = 210;
 export const FIRST_TO = 3;
-// Les quatre mondes (docs/DIRECTION-ARTISTIQUE.md, section 5), dans l'ordre de la Tour ; ils remplaceront les dojos.
+// Les quatre mondes dessinés (docs/DIRECTION-ARTISTIQUE.md, section 5). Mis de côté le 2026-11-12 : le jeu n'utilise
+// plus que les six dojos en pixel art, partout (Tour, entraînement, duel). Leur code reste (render/worlds.ts).
 export const MONDES: [string, string][] = [
   ['cerisiers', 'Le Jardin des cerisiers'],
   ['bambous', 'Le Jardin aux bambous'],
   ['enneige', 'Le Temple enneigé'],
   ['forge', 'La Forge des forteresses'],
 ];
-// Les mondes puis les six dojos provisoires. Liste blanche pour ce qui vient du réseau.
+// Les six dojos, dans l'ordre de la Tour. Liste blanche pour ce qui vient du réseau.
 export const DOJOS: [string, string][] = [
-  ...MONDES,
   ['coucher', 'Coucher de soleil'],
   ['bambou', 'Bambous'],
   ['brume', 'Brume'],
