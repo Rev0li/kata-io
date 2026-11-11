@@ -102,12 +102,24 @@ Sans `VITE_API_JEU`, le jeu utilise l'ancien classement et n'enregistre rien. Po
 2. Caddy, sur le domaine choisi (`kata.rev0li.duckdns.org` est prévu par D13) :
    ```
    kata.rev0li.duckdns.org {
-     handle /api/jeu/* {
-       reverse_proxy 127.0.0.1:8787
-     }
+       encode zstd gzip
+
+       # Seul le serveur de jeu est exposé ici ; tout le reste n'existe pas.
+       handle /api/jeu/* {
+           reverse_proxy 127.0.0.1:8787 {
+               import sans_cookie_portail
+               # Le jeu arrive par le relais de Vercel : sans cette ligne, Caddy remplace l'adresse du joueur
+               # par celle de Vercel, et tous les joueurs partagent la même limite de débit.
+               header_up X-Forwarded-For {http.request.header.X-Forwarded-For}
+           }
+       }
+       handle {
+           respond 404
+       }
    }
    ```
-3. Relais dans `vercel.json` :
+   Puis `sudo caddy validate --config /etc/caddy/Caddyfile` et `sudo systemctl reload caddy`. Le nom existe déjà : chez DuckDNS, tout sous-domaine de `rev0li.duckdns.org` pointe vers le VPS. `sans_cookie_portail` est le snippet déjà présent dans le Caddyfile (le cookie du portail vaut pour tous les sous-domaines).
+3. Relais dans `vercel.json` (**en place**) :
    ```json
    "rewrites": [{ "source": "/api/jeu/:chemin*", "destination": "https://kata.rev0li.duckdns.org/api/jeu/:chemin*" }]
    ```
