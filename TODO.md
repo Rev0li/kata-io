@@ -88,7 +88,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] Montée validée sur iPhone depuis un aperçu, production branchée (`.env.production`, 2026-11-11).
 - [x] Ancien classement supprimé du dépôt (`api/classement.js`, `api/e.js`, leur test).
 - [ ] Supprimer la base Upstash dans Vercel (onglet Storage).
-- [ ] Déployer le serveur automatiquement à chaque fusion qui touche `src/sim` ou `server/` (sinon montées non classées entre les deux).
+- [x] Serveur redéployé automatiquement à chaque fusion qui touche `src/sim` ou `server/` (`server/deploiement.sh`, cron du VPS, 2026-11-11).
 - [ ] Typage strict de `src/sim` (`Fighter`, `Sim`), dont le serveur dépend maintenant.
 
 Étape 2 : comptes (phase 4b ci-dessous). Étape 3 : duels en salles autoritaires (remplace le serveur TURN et PeerJS de la phase 4).
