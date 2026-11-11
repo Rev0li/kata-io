@@ -66,7 +66,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [ ] Ranger les visuels générés : sources et maquettes dans `art/source/`, images prêtes pour le jeu dans `public/assets/` (et pas dans `src/`).
 - [ ] Plus tard (option) : mode éditeur `?editeur` pour placer le décor à la souris et exporter le `dojo.json`.
 
-- [x] Décor de combat en pixel art, première passe (2026-11-11) : horizons, poissons, objets flottants et plateforme aux pixels des combattants. Voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md), section 1.
+- [x] Décor de combat en pixel art, première passe (2026-11-11) : horizons, poissons et objets flottants aux pixels des combattants ; la plateforme, essayée en pixel art, est revenue lisse le 2026-11-12 (pixel sur pixel : brouillon). Voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md), section 1.
 - [ ] Pixel art, suite : eau (ronds, reflets), lanternes, particules d'ambiance, mondes peints de l'entraînement.
 
 ## Phase 3 : bugs, tests, typage
