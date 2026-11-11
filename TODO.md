@@ -66,6 +66,9 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [ ] Ranger les visuels générés : sources et maquettes dans `art/source/`, images prêtes pour le jeu dans `public/assets/` (et pas dans `src/`).
 - [ ] Plus tard (option) : mode éditeur `?editeur` pour placer le décor à la souris et exporter le `dojo.json`.
 
+- [x] Décor de combat en pixel art, première passe (2026-11-11) : horizons, poissons, objets flottants et plateforme aux pixels des combattants. Voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md), section 1.
+- [ ] Pixel art, suite : eau (ronds, reflets), lanternes, particules d'ambiance, mondes peints de l'entraînement.
+
 ## Phase 3 : bugs, tests, typage
 
 - [x] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).

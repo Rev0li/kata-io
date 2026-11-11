@@ -18,6 +18,13 @@ Légende de l'état : **Pack** = pack Ninja Adventure (pixel art 16 px, CC0), **
 
 Le pixel art est la couche qui jure : les décors et les références sont déjà dans une même famille (cartoon vectoriel à contour), les personnages non.
 
+**Décidé le 2026-11-11 : tout le combat en pixel art, sauf l'image de l'accueil.** Les combattants restent ceux du pack, et c'est le décor qui s'aligne sur eux, avec des pixels de la même taille (`FIGHTER_PX`, 4 px d'écran) :
+
+- horizons, poissons et objets flottants : les mêmes dessins vectoriels, rastérisés en petit au chargement puis agrandis sans lissage (`src/game/assets.ts`) ;
+- plateforme du dojo : dessinée pixel par pixel, sans lissage (`src/game/render/pixel.ts`, `arena.ts`), lattes élargies et joints adoucis.
+
+C'est une conversion automatique, pas du pixel art dessiné à la main : elle donne la cohérence, pas le détail. Restent à convertir : l'eau (ronds, reflets), les lanternes sur pied, les particules d'ambiance, et les quatre mondes peints (entraînement), encore lissés.
+
 ### Décision à prendre : le style cible
 
 **Décidé le 2026-10-25 pour les combattants : on garde le pixel art**, agrandi d'un tiers (`FIGHTER_PX = 4` dans `src/game/assets.ts`). Un pantin découpé dessiné a été essayé puis abandonné (voir [PROMPTS-COMBATTANTS.md](PROMPTS-COMBATTANTS.md)).

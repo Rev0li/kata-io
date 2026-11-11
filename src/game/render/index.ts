@@ -13,12 +13,13 @@
 //   world.ts     sol, étang (eau, glace, lave), décor posé et premier plan en parallaxe
 import Phaser from 'phaser';
 import { lerp, Ev } from '../../sim/sim';
-import { FIGHTER_K } from '../assets';
+import { FIGHTER_K, FIGHTER_PX } from '../assets';
 import { sfxAt } from '../audio';
 import { ISO, iso, worldAngleToScreen, fillC, strokeC } from './iso';
 import { C, hex } from './palette';
 import { THEMES } from './themes';
 import { Arena } from './arena';
+import { Pixels } from './pixel';
 import { Lake } from './lake';
 import { Effects } from './effects';
 import { Fighters } from './fighters';
@@ -46,7 +47,7 @@ export class Renderer {
   bg: Phaser.GameObjects.Image;
   sky: Phaser.GameObjects.Image;
   waterG: Phaser.GameObjects.Graphics;
-  arenaG: Phaser.GameObjects.Graphics;
+  arenaG: Pixels; // plateforme, en pixel art
   dynG: Phaser.GameObjects.Graphics;
   topG: Phaser.GameObjects.Graphics;
   trailG: Phaser.GameObjects.Graphics;
@@ -60,7 +61,20 @@ export class Renderer {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.waterG = scene.add.graphics().setDepth(0);
-    this.arenaG = scene.add.graphics().setDepth(1);
+    {
+      // zone de la plus grande plateforme (demi-côté 300 et son bord), flancs et reflet compris
+      const o = 324;
+      this.arenaG = new Pixels(
+        scene,
+        'px-arene',
+        -2 * o * ISO - 8,
+        -o * ISO - 8,
+        2 * o * ISO + 24,
+        o * ISO + 64,
+        FIGHTER_PX,
+      );
+      this.arenaG.img.setDepth(1);
+    }
     this.bg = scene.add.image(0, 0, 'bg-brume').setOrigin(0.5, 1).setDepth(-1).setScrollFactor(0.95);
     this.sky = scene.add
       .image(0, 0, '__WHITE')
