@@ -30,6 +30,11 @@ import { Enregistreur, combatEtage } from '../sim/rejeu';
 import type { Combat } from '../sim/rejeu';
 import { track } from '../analytics';
 
+// Tutoriel, après la paume du dragon : attente maximale avant l'étape suivante, pause après le plouf,
+// et délai au bout duquel un mannequin resté debout sur le dojo fait passer à la suite (ms).
+const SUITE_MAX = 5000,
+  SUITE_PLOUF = 900,
+  SUITE_DEBOUT = 1600;
 export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
 // Vitrine du vestiaire : le long de la diagonale (x, -y), les deux combattants sont côte à côte à l'écran.
 const VITRINE_MANNEQUIN: [number, number] = [46, -46];
@@ -134,6 +139,8 @@ class Session {
     avoid: { active: boolean; dodged: boolean; hit: boolean };
     hintT: number;
     vide: boolean; // étape « souffle » : la barre a été vidée, on attend qu'elle remonte
+    suite: number; // étape réussie, la suivante attend (ms restantes) : on laisse le mannequin tomber à l'eau
+    sorti: boolean; // pendant cette attente : le mannequin est tombé
   } | null = null;
   hooks: Hooks = {};
 
@@ -379,6 +386,8 @@ class Session {
       avoid: { active: false, dodged: false, hit: false },
       hintT: 0,
       vide: false,
+      suite: 0,
+      sorti: false,
     };
     this.begin();
     this.setupStep();
@@ -473,6 +482,7 @@ class Session {
     if (st.qi != null) me.qi = st.qi;
     T.count = 0;
     T.vide = false;
+    T.suite = 0;
     if (st.kind === 'souffle') me.souffle = 3;
     T.avoid = { active: false, dodged: false, hit: false };
     this.hooks.onTuto?.(st, T.i, T.steps.length, 0);
@@ -485,8 +495,14 @@ class Session {
     this.hooks.onTuto?.(st, T.i, T.steps.length, T.count);
     if (T.count < st.goal) return;
     if (T.i + 1 < T.steps.length) {
-      T.i++;
       this.fx.push({ t: 'big', text: 'BIEN !', col: '#62c2a2', life: 900 });
+      // paume du dragon : on ne coupe pas l'éjection, l'étape suivante commence quand le mannequin réapparaît
+      if (st.kind === 'dragon') {
+        T.suite = SUITE_MAX;
+        T.sorti = false;
+        return;
+      }
+      T.i++;
       this.setupStep();
     } else {
       T.done = true;
@@ -500,12 +516,18 @@ class Session {
   tutoSkipStep() {
     const T = this.tuto;
     if (!T || T.done) return;
+    if (T.suite > 0) {
+      T.suite = 0;
+      T.i++;
+      this.setupStep();
+      return;
+    }
     T.count = T.steps[T.i].goal - 1;
     this.tutoCount();
   }
   private tutoEvent(e: Ev) {
     const T = this.tuto;
-    if (!T || T.done) return;
+    if (!T || T.done || T.suite > 0) return;
     const k = T.steps[T.i].kind;
     if (e.t === 'hit' && e.by === 0 && e.to === 1) {
       if (
@@ -541,6 +563,22 @@ class Session {
       respawn(sim, me, st.me ? st.me[0] : -110, st.me ? st.me[1] : 0);
       me.dropT = 0;
       me.spawnInv = 600;
+    }
+    if (T.suite > 0) {
+      // étape déjà réussie : le mannequin vole, tombe à l'eau, puis l'étape suivante le fait réapparaître.
+      // S'il est resté sur le dojo, on n'attend pas plus que le temps de le voir se relever.
+      T.suite -= dt * 1000;
+      if (foe.state === 'dead' && !T.sorti) {
+        T.sorti = true;
+        T.suite = Math.min(T.suite, SUITE_PLOUF);
+      }
+      const reste = !T.sorti && foe.state === 'idle' && T.suite < SUITE_MAX - SUITE_DEBOUT;
+      if (T.suite <= 0 || reste) {
+        T.suite = 0;
+        T.i++;
+        this.setupStep();
+      }
+      return;
     }
     if (foe.state === 'dead') {
       const p = st.foe || [80, 0];

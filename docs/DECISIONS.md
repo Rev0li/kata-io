@@ -47,6 +47,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
  
 1. Le souffle se régénère **à pleine vitesse seulement quand on avance** vers l'adversaire ou qu'on agit. **Intégré** (`regenIdle` 0,55 au repos ou en reculant).
 2. Le bonus d'équilibre ne se gagne qu'en esquivant une **attaque réelle**. **Intégré** (esquive parfaite uniquement).
+   Une esquive est « parfaite » quand le coup aurait touché **là d'où elle est partie** (ou touche le combattant pendant qu'il esquive) : elle rend alors le segment de souffle dépensé. Avant le 2026-11-11, seule la position en cours comptait : esquiver en reculant sortait de la portée avant l'impact et ne rendait jamais rien.
 3. Une **parade réussie** fait récupérer du souffle. **Intégré** (+0,5 segment, +1 pour une parade parfaite).
 4. **Mort subite** après **25 s** : le dojo rétrécit. **Intégré** (était 40 s).
 5. Coup **chargé** coûteux en souffle et très puissant. **Déjà dans le jeu.**
