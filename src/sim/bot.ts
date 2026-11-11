@@ -1,9 +1,9 @@
 // Adversaires pilotés par la simulation : bot d'entraînement (et gardiens de la Tour), mannequin du tutoriel.
-import { RAD, RULES } from './data';
+import { RAD, RULES, CHARGE_START, CHARGE_FULL } from './data';
 import { attaque } from './styles';
 import { lerp, angDiff, alive, rnd, rand, pick, fx } from './core';
 import type { Fighter, Sim } from './core';
-import { doAction, climb, startWhite, nextWhite } from './actions';
+import { doAction, climb, startWhite, startCharge, nextWhite } from './actions';
 
 export function newBrain(skill: number, dummy = false) {
   return {
@@ -263,11 +263,23 @@ function dummyUpdate(S: Sim, e: Fighter, dt: number) {
       b.cd = 1700;
     }
   }
+  // coups chargés : il s'approche, charge à fond (annonce rouge au sol), puis relâche
+  if (b.mode === 'red') {
+    if (e.state === 'idle') {
+      if (dist > 78) e.move = { x: (dx / dist) * 0.55, y: (dy / dist) * 0.55 };
+      else if (b.cd <= 0) {
+        startCharge(S, e);
+        e.holding = true;
+        b.cd = 2600;
+      }
+    } else if (e.state === 'charge' && e.chargeT >= CHARGE_FULL - CHARGE_START) e.holding = false; // relâche : le coup part
+  }
 }
 export function setDummy(st: Sim, idx: number, mode: string, ax = 0, ay = 0) {
   const e = st.f[idx];
   if (e && e.bot) {
     e.bot.mode = mode;
+    e.holding = false;
     e.bot.ax = ax;
     e.bot.ay = ay;
     e.bot.cd = 900;

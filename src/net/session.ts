@@ -125,6 +125,7 @@ class Session {
     endT: number;
     avoid: { active: boolean; dodged: boolean; hit: boolean };
     hintT: number;
+    vide: boolean; // étape « souffle » : la barre a été vidée, on attend qu'elle remonte
   } | null = null;
   hooks: Hooks = {};
 
@@ -355,6 +356,7 @@ class Session {
       endT: 0,
       avoid: { active: false, dodged: false, hit: false },
       hintT: 0,
+      vide: false,
     };
     this.begin();
     this.setupStep();
@@ -442,6 +444,8 @@ class Session {
     me.pct = 0;
     if (st.qi != null) me.qi = st.qi;
     T.count = 0;
+    T.vide = false;
+    if (st.kind === 'souffle') me.souffle = 3;
     T.avoid = { active: false, dodged: false, hit: false };
     this.hooks.onTuto?.(st, T.i, T.steps.length, 0);
   }
@@ -463,6 +467,13 @@ class Session {
       this.fx.push({ t: 'sfx', n: 'gong', x: 0, y: 0, v: 0.8 });
       this.hooks.onTuto?.(null, T.i, T.steps.length, T.count);
     }
+  }
+  // « Étape suivante » : l'étape en cours est comptée comme réussie (personne ne reste bloqué sur un geste difficile).
+  tutoSkipStep() {
+    const T = this.tuto;
+    if (!T || T.done) return;
+    T.count = T.steps[T.i].goal - 1;
+    this.tutoCount();
   }
   private tutoEvent(e: Ev) {
     const T = this.tuto;
@@ -514,6 +525,11 @@ class Session {
     if (alive(me)) me.pct = Math.min(me.pct, 40);
     if (st.kind === 'move' && st.marker && Math.hypot(me.x - st.marker.x, me.y - st.marker.y) < st.marker.r)
       this.tutoCount();
+    // souffle : vidé (épuisé, sous un segment), puis remonté à la moitié
+    if (st.kind === 'souffle') {
+      if (me.souffle < 1) T.vide = true;
+      else if (T.vide && me.souffle >= 1.5) this.tutoCount();
+    }
     if (st.kind === 'avoid') {
       const A = T.avoid,
         attacking = foe.state === 'attack';

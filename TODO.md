@@ -39,14 +39,18 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 
 - [x] Un seul défi : montée de la Tour depuis l'étage 1 jusqu'à la défaite, classement par pseudo (`api/classement.js`).
 - [x] Tout débloqué dès le départ, tutoriel facultatif ; défi du jour, duel et boutique grisés « Bientôt ».
-- [ ] Brancher la base Upstash Redis sur Vercel (à faire par l'utilisateur).
+- [x] Brancher la base Upstash Redis sur Vercel (fait le 2026-11-06, classement ouvert).
 - [ ] Contrôle anti-triche souple pour l'instant (8 s par étage au moins). Vraie validation prévue : la simulation est à graine (phase 0), donc le jeu peut envoyer la graine et les entrées de chaque combat, et le serveur rejoue la montée avec `src/sim` pour vérifier le résultat au lieu de croire le score envoyé.
 - [x] Prototype énergie et lisibilité : frapper et parer coûtent du souffle (l'anti-spam n'agit plus), souffle et qi sous son combattant, pourcentages cachés pour les deux, remplacés par trois paliers visibles (sueur, rouge et vapeur, chancelle). À régler en jouant.
 - [x] Prototype d'éjection en l'air (D15) : vol avec ombre, moins de freinage en l'air, plouf loin, « étoile » pour les plus gros coups, un seul rattrapage au bord par manche et jamais après une projection.
 - [x] Styles de combat (D16) : arme fondue dans le personnage, 4 styles (jeu de coups et profil), gardiens au style de leur personnage.
 - [x] Accueil simplifié : Jouer (avec ton record), ton combattant (choisir son personnage remplace le vestiaire), Tutoriel et Entraînement, top 10 en cascade, défi du jour et duel grisés en bas ; mode test caché en production (visible en développement, avec ?debug ou ?test).
 - [x] Fluidité : Entrée lance Jouer depuis l'accueil ; Recommencer et l'étage suivant partent sans compte à rebours (« COMBAT ! » en une demi-seconde).
-- [ ] Après les premiers retours : faut-il un temps limite, des étages plus courts au début, un classement de la semaine ?
+- [x] Trois vies par montée (2026-11-11) : une défaite coûte une vie, on retente l'étage (`src/ui/montee.ts`).
+- [x] Tutoriel complet (2026-11-11) : dix étapes, toutes les techniques, « Étape suivante » (`TUTO_COMPLET`).
+- [x] Zoom et textes du combat selon la taille de l'écran (D17), accueil affiché sans attendre Phaser (D18).
+- [ ] À valider en jouant : trois vies (en regagner une tous les cinq étages ?), tutoriel complet (longueur, étape « élan »), zoom sur grand écran.
+- [ ] Après les premiers retours : faut-il un temps limite, un classement de la semaine ?
 
 ## Phase 2b : assets remplaçables (après le retest)
 
@@ -65,11 +69,11 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 
 - [x] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).
 - [x] **Bug** : après une déconnexion, les dernières entrées de l'invité restent appliquées côté hôte (`lost()` dans `src/net/session.ts`).
-- [ ] Masquer le **mode test** en production (visible avec `?debug` ou en développement seulement).
+- [x] Masquer le **mode test** en production (visible avec `?debug`, `?test` ou en développement seulement).
 - [ ] `/api/e` : limiter la taille des propriétés et le nombre d'événements.
 - [ ] Tests unitaires : progression et XP, `sanitizeLook`, chargement du profil, compactage des entrées et des instantanés réseau, règles de combat (épuisé, parade, anti-spam).
 - [ ] Typage : interfaces `Fighter` et `Sim` (aujourd'hui `any`), puis `strict` activé fichier par fichier.
-- [ ] CI GitHub Actions : typecheck et tests sur chaque PR.
+- [x] CI GitHub Actions : format, types, tests, `npm run sim` et build sur chaque PR (`.github/workflows/ci.yml`).
 - [ ] Mettre à jour vite (8.3.4 → 8.3.5).
 
 ## Phase 4 : connexion
@@ -92,7 +96,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 
 ## Phase 5 : gameplay et refonte V1
 
-- [ ] Équilibrage de la Tour (`npx tsx scripts/towercheck.ts 0.45`) : l'étage 2 (47 %) est plus dur que les étages 3 à 6, les étages 9 à 12 sont à 10 % ou moins, l'étage 5 dure 131 s.
+- [ ] Équilibrage de la Tour (`npm run tour`, mesure du 2026-11-11 en manche unique, joueur simulé 0,45) : étages 1 à 4 autour de 90 %, l'étage 7 (35 %) est plus dur que les étages 8 à 10 (50 à 58 %), les étages 13 et 14 tombent à 10 % puis les suivants remontent à 30 %.
 - [ ] Trancher les questions ouvertes de DECISIONS : bonus d'équilibre (D2), affichage de son propre état (D3), indicateur de spam (D9), option « effets réduits » (D4), stockage des mesures (D12).
 - [ ] **Mondes** (remplacent les six dojos, voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md) section 5) : décor plein écran en isométrique trois quarts, premier plan en parallaxe, plateforme en pièces détachables. **Jouables en entraînement et en duel depuis le 2026-10-24** (cerisiers, bambous, temple enneigé, forge), avec des éléments provisoires découpés dans les planches (`public/assets/mondes/`). Restent : images définitives, plateforme en pièces, plouf adapté à la glace et à la lave. Définir le format des images (WebP, dimensions) et mettre à jour D11 (qui fixe aujourd'hui le décor en SVG).
 - [ ] **Tour par mondes** : cerisiers (étages 1 à 3), bambous (4 à 6), neige (7 à 9), forge (10 à 12), puis les quatre mondes en boucle dans la tour sans fin.

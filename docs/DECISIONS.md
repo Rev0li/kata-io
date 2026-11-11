@@ -106,6 +106,13 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Les gardiens** de la Tour jouent le style de leur personnage. L'onglet Arme du vestiaire est masqué ; chaque fiche indique le style.
 - **Garde-fou (D8) :** mesure de la Tour en manche unique pour chaque style, aucun ne doit être injouable. Les sprites n'ont que 7 poses : les styles se distinguent par le rythme, la portée, la force et l'arme dessinée.
 
+## D17. Zoom et textes selon l'écran (2026-11-11)
+- **Problème :** le zoom de la caméra était plafonné à 1,5. Au-delà d'un écran de portable, la plateforme n'occupait plus qu'un tiers de l'image, les combattants étaient petits et les textes en combat (12 à 14 px) illisibles.
+- **Décision :** la plateforme occupe la même part de l'écran du téléphone au grand écran : plafond du zoom porté à 2,6 (`ZOOM_MAX` dans `src/scenes/GameScene.ts`), textes du combat sur ordinateur multipliés par un facteur de 1 à 1,7 selon la taille de la fenêtre (`HudScene.layout`). Rien ne change sur téléphone ni sur un écran de 1366 × 768. **Statut : codé, à valider sur un vrai grand écran.**
+
+## D18. Accueil sans attendre le jeu (2026-11-11)
+- **Décision :** l'accueil (HTML) s'affiche avec un fichier léger ; Phaser et le rendu se chargent à part (`src/jeu.ts`). Le premier fichier passe d'environ 440 ko à 60 ko compressés. Une partie lancée avant la fin du chargement attend sous le voile de démarrage. **Statut : codé.**
+
 ## D15. Éjection en l'air (prototype du 2026-11-06)
 - **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
 - **Prototype :** un coup au-delà de `TUMBLE_V` **soulève** le combattant (hauteur `z`, gravité, ombre au sol) ; il freine **moins en l'air** (`airDamp` 0,6), et rien ne se décide tant qu'il vole : s'il atterrit dans l'eau, c'est plouf, loin du bord. Au-delà de `starV` il part dans le ciel (**« ÉTOILE ! »**). **Rattrapage au bord** : jamais après une projection, et une fois par manche. Réglages : `LAUNCH` dans `src/sim/data.ts`.
@@ -113,7 +120,9 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 
 ## D14. Version minimale : la montée de la Tour et son classement
 - **Question :** que sortir en premier, sans connexion entre joueurs ni comptes ?
-- **Décision (2026-11-06) :** un seul défi, **monter la Tour le plus haut possible** en une montée (de l'étage 1 jusqu'à la première défaite, ou « M'arrêter là »), **une seule manche par étage**, puis inscrire son **pseudo** au classement. **Statut : codé** (`MINI` dans `src/ui/edition.ts`).
+- **Décision (2026-11-06) :** un seul défi, **monter la Tour le plus haut possible** en une montée (de l'étage 1 jusqu'à la dernière vie, ou « M'arrêter là »), **une seule manche par étage**, puis inscrire son **pseudo** au classement. **Statut : codé** (`MINI` dans `src/ui/edition.ts`).
+- **Trois vies (2026-11-11) :** une défaite coûte une vie et on retente le même étage ; la troisième arrête la montée (`VIES` dans `src/ui/montee.ts`). Le temps des combats perdus compte dans le temps total. **Pourquoi :** en manche unique sans vie, la mesure donnait 3,3 étages à un joueur simulé faible et 5,4 à un fort : la chance d'une manche écrasait l'écart de niveau et une montée durait une minute. Avec trois vies : 5,8 et 8,4 étages (`npm run tour`). **À valider en jouant :** faut-il regagner une vie de temps en temps (tous les cinq étages ?), l'étage 7 (35 % pour un joueur moyen) est plus dur que les étages 8 à 10, et les étages 13 et 14 font mur (autour de 10 %).
+- **Tutoriel complet (2026-11-11) :** toujours facultatif, mais il montre toutes les techniques puisque tout est débloqué (`TUTO_COMPLET` dans `src/game/tutorial.ts`, dix étapes, « Étape suivante » pour passer un geste difficile). L'ancien tutoriel court (`MINI_TUTO`) et les exercices par ceinture restent pour la progression complète.
 - **Mis de côté** (code gardé, boutons grisés « Bientôt ») : défi du jour, duel entre amis, boutique d'effets et pièces.
 - **Retirés :** ceintures, XP et déblocages ; toutes les techniques, combattants et armes dès le départ. Tutoriel facultatif.
 - **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; Redis Upstash via Vercel (`api/classement.js`). Le combat tournant chez le joueur, la triche reste possible : on refuse l'impossible (moins de 8 s par étage) et on nettoie à la main. Les comptes de D13 reprendront cet identifiant (invité silencieux).

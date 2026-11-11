@@ -1,5 +1,5 @@
 // Vue isométrique 2:1 : le monde de la simulation (x, y) est projeté sur l'écran, les sprites restent debout.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 
 export const ISO = 0.6;
 export const RX = Math.SQRT2 * ISO; // demi-axe horizontal d'un cercle de rayon 1 une fois projeté (la hauteur vaut la moitié)

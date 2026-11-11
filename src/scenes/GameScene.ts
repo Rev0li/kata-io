@@ -11,6 +11,9 @@ import { preloadAssets, setupAssets } from '../game/assets';
 import { viewState } from '../ui/viewstate';
 import { bootProgres, bootScenePrete } from '../ui/boot';
 
+const ZOOM_MIN = 0.8,
+  ZOOM_MAX = 2.6;
+
 // Scène de combat : avance la partie, applique les effets et suit le joueur avec la caméra.
 export class GameScene extends Phaser.Scene {
   r!: Renderer;
@@ -137,7 +140,9 @@ export class GameScene extends Phaser.Scene {
     this.lastW = W;
     this.lastH = H;
     this.lastShop = viewState.shop;
-    let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), 0.8, 1.5);
+    // le zoom suit la taille de l'écran : la plateforme occupe la même part de l'image du téléphone au grand écran
+    // (jusqu'en 2026-11, plafonné à 1,5 : au-delà d'un écran de portable, les combattants devenaient minuscules)
+    let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), ZOOM_MIN, ZOOM_MAX);
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
     // vitrine du vestiaire : gros plan sur les deux combattants, dans la place laissée par le panneau
