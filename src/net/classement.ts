@@ -5,7 +5,8 @@
 //   définie (ex. /api/jeu)  serveur de jeu (server/, D19) : le classement est vérifié. Avant une montée, le jeu
 //                           demande une graine (ticket) ; à la fin, il envoie ses combats enregistrés et le serveur
 //                           les rejoue. Sans ticket (serveur injoignable au départ), la montée n'est pas classée.
-//   absente                 ancienne fonction Vercel /api/classement : le score envoyé est cru sur parole.
+//   absente                 pas de classement (l'ancienne fonction Vercel /api/classement n'existe plus) :
+//                           développement local sans serveur de jeu. Pour l'avoir : npm run serveur et VITE_API_JEU.
 import { aid } from '../analytics';
 import type { Combat } from '../sim/rejeu';
 

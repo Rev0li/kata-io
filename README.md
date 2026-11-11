@@ -209,7 +209,7 @@ Le jeu explique ce qui arrive, sans tutoriel supplémentaire : indice la premiè
 
 ## Mesures de jeu
 
-`src/analytics.ts` envoie des événements anonymes (identifiant aléatoire local, pas de donnée personnelle) à `/api/e`, une fonction Vercel (`api/e.js`) qui les écrit en JSON dans les journaux Vercel (`k:"kata_e"`). Désactivé en local (sauf `?analytics`) et si le navigateur demande « ne pas suivre ». `VITE_ANALYTICS_URL` remplace l'adresse de réception.
+`src/analytics.ts` envoie des événements anonymes (identifiant aléatoire local, pas de donnée personnelle) au serveur de jeu (`/api/jeu/e`), qui les garde 180 jours dans sa base (table `evenements`, voir [docs/BACKEND.md](docs/BACKEND.md)). Désactivé en local (sauf `?analytics`) et si le navigateur demande « ne pas suivre ». `VITE_ANALYTICS_URL` remplace l'adresse de réception.
 
 | Événement | Contenu |
 |---|---|
@@ -241,7 +241,7 @@ Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écr
 2. Vercel détecte Vite : commande `npm run build`, dossier `dist` (déjà fixés dans `vercel.json`). Cliquer sur **Deploy**.
 3. Chaque push sur `main` redéploie la production ; chaque branche ou pull request obtient une adresse de prévisualisation.
 
-Classement de la montée, version actuelle en ligne (`api/classement.js`, remplacée par le serveur de jeu dès qu'il est déployé, voir [docs/BACKEND.md](docs/BACKEND.md)) : ajouter une base **Upstash Redis** depuis l'onglet *Storage* (ou *Marketplace*) du projet Vercel et la relier au projet ; Vercel crée lui-même les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN`. Sans elles, le jeu marche et le classement affiche « pas encore ouvert ».
+Classement de la montée : tenu par le serveur de jeu du VPS, qui rejoue chaque montée avant de l'inscrire (voir [docs/BACKEND.md](docs/BACKEND.md)). Vercel lui relaie `/api/jeu` (`vercel.json`) et le build de production le vise par `.env.production` (`VITE_API_JEU`). Si le serveur est injoignable, le jeu marche et la montée n'est pas classée.
 
 ## Limites de cette version
 

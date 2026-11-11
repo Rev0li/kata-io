@@ -89,7 +89,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D12. Mesures de jeu (analytics)
 - **Décision :** mesures anonymes (identifiant aléatoire local, aucune donnée personnelle), respect de « ne pas suivre ». **Statut : DÉCIDÉ, intégré.**
 - **Événements :** `page_view`, `play_clicked`, `tutorial_started`, `tutorial_completed`, `match_started`, `match_ended` (avec coups, parades, esquives, spam déclenché et bloqué, coups reçus en étant épuisé, éjections), `match_abandoned` (où le joueur quitte), `rematch_clicked`, `invite_opened`, `disconnect`, `error`.
-- **Réception :** fonction Vercel `api/e.js` qui écrit chaque événement dans les journaux Vercel. **Décidé le 2026-11-11 :** les mesures vont dans la base du serveur de jeu (table `evenements`, gardée 180 jours, D19) dès qu'il est déployé ; `api/e.js` disparaît alors.
+- **Réception :** fonction Vercel `api/e.js` qui écrit chaque événement dans les journaux Vercel. **Décidé le 2026-11-11 :** les mesures vont dans la base du serveur de jeu (table `evenements`, gardée 180 jours, D19) ; en place depuis le 2026-11-11, `api/e.js` est supprimé.
 - **Questions auxquelles les mesures répondent :** où les joueurs quittent (`match_abandoned`), combien relancent une revanche (`rematch_clicked` / `match_ended`), si l'anti-spam se déclenche trop (`spam` et `spamBlock` par partie).
  
 ---
@@ -134,7 +134,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Tutoriel complet (2026-11-11) :** toujours facultatif, mais il montre toutes les techniques puisque tout est débloqué (`TUTO_COMPLET` dans `src/game/tutorial.ts`, dix étapes, « Étape suivante » pour passer un geste difficile). L'ancien tutoriel court (`MINI_TUTO`) et les exercices par ceinture restent pour la progression complète.
 - **Mis de côté** (code gardé, boutons grisés « Bientôt ») : défi du jour, duel entre amis, boutique d'effets et pièces.
 - **Retirés :** ceintures, XP et déblocages ; toutes les techniques, combattants et armes dès le départ. Tutoriel facultatif.
-- **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; Redis Upstash via Vercel (`api/classement.js`), remplacé par le serveur de jeu de D19 dès qu'il est déployé. Le combat tournant chez le joueur, la triche reste possible : on refuse l'impossible (moins de 8 s par étage) et on nettoie à la main. Les comptes de D13 reprendront cet identifiant (invité silencieux).
+- **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; d'abord dans Redis Upstash via Vercel, puis, depuis le 2026-11-11, dans le serveur de jeu de D19, qui rejoue chaque montée avant de l'inscrire. Les comptes de D13 reprendront cet identifiant (invité silencieux).
 - **Pourquoi pas pseudo + mot de passe :** plus de travail (mots de passe, sessions, pseudos uniques), mot de passe oublié = compte perdu sans e-mail, et n'empêche pas la triche.
 
 ## Ordre de production retenu
