@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/jeu/:chemin*",
+      "destination": "https://kata.rev0li.duckdns.org/api/jeu/:chemin*"
+    }
+  ]
 }
