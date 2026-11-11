@@ -152,6 +152,11 @@ export function shopAction() {
   else sfx('ui');
   profile.look = { ...profile.look, [tab]: sel };
   save();
+  // version minimale : choisir son combattant, c'est fini, on retourne à l'accueil
+  if (MINI && tab === 'perso') {
+    closeShop();
+    return;
+  }
   renderShop();
   preview(sel);
 }

@@ -73,7 +73,8 @@ export class GameScene extends Phaser.Scene {
     }
     if ((m === 'host' || m === 'guest') && isDojo(session.theme)) return session.theme;
     if (m === 'tuto') return 'coucher';
-    if (m === 'idle' || m === 'showcase')
+    // salon d'un duel : la salle est ouverte mais le combat n'a pas commencé, on montre le dojo choisi
+    if (m === 'idle' || m === 'showcase' || !session.state)
       return viewState.dojo && isDojo(viewState.dojo) ? viewState.dojo : viewState.world;
     if (m === 'practice') return viewState.world;
     return 'brume';
