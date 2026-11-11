@@ -2,7 +2,7 @@
 import { DOJOS } from '../sim/data';
 import { FULL_ABIL } from '../sim/progression';
 import { session } from '../net/session';
-import { hostRoom, joinRoom, cleanCode, NetKind, HostHandle } from '../net/transport';
+import { hostRoom, joinRoom, serveurOuvrir, duelServeur, cleanCode, NetKind, HostHandle, Conn } from '../net/transport';
 import { setLocks } from './actionbar';
 import { viewState } from './viewstate';
 import { track } from '../analytics';
@@ -12,11 +12,16 @@ import { nav, show } from './nav';
 import { myName, mySpec, goHome } from './home';
 
 const params = new URLSearchParams(location.search);
-export const net: NetKind = params.get('net') === 'local' ? 'local' : 'peer';
+// Duel arbitré par le serveur de jeu dès que le build le connaît ; ?net=local (deux onglets) et ?net=peer
+// (ancien pair à pair) restent pour les essais.
+const voulu = params.get('net');
+export const net: NetKind = voulu === 'local' ? 'local' : voulu === 'peer' ? 'peer' : duelServeur ? 'serveur' : 'peer';
+export const duelOuvert = net === 'serveur';
 // Code de salle reçu dans le lien d'invitation (?salle=…), ou ''.
 export const inviteCode = cleanCode(params.get('salle') || '');
 
 let host: HostHandle | null = null;
+let salle: Conn | null = null; // duel par le serveur : connexion du créateur, pour lui dire le dojo choisi
 let lobbyDojo = 'alea'; // dojo choisi dans le salon : un nom de DOJOS, ou 'alea' (tiré au sort au début du duel)
 
 function renderDojoChips() {
@@ -31,6 +36,7 @@ function renderDojoChips() {
     b.addEventListener('click', () => {
       lobbyDojo = id;
       viewState.dojo = id === 'alea' ? null : id;
+      salle?.send({ t: 'theme', v: viewState.dojo });
       renderDojoChips();
       sfx('ui');
     });
@@ -60,6 +66,8 @@ export function closeHost() {
     host.close();
     host = null;
   }
+  salle = null;
+  viewState.dojo = null;
 }
 
 export async function createRoom() {
@@ -76,16 +84,29 @@ export async function createRoom() {
   $('#lobbyStatus').textContent = 'Création de la salle…';
   $('#lobbyWait').hidden = true;
   try {
-    host = await hostRoom(
-      net,
-      conn => {
-        nav.lastMode = { kind: 'duel' };
-        setLocks(FULL_ABIL);
-        session.startHost(conn, mySpec(FULL_ABIL), pickDojo());
-        viewState.dojo = null;
-      },
-      err => toast(err),
-    );
+    if (net === 'serveur') {
+      // la salle vit sur le serveur : on y est déjà connecté, le combat commence quand l'adversaire arrive
+      const r = await serveurOuvrir();
+      if (nav.current !== 'lobby') {
+        r.conn.close(); // annulé pendant la création
+        return;
+      }
+      host = { code: r.code, close: () => {} };
+      salle = r.conn;
+      nav.lastMode = { kind: 'duel' };
+      setLocks(FULL_ABIL);
+      session.startGuest(r.conn, mySpec(FULL_ABIL));
+    } else
+      host = await hostRoom(
+        net,
+        conn => {
+          nav.lastMode = { kind: 'duel' };
+          setLocks(FULL_ABIL);
+          session.startHost(conn, mySpec(FULL_ABIL), pickDojo());
+          viewState.dojo = null;
+        },
+        err => toast(err),
+      );
     revealCode(host.code);
     ($('#lobbyLink') as HTMLInputElement).value = inviteLink(host.code);
     $('#lobbyStatus').textContent = 'En attente de ton adversaire. Envoie-lui le lien.';

@@ -2,8 +2,10 @@
 // - practice : combat local contre un bot, sans réseau
 // - tower    : un étage de la Tour du temple (local)
 // - tuto     : tutoriel ou exercice contre le mannequin (local)
-// - host     : ce navigateur fait tourner la simulation et envoie des instantanés à l'invité (30 par seconde)
-// - guest    : ce navigateur envoie ses entrées et affiche les instantanés reçus
+// - host     : ce navigateur fait tourner la simulation et envoie des instantanés à l'invité (30 par seconde) ;
+//              ancien duel pair à pair seulement
+// - guest    : ce navigateur envoie ses entrées et affiche les instantanés reçus. Duel arbitré par le serveur
+//              (server/duel.ts) : les DEUX joueurs sont invités, le serveur leur dit leur place (welcome.moi)
 import {
   createSim,
   stepSim,
@@ -668,6 +670,7 @@ class Session {
     if (!m || typeof m !== 'object') return;
     switch (m.t) {
       case 'welcome':
+        if (m.moi === 0 || m.moi === 1) this.myIdx = m.moi; // duel arbitré par le serveur : il attribue les places
         this.theme = isDojo(m.theme) ? m.theme : null;
         this.specs = (m.specs || []).map((s: any) => ({
           name: String(s.name || '').slice(0, 16),

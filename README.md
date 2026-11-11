@@ -2,11 +2,11 @@
 
 Duel de kung-fu en 1 contre 1, sur invitation. On frappe, on pare, on esquive, et on envoie son adversaire dans le lac qui entoure le dojo. Premier à 3 éjections.
 
-Version de développement : Phaser 4, TypeScript et Vite, avec une connexion pair à pair (WebRTC via PeerJS). Le site est entièrement statique et se déploie tel quel sur Vercel.
+Version de développement : Phaser 4, TypeScript et Vite. Le jeu est un site statique servi par Vercel ; le classement et les duels passent par un serveur de jeu sur un VPS ([docs/BACKEND.md](docs/BACKEND.md)).
 
 ## Version minimale (en ligne)
 
-Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1 avec **trois vies**, on enchaîne les gardiens, une manche chacun : une défaite coûte une vie et on retente le même étage, la dernière vie perdue (ou « M'arrêter là ») termine la montée, puis on inscrit son pseudo au **classement** (étages gravis, puis temps total, défaites comprises). Toutes les techniques, combattants et armes sont disponibles dès le départ ; le **tutoriel**, facultatif, les montre toutes en dix étapes (déplacement, coups, enchaînement, souffle, parade, esquive du coup rouge, coup chargé, élan, paume du dragon, éjection), avec « Étape suivante » pour ne rester bloqué sur aucune. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
+Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1 avec **trois vies**, on enchaîne les gardiens, une manche chacun : une défaite coûte une vie et on retente le même étage, la dernière vie perdue (ou « M'arrêter là ») termine la montée, puis on inscrit son pseudo au **classement** (étages gravis, puis temps total, défaites comprises). Toutes les techniques, combattants et armes sont disponibles dès le départ ; le **tutoriel**, facultatif, les montre toutes en dix étapes (déplacement, coups, enchaînement, souffle, parade, esquive du coup rouge, coup chargé, élan, paume du dragon, éjection), avec « Étape suivante » pour ne rester bloqué sur aucune. Le **duel entre amis** (un code, un lien) est arbitré par le serveur de jeu. Le défi du jour et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
 
 ## Progression
 
@@ -107,7 +107,7 @@ npm run serveur    # serveur de jeu local (classement vérifié), voir docs/BACK
 
 **Chargement en deux temps** : l'accueil est en HTML et s'affiche avec un premier fichier léger (environ 60 ko compressés). Le jeu Phaser (`src/jeu.ts`, environ 380 ko compressés) se charge à part, en parallèle. Si une partie est lancée avant la fin de ce chargement, le voile de démarrage revient jusqu'à la première image (`attendreJeu` dans `src/ui/boot.ts`). Règle à garder : rien de ce que `src/main.ts` importe directement ne doit importer Phaser, `src/scenes/` ou `src/game/render/` (sauf `render/iso.ts`, qui n'en a que les types).
 
-**Tester un duel seul sur sa machine** : ouvrir `http://localhost:5173/?net=local`, créer un duel, puis ouvrir le lien d'invitation dans un deuxième onglet du même navigateur. Les deux onglets communiquent par `BroadcastChannel`, sans passer par Internet.
+**Tester un duel seul sur sa machine** : lancer `npm run serveur` et `VITE_API_JEU=/api/jeu npm run dev` (ou, sans serveur, ouvrir `http://localhost:5173/?net=local`), créer un duel, puis ouvrir le lien d'invitation dans un deuxième onglet du même navigateur. Les deux onglets communiquent par `BroadcastChannel`, sans passer par Internet.
 
 **Débogage** : ajouter `?debug` à l'adresse expose `window.__kata` (`game`, `session`) dans la console, y compris sur le build de production.
 
@@ -131,7 +131,7 @@ src/
     update.ts          avancée d'un combattant d'un pas, collisions
     bot.ts             bot d'entraînement et mannequin
     snapshot.ts        instantanés réseau et miroir de l'invité
-  net/transport.ts     connexion PeerJS (production) ou BroadcastChannel (?net=local)
+  net/transport.ts     duel : WebSocket vers le serveur de jeu ; PeerJS (?net=peer) ou BroadcastChannel (?net=local)
   net/session.ts       modes entraînement / Tour / tutoriel / hôte / invité, revanche, ping
   game/assets.ts       chargement des sprites et du décor SVG
   game/render/         rendu Phaser en vue isométrique 2:1 (index.ts : le Renderer)
@@ -173,7 +173,7 @@ scripts/build-decor-svg.py génère le décor vectoriel (horizons, poissons, flo
 archive/               assets retirés du jeu, gardés pour plus tard (non déployés)
 ```
 
-**Modèle réseau** : le joueur qui crée la salle est l'**hôte**. Son navigateur fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. L'**invité** envoie ses entrées (déplacement, visée, boutons) et reçoit 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : c'est le module qui passera tel quel sur un serveur dédié.
+**Modèle réseau** : la salle vit sur le **serveur de jeu** (`server/duel.ts`), qui fait tourner la simulation à 60 pas par seconde et arbitre chaque coup. Les deux joueurs envoient leurs entrées (déplacement, visée, boutons) et reçoivent 30 instantanés par seconde avec les événements à afficher (impacts, sons, textes). La simulation (`src/sim`) ne dépend ni de Phaser ni du DOM : le serveur utilise le même module que le jeu. Avec `?net=peer`, l'ancien mode pair à pair : le créateur de la salle est l'hôte et son navigateur arbitre.
 
 Messages échangés :
 

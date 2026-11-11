@@ -2,7 +2,7 @@
   "name": "kata-io",
   "private": true,
   "version": "0.1.0",
-  "description": "Kata.io — duel de kung-fu en 1 contre 1 sur invitation (Phaser + PeerJS)",
+  "description": "Kata.io — duel de kung-fu en 1 contre 1 (Phaser, serveur de jeu Node)",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -23,11 +23,13 @@
   "dependencies": {
     "peerjs": "1.5.5",
     "pg": "8.23.1",
-    "phaser": "4.2.1"
+    "phaser": "4.2.1",
+    "ws": "8.22.2"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@types/pg": "8.23.1",
+    "@types/ws": "8.18.2",
     "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

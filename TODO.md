@@ -94,14 +94,17 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] Serveur redéployé automatiquement à chaque fusion qui touche `src/sim` ou `server/` (`server/deploiement.sh`, cron du VPS, 2026-11-11).
 - [x] Typage strict de `src/sim` et `server/` (2026-11-11).
 
-Étape 2 : comptes (phase 4b ci-dessous). Étape 3 : duels en salles autoritaires (remplace le serveur TURN et PeerJS de la phase 4).
+Étape 2 : comptes (phase 4b ci-dessous).
+
+- [x] Étape 3, duel entre amis arbitré par le serveur (2026-11-12) : salles en WebSocket sur le VPS (`server/duel.ts`), les deux joueurs envoient leurs entrées et reçoivent des instantanés ; bouton Duel rouvert. Voir [docs/BACKEND.md](docs/BACKEND.md).
+- [ ] Duel : à jouer à deux sur deux machines (délai ressenti, téléphone), puis prédiction locale si besoin.
 
 ## Phase 4 : connexion
 
 - [ ] Serveur **TURN** (relais quand la connexion directe est bloquée : 4G, wifi d'entreprise) : coturn sur le VPS ou service loué.
-- [ ] Serveur de mise en relation PeerJS à nous, à la place de `0.peerjs.com`.
+- [x] ~~Serveur de mise en relation PeerJS à nous~~ : sans objet, le duel passe par le serveur de jeu.
 - [ ] Reconnexion après une coupure courte au lieu de terminer le duel.
-- [ ] **Partie publique** (bouton « Bientôt » de l'accueil) : affronter un joueur au hasard sans code. Sans serveur : le premier qui cherche ouvre une salle PeerJS à un nom connu de tous, le suivant la rejoint. À tester à deux sur deux machines.
+- [ ] **Partie publique** (bouton « Bientôt » de l'accueil) : affronter un joueur au hasard sans code. File d'attente sur le serveur de jeu, après les comptes.
 - [ ] Plus tard : serveur autoritaire (réutilise `src/sim`) et prédiction chez le client. Hors Vercel (pas de WebSocket).
 
 ## Phase 4b : comptes joueurs (voir [docs/COMPTES.md](docs/COMPTES.md))
