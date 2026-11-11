@@ -7,6 +7,7 @@
 //   POST /api/jeu/classement  { id, pseudo, montee, combats }
 //   POST /api/jeu/e           { m, e }   mesures de jeu anonymes
 //   WS   /api/jeu/duel[?salle=CODE]      duel entre amis arbitré ici (duel.ts) : sans code, ouvre une salle
+//   /api/jeu/duel/ouvrir, flux, dire     le même duel sans WebSocket, pour les navigateurs qui le bloquent (duel-http.ts)
 //
 // Variables : PORT (8787), la base par DATABASE_URL ou PGHOST, PGUSER, PGPASSWORD, PGDATABASE (sans base : tout
 // en mémoire, pour le développement),
@@ -17,6 +18,7 @@ import { setImmediate as prochainTour } from 'node:timers/promises';
 import pg from 'pg';
 import { WebSocketServer } from 'ws';
 import { Duels } from './duel';
+import { duelHttp } from './duel-http';
 import { baseMemoire, basePostgres } from './base';
 import type { Base } from './base';
 import { ouvrirMontee, envoyerMontee, lireClassement, noterEvenements, MONTEE_MAX_MS } from './classement';
@@ -123,7 +125,19 @@ async function demarrer() {
   menage();
   setInterval(menage, 6 * 3600_000).unref();
 
+  const duels = new Duels(Date.now, journal),
+    secours = duelHttp(duels, journal); // duel sans WebSocket (duel-http.ts)
   const serveur = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    // le duel en HTTP a ses propres limites (par joueur) : il ne passe pas par celle des adresses, que tous les
+    // joueurs en connexion directe partagent
+    try {
+      if (await secours(req, res, new URL(req.url || '/', 'http://x'))) return;
+    } catch (e: any) {
+      journal('erreur duel', { erreur: String(e && e.stack ? e.stack : e) });
+      if (!res.headersSent) res.writeHead(500);
+      res.end();
+      return;
+    }
     const origine = req.headers.origin;
     if (origine && ORIGINES.includes(origine)) {
       res.setHeader('access-control-allow-origin', origine);
@@ -156,8 +170,7 @@ async function demarrer() {
     else res.writeHead(rep[0], { 'content-type': 'application/json; charset=utf-8' }).end(JSON.stringify(rep[1]));
   });
   // Duels : le WebSocket partage le port du serveur HTTP.
-  const duels = new Duels(Date.now, journal),
-    wss = new WebSocketServer({ noServer: true, maxPayload: DUEL_MESSAGE_MAX });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: DUEL_MESSAGE_MAX });
   serveur.on('upgrade', (req, socket, tete) => {
     const url = new URL(req.url || '/', 'http://x');
     if (url.pathname.replace(/\/+$/, '') !== '/api/jeu/duel' || !salles('tous')) {

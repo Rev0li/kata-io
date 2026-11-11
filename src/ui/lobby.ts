@@ -2,7 +2,17 @@
 import { DOJOS } from '../sim/data';
 import { FULL_ABIL } from '../sim/progression';
 import { session } from '../net/session';
-import { hostRoom, joinRoom, serveurOuvrir, duelServeur, cleanCode, NetKind, HostHandle, Conn } from '../net/transport';
+import {
+  hostRoom,
+  joinRoom,
+  serveurOuvrir,
+  forcerHttp,
+  duelServeur,
+  cleanCode,
+  NetKind,
+  HostHandle,
+  Conn,
+} from '../net/transport';
 import { setLocks } from './actionbar';
 import { viewState } from './viewstate';
 import { track } from '../analytics';
@@ -13,10 +23,11 @@ import { myName, mySpec, goHome } from './home';
 
 const params = new URLSearchParams(location.search);
 // Duel arbitré par le serveur de jeu dès que le build le connaît ; ?net=local (deux onglets) et ?net=peer
-// (ancien pair à pair) restent pour les essais.
+// (ancien pair à pair) restent pour les essais, ainsi que ?net=http (duel par le serveur, sans WebSocket).
 const voulu = params.get('net');
 export const net: NetKind = voulu === 'local' ? 'local' : voulu === 'peer' ? 'peer' : duelServeur ? 'serveur' : 'peer';
 export const duelOuvert = net === 'serveur';
+if (voulu === 'http') forcerHttp();
 // Code de salle reçu dans le lien d'invitation (?salle=…), ou ''.
 export const inviteCode = cleanCode(params.get('salle') || '');
 

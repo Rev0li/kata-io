@@ -74,6 +74,8 @@ Limites :
 - L'adresse des joueurs n'arrive pas jusqu'au serveur en connexion directe (le bloc Caddy la recopie d'un en-tête que seul Vercel remplit) : la limite de connexions au duel est donc globale (240 par minute), pas par joueur.
 - `?net=peer` rejoue l'ancien pair à pair, `?net=local` relie deux onglets sans réseau.
 
+**Voie de secours sans WebSocket** (`server/duel-http.ts`). Brave, et sans doute d'autres bloqueurs, coupent un WebSocket ouvert vers un autre domaine que celui de la page (constaté le 2026-11-12 : refus en quelques millisecondes depuis `kata-io.vercel.app`, alors qu'un Chromium nu passe). Les requêtes ordinaires, elles, passent. Le jeu essaie donc le WebSocket puis, s'il ne s'ouvre pas, joue le même duel en HTTP : le serveur parle par un flux d'événements (`EventSource`), le jeu répond par de petites requêtes, une à la fois. Mêmes salles : un joueur en WebSocket peut affronter un joueur en HTTP. `?net=http` force cette voie pour l'essayer. Un vrai domaine commun au jeu et au serveur rendrait ce détour inutile.
+
 ## L'API
 
 Tout est sous `/api/jeu`. Réponses en JSON ; une erreur porte un champ `erreur`, en français, affiché tel quel au joueur.
@@ -86,6 +88,9 @@ Tout est sous `/api/jeu`. Réponses en JSON ; une erreur porte un champ `erreur`
 | `POST /api/jeu/classement` | `{ id, pseudo, montee, combats }` | le classement, plus `record`, `etages`, `secondes` |
 | `POST /api/jeu/e` | `{ m, e }` (mesures de jeu, D12) | 204 |
 | `WS /api/jeu/duel` | `?salle=CODE` pour rejoindre, rien pour créer | messages du duel (`server/duel.ts`) |
+| `POST /api/jeu/duel/ouvrir` | `{ salle? }` | `{ jeton, m }` : duel sans WebSocket |
+| `GET /api/jeu/duel/flux?j=jeton` | | flux d'événements : les messages du duel |
+| `POST /api/jeu/duel/dire?j=jeton` | tableau de messages | 204 |
 
 Limites : 600 ko par requête, 120 requêtes par minute et par adresse, 20 montées ouvertes et 6 envoyées par minute et par joueur.
 
@@ -98,10 +103,11 @@ server/
   base.ts         stockage : PostgreSQL en production, mémoire pour les tests et le développement
   version.ts      empreinte de src/sim
   duel.ts         salles de duel : la simulation tourne ici (le WebSocket est branché dans index.ts)
+  duel-http.ts    le même duel sans WebSocket (flux d'événements et requêtes), pour les navigateurs qui le bloquent
   Dockerfile, compose.yml, .env.example
 src/sim/rejeu.ts  enregistrement, rejeu d'un combat, vérification d'une montée (partagé par le jeu et le serveur)
 src/sim/dmath.ts  fonctions mathématiques reproductibles
-tests/serveur.test.ts, tests/duel.test.ts, tests/rejeu.test.ts, tests/dmath.test.ts
+tests/serveur.test.ts, tests/duel.test.ts, tests/duel-http.test.ts, tests/rejeu.test.ts, tests/dmath.test.ts
 ```
 
 Tables (créées au démarrage) : `montees` (ouvertes puis closes, avec leur résultat), `records` (la meilleure montée de chaque joueur), `evenements` (mesures de jeu, gardées 180 jours).

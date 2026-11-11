@@ -218,8 +218,11 @@ const WS_DUEL =
   (API.startsWith('/') ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + API + '/duel' : '');
 export const duelServeur = !!WS_DUEL;
 
+// Refus du serveur (salle introuvable, complète) : à montrer tel quel, inutile d'essayer l'autre voie.
+class Refus extends Error {}
+
 // Ouvre le WebSocket et attend le premier message : « salle » (créateur), « ok » (invité) ou « refus ».
-function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
+function ouvrirWs(code: string | null): Promise<{ code: string; conn: Conn }> {
   return new Promise((resolve, reject) => {
     let ws: WebSocket;
     try {
@@ -232,7 +235,7 @@ function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
       ferme = false,
       msgCb: ((m: any) => void) | null = null,
       closeCb: (() => void) | null = null;
-    const echec = (m: string) => {
+    const echec = (m: string, refus = false) => {
       if (pret || ferme) return;
       ferme = true;
       clearTimeout(delai);
@@ -241,7 +244,7 @@ function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
       } catch {
         /* déjà fermé */
       }
-      reject(new Error(m));
+      reject(refus ? new Refus(m) : new Error(m));
     };
     const delai = setTimeout(() => echec('Le serveur de duel ne répond pas. Réessaie dans un instant.'), 10000);
     const conn: Conn = {
@@ -270,7 +273,7 @@ function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
         msgCb && msgCb(m);
         return;
       }
-      if (m && m.t === 'refus') echec(String(m.msg || 'Salle refusée.'));
+      if (m && m.t === 'refus') echec(String(m.msg || 'Salle refusée.'), true);
       else if (m && (m.t === 'salle' || m.t === 'ok')) {
         pret = true;
         clearTimeout(delai);
@@ -286,6 +289,103 @@ function ouvrir(code: string | null): Promise<{ code: string; conn: Conn }> {
       }
     };
   });
+}
+
+/* ---------- serveur de jeu, sans WebSocket ---------- */
+// Voie de secours (server/duel-http.ts) : Brave et certains bloqueurs coupent les WebSocket vers un autre domaine
+// que celui de la page, alors que les requêtes ordinaires passent. Le serveur envoie par un flux d'événements
+// (EventSource), le jeu répond par de petites requêtes POST, une à la fois : ce qui s'accumule pendant un envoi
+// part dans le suivant, et seules les dernières entrées du joueur sont gardées.
+const HTTP_DUEL = WS_DUEL.replace(/^ws/, 'http');
+async function ouvrirHttp(code: string | null): Promise<{ code: string; conn: Conn }> {
+  const injoignable = 'Serveur de duel injoignable. Réessaie dans un instant.';
+  let d: any;
+  try {
+    // corps en texte simple : pas de requête préalable du navigateur (CORS)
+    const r = await fetch(HTTP_DUEL + '/ouvrir', { method: 'POST', body: JSON.stringify({ salle: code || '' }) });
+    d = await r.json();
+  } catch {
+    throw new Error(injoignable);
+  }
+  const premiers: any[] = Array.isArray(d && d.m) ? d.m : [],
+    refus = premiers.find(m => m && m.t === 'refus'),
+    salle = premiers.find(m => m && m.t === 'salle');
+  if (refus) throw new Refus(String(refus.msg || 'Salle refusée.'));
+  if (!d || typeof d.jeton !== 'string') throw new Error(injoignable);
+  const jeton = encodeURIComponent(d.jeton);
+  let ferme = false,
+    enVol = false,
+    file: any[] = [],
+    msgCb: ((m: any) => void) | null = null,
+    closeCb: (() => void) | null = null;
+  const es = new EventSource(HTTP_DUEL + '/flux?j=' + jeton);
+  const fin = () => {
+    if (ferme) return;
+    ferme = true;
+    es.close();
+    closeCb && closeCb();
+  };
+  es.onmessage = ev => {
+    if (ferme) return;
+    try {
+      const m = JSON.parse(ev.data);
+      msgCb && msgCb(m);
+    } catch {
+      /* message illisible : ignoré */
+    }
+  };
+  es.addEventListener('fin', fin);
+  es.onerror = fin; // le serveur a déjà libéré la salle : inutile de laisser le navigateur se reconnecter
+  const vider = async () => {
+    if (enVol || ferme || !file.length) return;
+    enVol = true;
+    const lot = file.splice(0, 20);
+    try {
+      await fetch(HTTP_DUEL + '/dire?j=' + jeton, { method: 'POST', body: JSON.stringify(lot) });
+    } catch {
+      /* perdu : les entrées suivantes le remplacent */
+    }
+    enVol = false;
+    vider();
+  };
+  const conn: Conn = {
+    send: m => {
+      if (ferme) return;
+      const i = m && m.t === 'in' ? file.findIndex(x => x.t === 'in') : -1;
+      if (i >= 0) file[i] = m;
+      else file.push(m);
+      vider();
+    },
+    onMessage: cb => {
+      msgCb = cb;
+    },
+    onClose: cb => {
+      closeCb = cb;
+    },
+    close: () => {
+      ferme = true;
+      es.close();
+    },
+  };
+  return { code: salle ? String(salle.code) : code || '', conn };
+}
+
+// WebSocket d'abord ; s'il ne s'ouvre pas, la voie HTTP, que l'on garde ensuite pour toute la visite.
+let sansWs = false;
+// ?net=http : essayer la voie de secours sans attendre un blocage.
+export const forcerHttp = () => {
+  sansWs = true;
+};
+async function ouvrir(code: string | null) {
+  if (!sansWs)
+    try {
+      return await ouvrirWs(code);
+    } catch (e) {
+      if (e instanceof Refus) throw e;
+    }
+  const r = await ouvrirHttp(code);
+  sansWs = true;
+  return r;
 }
 // Salle sur le serveur : le créateur est connecté dès l'ouverture, et sera prévenu (welcome) quand l'autre arrive.
 export const serveurOuvrir = () => ouvrir(null);
