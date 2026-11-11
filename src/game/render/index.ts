@@ -5,7 +5,7 @@
 //   iso.ts       projection isométrique et formes posées au sol
 //   palette.ts   couleurs, polices, outils
 //   themes.ts    ambiances des dojos et vie de chaque dojo
-//   arena.ts     plateforme du dojo et lanternes
+//   arena.ts     plateforme du dojo
 //   lake.ts      poissons, objets flottants, ronds dans l'eau, reflets, particules d'ambiance
 //   effects.ts   étincelles, anneaux, lignes de vitesse, sprites d'impact, ploufs, textes flottants
 //   fighters.ts  combattants, armes, annonce du coup chargé, éclat du coup entrant, traînées, emotes
@@ -222,24 +222,22 @@ export class Renderer {
     this.lake.update(dt, time, view);
     this.fx.update(dt);
 
-    // eau : ronds, reflets, lanternes du fond
+    // eau : ronds, reflets
     const w = this.waterG;
     w.clear();
     this.world.drawLive(w, time);
     this.lake.drawWater(w, time);
     this.world.update(this.scene.cameras.main);
-    this.arena.drawLamp(w, 0, time);
 
     const g = this.dynG;
     g.clear();
     const tg = this.trailG;
     tg.clear();
     this.lastSt = st;
-    // premier plan : anneaux, lanterne de devant, lignes de vitesse, particules, ambiance
+    // premier plan : anneaux, lignes de vitesse, particules, ambiance
     const t = this.topG;
     t.clear();
     this.fx.drawRings(t);
-    this.arena.drawLamp(t, 1, time);
     this.fx.drawLines(t);
     this.fx.drawParts(t);
     this.lake.drawAmbient(t, view, time, dt);

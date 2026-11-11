@@ -1,4 +1,5 @@
-// Plateforme du dojo, dessinée en code (elle rétrécit en mort subite), et lanternes sur pied aux angles.
+// Plateforme du dojo, dessinée en code (elle rétrécit en mort subite). Les lanternes sur pied des angles ont été
+// retirées le 2026-11-12 : elles gênaient la lecture du bord.
 import Phaser from 'phaser';
 import { lerp } from '../../sim/sim';
 import { isoX, isoY, iso } from './iso';
@@ -105,41 +106,5 @@ export class Arena {
     g.lineBetween(o[1].x, o[1].y, o[1].x, o[1].y + TH);
     g.lineBetween(o[3].x, o[3].y + TH, o[2].x, o[2].y + TH);
     g.lineBetween(o[2].x, o[2].y + TH, o[1].x, o[1].y + TH);
-  }
-
-  // Lanterne sur pied aux angles du dojo ; flickering léger. back = angles du fond (sous le dojo), front = angle du bas.
-  drawLamp(g: Phaser.GameObjects.Graphics, front: number, time = performance.now()) {
-    const T = THEMES[this.r.theme];
-    if (!T.lamp) return;
-    const fl = 0.85 + 0.15 * Math.sin(time * 0.004),
-      d = this.r.H + 40;
-    const corners: [number, number][] = front
-      ? [[1, 1]]
-      : [
-          [-1, -1],
-          [1, -1],
-          [-1, 1],
-        ];
-    for (const [sx, sy] of corners) {
-      const p = iso(sx * d, sy * d);
-      for (const [w, a] of [
-        [70, 0.05],
-        [46, 0.07],
-        [28, 0.1],
-      ]) {
-        g.fillStyle(T.glow || 0xffd88a, a * fl);
-        g.fillEllipse(p.x, p.y - 63, w, w * 0.9);
-      }
-      g.fillStyle(0x2a1c10, 1);
-      g.fillRect(p.x - 2, p.y - 54, 4, 56);
-      g.fillRect(p.x - 12, p.y - 1, 24, 4);
-      g.fillRect(p.x - 3, p.y - 6, 6, 6);
-      g.fillStyle(T.out, 1);
-      g.fillRoundedRect(p.x - 9, p.y - 76, 18, 26, 5);
-      g.fillStyle(T.lamp!, 0.95 * fl);
-      g.fillRoundedRect(p.x - 7, p.y - 74, 14, 22, 4);
-      g.fillStyle(0xffffff, 0.35 * fl);
-      g.fillRect(p.x - 4, p.y - 71, 3, 14);
-    }
   }
 }

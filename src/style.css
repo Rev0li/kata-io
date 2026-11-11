@@ -3110,7 +3110,15 @@ body:not(.mini) .onlymini {
     animation: none;
   }
 }
-/* à venir : petits boutons grisés, tout en bas */
+/* Duel : sous Jouer, aussi large, moins haut */
+.mside.mwide {
+  justify-content: center;
+  padding: 9px 14px;
+}
+.mside.mwide span {
+  flex: 0 1 auto;
+}
+/* tout en bas : tutoriel et entraînement, en petit */
 .msoon {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
