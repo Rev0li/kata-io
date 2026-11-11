@@ -96,9 +96,12 @@ npm run sim        # duels bot contre bot dans le terminal, pour vérifier l'éq
 npm run tour       # montée de la Tour par un joueur simulé (taux de victoire par étage, étages gravis)
 npm test           # tests Vitest (simulation, vies de la montée, mannequin, classement)
 npm run format     # Prettier
+npm run serveur    # serveur de jeu local (classement vérifié), voir docs/BACKEND.md
 ```
 
 **Tests de non-régression** : `tests/sim.golden.test.ts` joue des matchs à graine fixe (`createSim(specs, { seed })`) et compare leur résumé à `tests/__snapshots__/`. Si un réglage de `RULES` change volontairement le combat, accepter les nouveaux résumés avec `npm test -- -u`. Sinon, un échec signale une régression.
+
+**Serveur de jeu** : le classement vérifié par rejeu des combats et les mesures de jeu vivent dans `server/` (Node et PostgreSQL, à déployer sur le VPS). Le jeu ne l'utilise que si `VITE_API_JEU` est définie au build : `npm run serveur` dans un terminal, `VITE_API_JEU=/api/jeu npm run dev` dans l'autre. Principe, API et déploiement : [docs/BACKEND.md](docs/BACKEND.md). Règle à garder : dans `src/sim`, pas d'appel direct à `Math.sin`, `cos`, `atan2`, `exp` ni `hypot` (utiliser `dmath.ts`), sinon le serveur ne retrouve plus les combats joués sur un autre navigateur.
 
 **Intégration continue** : `.github/workflows/ci.yml` lance format, types, tests, `npm run sim` et le build sur chaque pull request et sur `main`. Chaque push sur `main` part en production : on passe toujours par une branche et une PR verte.
 
@@ -117,6 +120,8 @@ src/
   sim/                 simulation du duel, sans Phaser ni DOM (passera telle quelle sur un serveur)
     sim.ts             point d'entrée : createSim, stepSim, API publique
     data.ts            réglages (RULES), gardes, coups, apparences (aucune dépendance)
+    dmath.ts           sin, cos, atan2, exp, hypot identiques sur toutes les machines
+    rejeu.ts           enregistrement des entrées d'un combat, rejeu, vérification d'une montée
     progression.ts     ceintures, techniques débloquées, étages de la Tour, étoiles, XP
     core.ts            types, outils, hasard à graine, événements
     fighter.ts         création et remise en place d'un combattant
@@ -158,7 +163,8 @@ src/
     actionbar.ts       barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
     controls.ts        clavier et commandes tactiles
     viewstate.ts       état partagé entre l'interface et la scène
-tests/                 tests Vitest (simulation, vies, mannequin du tutoriel, classement)
+server/                serveur de jeu : classement vérifié, mesures (docs/BACKEND.md)
+tests/                 tests Vitest (simulation, rejeu, serveur, vies, mannequin du tutoriel, classement)
 scripts/simcheck.ts    duels bot contre bot dans le terminal
 scripts/towercheck.ts  équilibrage de la montée de la Tour (npm run tour)
 .github/workflows/     intégration continue
@@ -235,7 +241,7 @@ Décision : sur téléphone, le jeu se joue **en paysage**. En portrait, un écr
 2. Vercel détecte Vite : commande `npm run build`, dossier `dist` (déjà fixés dans `vercel.json`). Cliquer sur **Deploy**.
 3. Chaque push sur `main` redéploie la production ; chaque branche ou pull request obtient une adresse de prévisualisation.
 
-Classement de la montée (`api/classement.js`) : ajouter une base **Upstash Redis** depuis l'onglet *Storage* (ou *Marketplace*) du projet Vercel et la relier au projet ; Vercel crée lui-même les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN`. Sans elles, le jeu marche et le classement affiche « pas encore ouvert ».
+Classement de la montée, version actuelle en ligne (`api/classement.js`, remplacée par le serveur de jeu dès qu'il est déployé, voir [docs/BACKEND.md](docs/BACKEND.md)) : ajouter une base **Upstash Redis** depuis l'onglet *Storage* (ou *Marketplace*) du projet Vercel et la relier au projet ; Vercel crée lui-même les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN`. Sans elles, le jeu marche et le classement affiche « pas encore ouvert ».
 
 ## Limites de cette version
 
@@ -247,7 +253,7 @@ Classement de la montée (`api/classement.js`) : ajouter une base **Upstash Redi
 
 ## Prochaines étapes
 
-1. Serveur de salle autoritaire (Node.js, par exemple Colyseus) qui réutilise `src/sim` tel quel, hébergé hors de Vercel (Fly.io, Railway ou un VPS), car Vercel ne garde pas de connexion WebSocket ouverte.
+1. Déployer le serveur de jeu sur le VPS (classement vérifié), puis y ajouter les comptes et les salles de duel autoritaires (Colyseus) qui réutilisent `src/sim` tel quel : [docs/BACKEND.md](docs/BACKEND.md).
 2. Prédiction des déplacements et du départ des coups chez le client, avec un rembobinage de 150 ms côté serveur pour juger parades et esquives.
 3. Comptes et sauvegarde en ligne (aujourd'hui la progression est dans le navigateur), classement du défi du jour.
 4. Arène à plusieurs, repris du prototype.

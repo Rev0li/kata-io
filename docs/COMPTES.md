@@ -60,7 +60,8 @@ Le profil actuel (`src/ui/profile.ts`), à l'identique : nom, apparence, XP, ét
 navigateur ── kata.rev0li.duckdns.org ──► Caddy (VPS)
                                             ├── /            jeu (fichiers construits par Vite)
                                             └── /api/compte  service comptes : BetterAuth + PostgreSQL
-                                                             (plus tard /api/jeu : serveur de salle, phase 4)
+                                                             /api/jeu : serveur de jeu (classement vérifié, D19 ;
+                                                             les comptes s'y ajoutent, voir BACKEND.md)
 ```
 
 - **BetterAuth** (connu grâce à rev0auth), avec le plugin des **comptes invités** (anonymous) et les fournisseurs **Google** et **Discord**.

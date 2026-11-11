@@ -10,7 +10,11 @@ services:
     restart: unless-stopped
     environment:
       PORT: 8787
-      DATABASE_URL: postgres://kata:${POSTGRES_PASSWORD:?mot de passe manquant dans server/.env}@base:5432/kata
+      # connexion à la base : variables standard de PostgreSQL, lues par le serveur
+      PGHOST: base
+      PGUSER: kata
+      PGDATABASE: kata
+      PGPASSWORD: ${POSTGRES_PASSWORD:?mot de passe manquant dans server/.env}
       KATA_ORIGINES: ${KATA_ORIGINES:-}
     ports:
       - '127.0.0.1:8787:8787' # joignable par Caddy seulement, jamais directement depuis Internet
