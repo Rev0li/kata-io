@@ -5,7 +5,7 @@
 //   Entraînement  monde et niveau du bot
 //   Duel          duel privé (code), partie publique (verrouillée jusqu'à la fin de la Tour)
 // Les paramètres (commandes, son, plein écran, mode test) s'ouvrent par la roue en haut à droite.
-import { PERSOS, ARMES, MONDES, LEVELS } from '../sim/data';
+import { PERSOS, ARMES, DOJOS, LEVELS } from '../sim/data';
 import {
   RANKS,
   rankProgress,
@@ -45,13 +45,6 @@ export const SCROLLS: Record<string, string> = {
   elan: 'scroll-thunder',
   dragon: 'scroll-fire',
 };
-// Vignette de chaque monde dans le choix de l'entraînement : un élément du décor sur les couleurs du monde.
-const WORLD_TILE: Record<string, [string, string, string]> = {
-  cerisiers: ['cerisiers/cerisier-rose', '#7ea35a', '#4fb3c2'],
-  bambous: ['bambous/pagode-3-etages', '#5f7f44', '#3f9c94'],
-  enneige: ['neige/torii-enneige-a', '#e9f1f5', '#9ed6dc'],
-  forge: ['forge/tour-a', '#2b1713', '#e2561f'],
-};
 
 /* ---------- retour à l'accueil ---------- */
 export function goHome() {
@@ -65,16 +58,14 @@ export function goHome() {
 export function setupTraining() {
   const wp = $('#worldPick');
   wp.innerHTML = '';
-  for (const [id, name] of MONDES) {
-    const [img, ground, pond] = WORLD_TILE[id];
+  // les six dojos, les mêmes que dans la Tour et en duel ; vignette : l'horizon du dojo
+  for (const [id, name] of DOJOS) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'wtile';
     b.dataset.world = id;
     b.setAttribute('role', 'radio');
-    b.style.setProperty('--g', ground);
-    b.style.setProperty('--p', pond);
-    b.innerHTML = `<img src="/assets/mondes/${img}.png" alt="" /><span>${name}</span>`;
+    b.innerHTML = `<img src="/assets/decor/bg-${id}.svg" alt="" /><span>${name}</span>`;
     b.addEventListener('click', () => {
       viewState.world = id; // le décor derrière l'accueil change aussitôt
       renderTraining();

@@ -110,6 +110,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D17. Zoom et textes selon l'écran (2026-11-11)
 - **Problème :** le zoom de la caméra était plafonné à 1,5. Au-delà d'un écran de portable, la plateforme n'occupait plus qu'un tiers de l'image, les combattants étaient petits et les textes en combat (12 à 14 px) illisibles.
 - **Décision :** la plateforme occupe la même part de l'écran du téléphone au grand écran : plafond du zoom porté à 2,6 (`ZOOM_MAX` dans `src/scenes/GameScene.ts`), textes du combat sur ordinateur multipliés par un facteur de 1 à 1,7 selon la taille de la fenêtre (`HudScene.layout`). Rien ne change sur téléphone ni sur un écran de 1366 × 768. **Statut : codé, à valider sur un vrai grand écran.**
+- **Ajusté le 2026-11-12 :** sur ordinateur on ne voyait plus que la plateforme. Au-delà du zoom d'un téléphone couché (`ZOOM_RECUL`, 1,2), le zoom ne monte plus qu'à 60 % : environ 15 % de recul sur un écran de portable, 20 % sur un grand écran. Téléphone inchangé.
 
 ## D18. Accueil sans attendre le jeu (2026-11-11)
 - **Décision :** l'accueil (HTML) s'affiche avec un fichier léger ; Phaser et le rendu se chargent à part (`src/jeu.ts`). Le premier fichier passe d'environ 440 ko à 60 ko compressés. Une partie lancée avant la fin du chargement attend sous le voile de démarrage. **Statut : codé.**

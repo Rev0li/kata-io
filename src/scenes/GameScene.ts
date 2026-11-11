@@ -12,7 +12,8 @@ import { viewState } from '../ui/viewstate';
 import { bootProgres, bootScenePrete } from '../ui/boot';
 
 const ZOOM_MIN = 0.8,
-  ZOOM_MAX = 2.6;
+  ZOOM_MAX = 2.6,
+  ZOOM_RECUL = 1.2; // zoom d'un téléphone couché : en dessous, rien ne change
 
 // Scène de combat : avance la partie, applique les effets et suit le joueur avec la caméra.
 export class GameScene extends Phaser.Scene {
@@ -143,6 +144,9 @@ export class GameScene extends Phaser.Scene {
     // le zoom suit la taille de l'écran : la plateforme occupe la même part de l'image du téléphone au grand écran
     // (jusqu'en 2026-11, plafonné à 1,5 : au-delà d'un écran de portable, les combattants devenaient minuscules)
     let z = clamp(Math.max(Math.min(W, H) / 470, Math.sqrt(W * H) / 700), ZOOM_MIN, ZOOM_MAX);
+    // grand écran : on prend du recul pour voir le décor autour de la plateforme (au-delà de ZOOM_RECUL, le zoom
+    // ne monte plus qu'à 60 %). Téléphone : inchangé.
+    if (z > ZOOM_RECUL) z = ZOOM_RECUL + (z - ZOOM_RECUL) * 0.6;
     if (!st) z *= 0.85;
     if (WORLDS[this.r.theme]) z *= 0.82; // mondes : un peu plus de recul pour voir le décor autour de l'étang
     // vitrine du vestiaire : gros plan sur les deux combattants, dans la place laissée par le panneau

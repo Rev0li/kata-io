@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { session } from '../net/session';
 import { heatCss } from '../game/render';
 import { controls } from '../ui/controls';
-import { FIRST_TO, LEVELS, ATTACK_BY_ID, RULES, MONDES } from '../sim/data';
+import { FIRST_TO, LEVELS, ATTACK_BY_ID, RULES, DOJOS } from '../sim/data';
 import { viewState } from '../ui/viewstate';
 import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
@@ -249,7 +249,7 @@ export class HudScene extends Phaser.Scene {
     const cadre = tuto
       ? 'Tutoriel'
       : session.mode === 'practice'
-        ? `Entraînement · ${LEVELS[session.level].name} · ${(MONDES.find(m => m[0] === viewState.world) || MONDES[0])[1]}`
+        ? `Entraînement · ${LEVELS[session.level].name} · ${(DOJOS.find(m => m[0] === viewState.world) || DOJOS[0])[1]}`
         : session.mode === 'tower'
           ? ''
           : session.ping >= 0
