@@ -227,7 +227,7 @@ function startDodge(S: Sim, e: Fighter, dir: any) {
   e.souffle -= 1;
   e.state = 'dodge';
   e.stateT = 0;
-  e.dodge = { dx, dy, done: 0 };
+  e.dodge = { dx, dy, done: 0, ox: e.x, oy: e.y }; // ox, oy : d'où part l'esquive (voir checkHits)
   e.atk = null;
   e.holding = false;
   e.chargeT = 0;

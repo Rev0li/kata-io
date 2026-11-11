@@ -11,6 +11,16 @@ function addQi(e: Fighter, n: number) {
   if (e.abil.dragon) e.qi = Math.min(100, e.qi + n);
 }
 
+// Le point (x, y) est-il dans la zone du coup en cours de e (portée et arc) ?
+function dansLeCoup(e: Fighter, x: number, y: number) {
+  const d = e.atk.def,
+    dx = x - e.x,
+    dy = y - e.y,
+    dist = DM.hypot(dx, dy);
+  if (dist > d.rg + R * 0.7) return false;
+  if (d.arc >= 360) return true;
+  return Math.abs(angDiff(e.facing, DM.atan2(dy, dx))) <= (d.arc * RAD) / 2 + DM.atan2(R, Math.max(dist, 1));
+}
 export function checkHits(S: Sim, e: Fighter) {
   const a = e.atk,
     d = a.def;
@@ -23,14 +33,12 @@ export function checkHits(S: Sim, e: Fighter) {
     a.hit.clear();
     fx.sfx(S, 'whoosh', e.x, e.y, 0.5);
   }
-  const ar = (d.arc * RAD) / 2;
   for (const o of S.f) {
     if (o === e || !alive(o) || a.hit.has(o.id)) continue;
-    const dx = o.x - e.x,
-      dy = o.y - e.y,
-      dist = DM.hypot(dx, dy);
-    if (dist > d.rg + R * 0.7) continue;
-    if (d.arc < 360 && Math.abs(angDiff(e.facing, DM.atan2(dy, dx))) > ar + DM.atan2(R, Math.max(dist, 1))) continue;
+    // Esquive : le coup compte aussi s'il aurait touché là d'où l'esquive est partie.
+    // Sans cela, esquiver en reculant sort de la portée avant l'impact et ne rend jamais le souffle.
+    const esquive = o.state === 'dodge' && o.dodge && o.stateT >= DODGE_IF0 && o.stateT <= DODGE_IF1;
+    if (!dansLeCoup(e, o.x, o.y) && !(esquive && dansLeCoup(e, o.dodge.ox, o.dodge.oy))) continue;
     resolveHit(S, e, o);
     if (e.state !== 'attack') return;
   }
