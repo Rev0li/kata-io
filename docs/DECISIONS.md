@@ -88,7 +88,7 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D12. Mesures de jeu (analytics)
 - **Décision :** mesures anonymes (identifiant aléatoire local, aucune donnée personnelle), respect de « ne pas suivre ». **Statut : DÉCIDÉ, intégré.**
 - **Événements :** `page_view`, `play_clicked`, `tutorial_started`, `tutorial_completed`, `match_started`, `match_ended` (avec coups, parades, esquives, spam déclenché et bloqué, coups reçus en étant épuisé, éjections), `match_abandoned` (où le joueur quitte), `rematch_clicked`, `invite_opened`, `disconnect`, `error`.
-- **Réception :** fonction Vercel `api/e.js` qui écrit chaque événement dans les journaux Vercel. **OUVERT :** où stocker pour analyser dans la durée (journaux Vercel limités dans le temps ; options : Log Drain, base Vercel KV, PostHog).
+- **Réception :** fonction Vercel `api/e.js` qui écrit chaque événement dans les journaux Vercel. **Décidé le 2026-11-11 :** les mesures vont dans la base du serveur de jeu (table `evenements`, gardée 180 jours, D19) dès qu'il est déployé ; `api/e.js` disparaît alors.
 - **Questions auxquelles les mesures répondent :** où les joueurs quittent (`match_abandoned`), combien relancent une revanche (`rematch_clicked` / `match_ended`), si l'anti-spam se déclenche trop (`spam` et `spamBlock` par partie).
  
 ---
@@ -113,6 +113,14 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D18. Accueil sans attendre le jeu (2026-11-11)
 - **Décision :** l'accueil (HTML) s'affiche avec un fichier léger ; Phaser et le rendu se chargent à part (`src/jeu.ts`). Le premier fichier passe d'environ 440 ko à 60 ko compressés. Une partie lancée avant la fin du chargement attend sous le voile de démarrage. **Statut : codé.**
 
+## D19. Backend : un service sur le VPS, classement vérifié par rejeu (2026-11-11)
+- **Question :** comment avoir un classement auquel on peut croire, puis des comptes et des duels fiables ?
+- **Décision :** un seul service Node sur le VPS, derrière Caddy, avec PostgreSQL, en trois étapes : (1) classement vérifié et mesures de jeu, (2) comptes (D13), (3) duels en salles autoritaires. Vercel continue de servir le jeu et relaie `/api/jeu` vers le VPS. Upstash disparaît à la bascule. Détails : [BACKEND.md](BACKEND.md).
+- **Étape 1 : codée, pas encore déployée.** Le serveur donne la graine de la montée, le jeu enregistre les entrées de chaque combat, le serveur rejoue la montée avec `src/sim` et inscrit le résultat qu'il trouve. Le jeu n'utilise ce serveur que si `VITE_API_JEU` est définie au build ; sinon l'ancien classement continue.
+- **Conséquence pour la simulation :** elle doit donner le même résultat au bit près sur toutes les machines. Les fonctions mathématiques qui varient d'un navigateur à l'autre sont remplacées par `src/sim/dmath.ts` (un test l'impose), et le jeu et le serveur doivent avoir la même version de `src/sim` (empreinte comparée avant d'ouvrir une montée). Équilibrage inchangé (`npm run tour` donne les mêmes valeurs).
+- **Limite assumée :** le rejeu prouve qu'une montée est possible avec ces entrées, pas qu'un humain les a jouées.
+- **À valider :** une montée jouée sur iPhone (Safari) acceptée par le serveur.
+
 ## D15. Éjection en l'air (prototype du 2026-11-06)
 - **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
 - **Prototype :** un coup au-delà de `TUMBLE_V` **soulève** le combattant (hauteur `z`, gravité, ombre au sol) ; il freine **moins en l'air** (`airDamp` 0,6), et rien ne se décide tant qu'il vole : s'il atterrit dans l'eau, c'est plouf, loin du bord. Au-delà de `starV` il part dans le ciel (**« ÉTOILE ! »**). **Rattrapage au bord** : jamais après une projection, et une fois par manche. Réglages : `LAUNCH` dans `src/sim/data.ts`.
@@ -121,11 +129,11 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 ## D14. Version minimale : la montée de la Tour et son classement
 - **Question :** que sortir en premier, sans connexion entre joueurs ni comptes ?
 - **Décision (2026-11-06) :** un seul défi, **monter la Tour le plus haut possible** en une montée (de l'étage 1 jusqu'à la dernière vie, ou « M'arrêter là »), **une seule manche par étage**, puis inscrire son **pseudo** au classement. **Statut : codé** (`MINI` dans `src/ui/edition.ts`).
-- **Trois vies (2026-11-11) :** une défaite coûte une vie et on retente le même étage ; la troisième arrête la montée (`VIES` dans `src/ui/montee.ts`). Le temps des combats perdus compte dans le temps total. **Pourquoi :** en manche unique sans vie, la mesure donnait 3,3 étages à un joueur simulé faible et 5,4 à un fort : la chance d'une manche écrasait l'écart de niveau et une montée durait une minute. Avec trois vies : 5,8 et 8,4 étages (`npm run tour`). **À valider en jouant :** faut-il regagner une vie de temps en temps (tous les cinq étages ?), l'étage 7 (35 % pour un joueur moyen) est plus dur que les étages 8 à 10, et les étages 13 et 14 font mur (autour de 10 %).
+- **Trois vies (2026-11-11) :** une défaite coûte une vie et on retente le même étage ; la troisième arrête la montée (`VIES` dans `src/ui/montee.ts`). Le temps des combats perdus compte dans le temps total. **Pourquoi :** en manche unique sans vie, la mesure donnait 3,3 étages à un joueur simulé faible et 5,4 à un fort : la chance d'une manche écrasait l'écart de niveau et une montée durait une minute. Avec trois vies : 5,8 et 8,4 étages (`npm run tour`). **Décidé le 2026-11-11 : trois vies fixes**, on n'en regagne pas en cours de montée. Reste à régler : l'étage 7 (35 % pour un joueur moyen) est plus dur que les étages 8 à 10, et les étages 13 et 14 font mur (autour de 10 %).
 - **Tutoriel complet (2026-11-11) :** toujours facultatif, mais il montre toutes les techniques puisque tout est débloqué (`TUTO_COMPLET` dans `src/game/tutorial.ts`, dix étapes, « Étape suivante » pour passer un geste difficile). L'ancien tutoriel court (`MINI_TUTO`) et les exercices par ceinture restent pour la progression complète.
 - **Mis de côté** (code gardé, boutons grisés « Bientôt ») : défi du jour, duel entre amis, boutique d'effets et pièces.
 - **Retirés :** ceintures, XP et déblocages ; toutes les techniques, combattants et armes dès le départ. Tutoriel facultatif.
-- **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; Redis Upstash via Vercel (`api/classement.js`). Le combat tournant chez le joueur, la triche reste possible : on refuse l'impossible (moins de 8 s par étage) et on nettoie à la main. Les comptes de D13 reprendront cet identifiant (invité silencieux).
+- **Classement :** sans compte. L'identifiant anonyme du navigateur garde sa meilleure montée (étages, puis temps le plus court) ; Redis Upstash via Vercel (`api/classement.js`), remplacé par le serveur de jeu de D19 dès qu'il est déployé. Le combat tournant chez le joueur, la triche reste possible : on refuse l'impossible (moins de 8 s par étage) et on nettoie à la main. Les comptes de D13 reprendront cet identifiant (invité silencieux).
 - **Pourquoi pas pseudo + mot de passe :** plus de travail (mots de passe, sessions, pseudos uniques), mot de passe oublié = compte perdu sans e-mail, et n'empêche pas la triche.
 
 ## Ordre de production retenu
@@ -140,4 +148,3 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - Le joueur voit-il son propre état (D3) ?
 - Réglages anti-spam et épuisement après test (D1, D9).
 - Cohérence visuelle pixel art / vectoriel (D11).
-- Stockage des mesures de jeu (D12).

@@ -49,7 +49,8 @@ Les règles de jeu sont dans [docs/DECISIONS.md](docs/DECISIONS.md).
 - [x] Trois vies par montée (2026-11-11) : une défaite coûte une vie, on retente l'étage (`src/ui/montee.ts`).
 - [x] Tutoriel complet (2026-11-11) : dix étapes, toutes les techniques, « Étape suivante » (`TUTO_COMPLET`).
 - [x] Zoom et textes du combat selon la taille de l'écran (D17), accueil affiché sans attendre Phaser (D18).
-- [ ] À valider en jouant : trois vies (en regagner une tous les cinq étages ?), tutoriel complet (longueur, étape « élan »), zoom sur grand écran.
+- [x] Trois vies fixes, décidé le 2026-11-11 : on n'en regagne pas en cours de montée.
+- [ ] À valider en jouant : tutoriel complet (longueur, étape « élan »), zoom sur grand écran.
 - [ ] Après les premiers retours : faut-il un temps limite, un classement de la semaine ?
 
 ## Phase 2b : assets remplaçables (après le retest)
@@ -70,11 +71,26 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] **Bug** : quitter juste après la fin d'un match affiche quand même le résultat 1,3 s plus tard et donne l'XP d'un duel (`leave()` n'annule pas `endTimer` dans `src/ui/ui.ts`).
 - [x] **Bug** : après une déconnexion, les dernières entrées de l'invité restent appliquées côté hôte (`lost()` dans `src/net/session.ts`).
 - [x] Masquer le **mode test** en production (visible avec `?debug`, `?test` ou en développement seulement).
-- [ ] `/api/e` : limiter la taille des propriétés et le nombre d'événements.
+- [x] Mesures de jeu : taille des propriétés et nombre d'événements limités dans le serveur de jeu (`server/classement.ts`) ; l'ancien `/api/e` disparaît à la bascule.
 - [ ] Tests unitaires : progression et XP, `sanitizeLook`, chargement du profil, compactage des entrées et des instantanés réseau, règles de combat (épuisé, parade, anti-spam).
 - [ ] Typage : interfaces `Fighter` et `Sim` (aujourd'hui `any`), puis `strict` activé fichier par fichier.
 - [x] CI GitHub Actions : format, types, tests, `npm run sim` et build sur chaque PR (`.github/workflows/ci.yml`).
 - [ ] Mettre à jour vite (8.3.4 → 8.3.5).
+
+## Backend (D19, voir [docs/BACKEND.md](docs/BACKEND.md))
+
+Étape 1 : classement vérifié par rejeu et mesures de jeu en base.
+
+- [x] Simulation reproductible sur toutes les machines (`src/sim/dmath.ts`), enregistrement et rejeu d'un combat (`src/sim/rejeu.ts`).
+- [x] Serveur de jeu (`server/`) : graine donnée par le serveur, rejeu de la montée, records et mesures dans PostgreSQL, Docker.
+- [x] Jeu branché si `VITE_API_JEU` est définie (ticket d'avance, combats enregistrés, montée non classée sans ticket).
+- [ ] Déployer sur le VPS : `docker compose`, Caddy, relais dans `vercel.json` (à faire avec l'utilisateur, qui a l'accès).
+- [ ] Brancher un aperçu (`VITE_API_JEU` sur Preview) et **valider une montée sur iPhone**, puis brancher la production.
+- [ ] Après la bascule : supprimer `api/classement.js`, `api/e.js`, leur test et la base Upstash.
+- [ ] Déployer le serveur automatiquement à chaque fusion qui touche `src/sim` ou `server/` (sinon montées non classées entre les deux).
+- [ ] Typage strict de `src/sim` (`Fighter`, `Sim`), dont le serveur dépend maintenant.
+
+Étape 2 : comptes (phase 4b ci-dessous). Étape 3 : duels en salles autoritaires (remplace le serveur TURN et PeerJS de la phase 4).
 
 ## Phase 4 : connexion
 

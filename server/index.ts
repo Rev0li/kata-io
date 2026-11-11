@@ -7,7 +7,8 @@
 //   POST /api/jeu/classement  { id, pseudo, montee, combats }
 //   POST /api/jeu/e           { m, e }   mesures de jeu anonymes
 //
-// Variables : PORT (8787), DATABASE_URL (sans elle : tout en mémoire, pour le développement),
+// Variables : PORT (8787), la base par DATABASE_URL ou PGHOST, PGUSER, PGPASSWORD, PGDATABASE (sans base : tout
+// en mémoire, pour le développement),
 // KATA_ORIGINES (origines autorisées en appel direct, séparées par des virgules ; inutile derrière le relais Vercel).
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -94,11 +95,13 @@ async function router(c: Contexte, req: IncomingMessage, url: URL): Promise<Repo
 
 async function demarrer() {
   let base: Base;
-  if (process.env.DATABASE_URL) {
-    base = await basePostgres(new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 5 }));
+  if (process.env.DATABASE_URL || process.env.PGHOST) {
+    // DATABASE_URL, ou les variables standard PGHOST, PGUSER, PGPASSWORD, PGDATABASE (lues par pg)
+    const url = process.env.DATABASE_URL;
+    base = await basePostgres(new pg.Pool(url ? { connectionString: url, max: 5 } : { max: 5 }));
   } else {
     base = baseMemoire();
-    journal('ATTENTION : pas de DATABASE_URL, tout est gardé en mémoire et perdu à l’arrêt');
+    journal('ATTENTION : pas de base configurée, tout est gardé en mémoire et perdu à l’arrêt');
   }
   const c: Contexte = { base, version: versionSim(), souffler: () => prochainTour(), journal };
 
