@@ -42,7 +42,19 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
     slow: 0,
     uid: 0,
     atkUid: 0,
-    duel: null,
+    duel: {
+      score: [0, 0],
+      round: 0,
+      phase: 'intro',
+      t: 0,
+      winner: -1,
+      firstTo: opts.firstTo || FIRST_TO,
+      start: 0,
+      fightT: 0,
+      sudden: false,
+      mp: false,
+      quick: !!opts.quick,
+    },
     rng: opts.seed != null ? seededRng(opts.seed) : Math.random,
   };
   specs.forEach((sp, i) => {
@@ -60,19 +72,6 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
     if (sp.dummy) e.bot = newBrain(0, true);
     st.f.push(e);
   });
-  st.duel = {
-    score: [0, 0],
-    round: 0,
-    phase: 'intro',
-    t: 0,
-    winner: -1,
-    firstTo: opts.firstTo || FIRST_TO,
-    start: 0,
-    fightT: 0,
-    sudden: false,
-    mp: false,
-    quick: !!opts.quick,
-  };
   if (opts.free) {
     st.duel.phase = 'free';
     st.f.forEach((e: Fighter, i: number) => {

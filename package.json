@@ -9,9 +9,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.strict.json",
     "sim": "tsx scripts/simcheck.ts",
     "tour": "tsx scripts/towercheck.ts",
     "serveur": "tsx server/index.ts",

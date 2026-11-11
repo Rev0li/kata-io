@@ -1,7 +1,7 @@
 // Socle de la simulation : types, outils mathématiques, hasard et émission d'événements.
 // Chaque fonction reçoit l'état de la partie (S) en paramètre : plusieurs simulations peuvent tourner en même temps.
 import { TAU } from './data';
-import type { Deck, Look } from './data';
+import type { AttackDef, Deck, Look } from './data';
 import type { Abil } from './progression';
 
 export interface Input {
@@ -44,9 +44,154 @@ export interface SimOpts {
   seed?: number;
   quick?: boolean; // relance : pas de compte à rebours 3-2-1, juste « COMBAT ! »
 }
+// Événement émis par la simulation (impact, son, texte, point…) : le client l'affiche. Champs libres selon t.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Ev = { t: string; [k: string]: any };
-export type Fighter = any;
-export type Sim = any;
+
+export type Etat =
+  | 'idle'
+  | 'frozen' // avant le début de la manche
+  | 'attack'
+  | 'charge'
+  | 'parry'
+  | 'recover'
+  | 'dodge'
+  | 'stun'
+  | 'tumble' // projeté, roule
+  | 'ledge' // accroché au bord
+  | 'climb'
+  | 'falling'
+  | 'dead';
+// Coup en cours : su (démarrage), ac (actif), rc (récupération), en millisecondes.
+export interface Coup {
+  def: AttackDef;
+  kind: 'white' | 'red';
+  t: number;
+  su: number;
+  ac: number;
+  rc: number;
+  seg: number; // segment en cours d'un coup à plusieurs touches
+  hit: Set<number>; // identifiants déjà touchés pendant ce segment
+  startStance: number;
+  endStance: number;
+  applied: boolean;
+  uid: number;
+  idx: number; // rang dans l'enchaînement (2 : finisseur)
+  finisher: boolean;
+  power: number;
+  dragon: boolean;
+}
+export type Action = 'atk' | 'parry' | 'dodge';
+export interface Vec {
+  x: number;
+  y: number;
+}
+// Cerveau d'un bot ou du mannequin (bot.ts).
+export interface Cerveau {
+  adapt: number;
+  adaptShown: boolean;
+  dummy: boolean;
+  mode: string; // mannequin : 'idle', 'white', 'red'
+  cd: number;
+  ax: number;
+  ay: number;
+  skill: number;
+  atkCd: number;
+  strafe: number;
+  strafeT: number;
+  pref: number;
+  plan: { act: 'dodge' | 'parry'; at: number } | null;
+  holdFor: number;
+  chain: number;
+  seen: Map<number, number>; // adversaire -> dernier coup auquel il a déjà réagi
+  climbAt: number | null;
+  respect: number;
+  waited: boolean;
+}
+export interface Fighter {
+  id: number;
+  idx: number;
+  name: string;
+  bot: Cerveau | null;
+  look: Look;
+  deck: Deck;
+  abil: Abil;
+  belt: string | null;
+  atkSlow: number;
+  god: boolean;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  facing: number;
+  wantFacing: number;
+  move: Vec;
+  pct: number;
+  souffle: number;
+  qi: number;
+  state: Etat;
+  stateT: number;
+  stunDur: number;
+  atk: Coup | null;
+  combo: { stance: number; idx: number };
+  comboT: number;
+  stance: number;
+  buffer: { type: Action; arg?: Vec } | null; // action demandée trop tôt, rejouée dès que possible
+  bufferT: number;
+  holding: boolean;
+  holdT: number;
+  chargeT: number;
+  chargeDef: AttackDef | null;
+  dodge: { dx: number; dy: number; done: number; ox: number; oy: number } | null;
+  ledge: { nx: number; ny: number; t: number } | null;
+  ledgeUsed: boolean;
+  z: number;
+  vz: number;
+  star: boolean;
+  fallT: number;
+  elanT: number;
+  kos: number;
+  lastHitBy: number | null;
+  lastHitT: number;
+  lastHitDragon: boolean;
+  exhHit: boolean;
+  spawnInv: number;
+  emote: { id: string; t: number } | null;
+  dropT: number;
+  spam: number;
+  lastAvoid: number;
+  dodgeCount?: number; // D2 : esquives parfaites d'affilée (bonus pas encore décidé)
+  splashFx: string;
+  koWord: string;
+  inPrev: { atk: boolean; parryN: number; dodgeN: number; emoteN: number };
+}
+export interface Duel {
+  score: [number, number];
+  round: number;
+  phase: 'intro' | 'fight' | 'point' | 'end' | 'free';
+  t: number;
+  winner: number;
+  firstTo: number;
+  start: number;
+  fightT: number;
+  sudden: boolean;
+  mp: boolean; // balle de match
+  quick: boolean;
+}
+export interface Sim {
+  H: number; // demi-côté du dojo
+  H0: number;
+  damp: number;
+  time: number;
+  f: Fighter[];
+  ev: Ev[];
+  hitstop: number;
+  slow: number;
+  uid: number;
+  atkUid: number;
+  duel: Duel;
+  rng: () => number;
+}
 
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
