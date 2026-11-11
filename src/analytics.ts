@@ -9,7 +9,7 @@ interface Ev {
 }
 
 const AID_KEY = 'kata.aid';
-// serveur de jeu (VITE_API_JEU) : les mesures y sont gardées en base ; sinon l'ancienne fonction Vercel /api/e
+// serveur de jeu (VITE_API_JEU) : les mesures y sont gardées en base ; sans lui, /api/e n'existe plus et l'envoi échoue en silence
 const apiJeu = ((import.meta.env.VITE_API_JEU as string | undefined) || '').replace(/\/+$/, '');
 const endpoint: string = (import.meta.env.VITE_ANALYTICS_URL as string) || (apiJeu ? apiJeu + '/e' : '/api/e');
 const local = /^(localhost|127\.|\[::1\])/.test(location.hostname);

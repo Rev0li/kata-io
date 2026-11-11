@@ -84,9 +84,10 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] Simulation reproductible sur toutes les machines (`src/sim/dmath.ts`), enregistrement et rejeu d'un combat (`src/sim/rejeu.ts`).
 - [x] Serveur de jeu (`server/`) : graine donnée par le serveur, rejeu de la montée, records et mesures dans PostgreSQL, Docker.
 - [x] Jeu branché si `VITE_API_JEU` est définie (ticket d'avance, combats enregistrés, montée non classée sans ticket).
-- [ ] Déployer sur le VPS : `docker compose`, Caddy, relais dans `vercel.json` (à faire avec l'utilisateur, qui a l'accès).
-- [ ] Brancher un aperçu (`VITE_API_JEU` sur Preview) et **valider une montée sur iPhone**, puis brancher la production.
-- [ ] Après la bascule : supprimer `api/classement.js`, `api/e.js`, leur test et la base Upstash.
+- [x] Déployer sur le VPS : `docker compose`, Caddy, relais dans `vercel.json` (fait le 2026-11-11).
+- [x] Montée validée sur iPhone depuis un aperçu, production branchée (`.env.production`, 2026-11-11).
+- [x] Ancien classement supprimé du dépôt (`api/classement.js`, `api/e.js`, leur test).
+- [ ] Supprimer la base Upstash dans Vercel (onglet Storage).
 - [ ] Déployer le serveur automatiquement à chaque fusion qui touche `src/sim` ou `server/` (sinon montées non classées entre les deux).
 - [ ] Typage strict de `src/sim` (`Fighter`, `Sim`), dont le serveur dépend maintenant.
 
