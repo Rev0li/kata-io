@@ -1,4 +1,4 @@
-// Plateforme du dojo, dessinée en code (elle rétrécit en mort subite), et lanternes sur pied aux angles.
+// Plateforme du dojo, dessinée en code et en pixel art (pixel.ts) : elle rétrécit en mort subite. Lanternes sur pied aux angles.
 import Phaser from 'phaser';
 import { lerp } from '../../sim/sim';
 import { isoX, isoY, iso } from './iso';
@@ -49,7 +49,8 @@ export class Arena {
     g.fillPoints(o, true);
     g.lineStyle(2, mix(T.rim, 0xffffff, 0.25), 0.7);
     g.strokePoints(quad(O - 3), true);
-    const n = Math.max(6, Math.round(H / 24)),
+    // lattes larges et joints peu contrastés : à quatre pixels d'écran par pixel, des joints sombres et serrés brouillent tout
+    const n = Math.max(4, Math.round(H / 40)),
       step = (2 * H) / n;
     for (let i = 0; i < n; i++) {
       const x0 = -H + i * step,
@@ -57,14 +58,14 @@ export class Arena {
       g.fillStyle(i % 2 ? T.top : T.top2, 1);
       g.fillPoints([P(x0, -H), P(x1, -H), P(x1, H), P(x0, H)], true);
     }
-    g.lineStyle(1.5, T.seam, 0.85);
+    g.lineStyle(1.5, mix(T.top, T.seam, 0.5), 1);
     for (let i = 0; i <= n; i++) {
       const x = -H + i * step,
         a = P(x, -H),
         c = P(x, H);
       g.lineBetween(a.x, a.y, c.x, c.y);
     }
-    g.lineStyle(1, T.seam, 0.5); // joints d'about, décalés d'une latte à l'autre
+    g.lineStyle(1, mix(T.top, T.seam, 0.3), 1); // joints d'about, décalés d'une latte à l'autre
     for (let i = 0; i < n; i++) {
       const x0 = -H + i * step,
         y = -H + ((i * 0.37) % 1) * 2 * H,
@@ -105,6 +106,7 @@ export class Arena {
     g.lineBetween(o[1].x, o[1].y, o[1].x, o[1].y + TH);
     g.lineBetween(o[3].x, o[3].y + TH, o[2].x, o[2].y + TH);
     g.lineBetween(o[2].x, o[2].y + TH, o[1].x, o[1].y + TH);
+    g.flush();
   }
 
   // Lanterne sur pied aux angles du dojo ; flickering léger. back = angles du fond (sous le dojo), front = angle du bas.

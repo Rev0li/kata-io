@@ -4,6 +4,7 @@ import { TAU } from '../../sim/data';
 import { clamp, angDiff } from '../../sim/sim';
 import { ISO, iso, unIso } from './iso';
 import { hex, mix, rand } from './palette';
+import { FISH_W } from '../assets';
 import { THEMES, LIFE } from './themes';
 import type { Renderer } from './index';
 
@@ -92,7 +93,7 @@ export class Lake {
       const glow = kind === 'lanterne' || kind === 'braise';
       if (glow) rope.setBlendMode(Phaser.BlendModes.ADD);
       else rope.setColors(mix(0xffffff, water, 0.45)); // le poisson se fond dans l'eau
-      rope.setAlpha(L.fishA ?? (glow ? 0.75 : 0.62)).setScale(len / 276);
+      rope.setAlpha(L.fishA ?? (glow ? 0.75 : 0.62)).setScale(len / FISH_W);
       this.fish.push({
         x: p.x,
         y: p.y,

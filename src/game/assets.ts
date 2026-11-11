@@ -43,6 +43,9 @@ export const THEME_BG = ['brume', 'coucher', 'neon', 'neige', 'bambou', 'volcan'
 // Décor vectoriel (SVG, généré par scripts/build-decor-svg.py) : poissons articulés (corps + queue) et objets flottants.
 export const SPECIES = ['koi_orange', 'koi_blanc', 'koi_or', 'lanterne', 'argente', 'carpe_jade', 'braise'];
 export const FLOATS = ['nenuphar', 'fleur', 'glace', 'lave', 'lanterne', 'feuille'];
+// Largeur de l'image d'un poisson, affiché sur une cinquantaine de pixels : deux pixels d'écran par pixel d'image
+// (à quatre, comme les combattants, il ne resterait qu'une tache).
+export const FISH_W = 28;
 const BASE = import.meta.env.BASE_URL + 'assets/';
 // Planches des combattants et des armes : cases écartées, bord recopié (scripts/espacer.py), pour que le zoom
 // de la caméra ne fasse pas apparaître un trait de la case voisine au bord des sprites.
@@ -55,10 +58,23 @@ export function preloadAssets(scene: Phaser.Scene) {
     ...ESPACE,
   });
   scene.load.spritesheet('armes', BASE + 'armes.png', { frameWidth: 16, frameHeight: 16, ...ESPACE });
-  // Rastérisés à la taille demandée (4096 px de large au plus : limite des GPU mobiles) puis affichés à 2400 × 420.
-  for (const t of THEME_BG) scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', { width: 4096, height: 717 });
-  for (const s of SPECIES) scene.load.svg('fish-' + s, BASE + 'decor/fish-' + s + '.svg', { width: 276, height: 96 }); // un seul tenant : déformé en tranches par le jeu
-  for (const n of FLOATS) scene.load.svg('fl-' + n, BASE + 'decor/float-' + n + '.svg', { width: 192, height: 128 });
+  // Décor en pixel art, comme les combattants : les dessins vectoriels sont rastérisés en petit (un pixel d'image
+  // pour FIGHTER_PX pixels à l'écran) puis agrandis sans lissage (setupAssets). Horizon affiché à 2400 × 420.
+  for (const t of THEME_BG)
+    scene.load.svg('bg-' + t, BASE + 'decor/bg-' + t + '.svg', {
+      width: Math.round(2400 / FIGHTER_PX),
+      height: Math.round(420 / FIGHTER_PX),
+    });
+  for (const s of SPECIES)
+    scene.load.svg('fish-' + s, BASE + 'decor/fish-' + s + '.svg', {
+      width: FISH_W,
+      height: Math.round(FISH_W / 2.875),
+    }); // un seul tenant : déformé en tranches par le jeu
+  for (const n of FLOATS)
+    scene.load.svg('fl-' + n, BASE + 'decor/float-' + n + '.svg', {
+      width: Math.round(80 / FIGHTER_PX),
+      height: Math.round(53 / FIGHTER_PX),
+    });
   for (const k of FX_KEYS)
     scene.load.spritesheet('fx-' + k, BASE + 'fx/' + k + '.png', { frameWidth: 32, frameHeight: 32 });
   for (const [k, [w, h]] of Object.entries(PARTS))
@@ -73,7 +89,14 @@ export function setupAssets(scene: Phaser.Scene) {
   for (const k of scene.textures.getTextureKeys())
     if (k.startsWith('m:')) scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.LINEAR);
   // Pixel art : pas de lissage quand on agrandit.
-  for (const k of ['persos', 'armes', ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k)])
+  for (const k of [
+    'persos',
+    'armes',
+    ...[...FX_KEYS, ...Object.keys(PARTS)].map(k => 'fx-' + k),
+    ...THEME_BG.map(t => 'bg-' + t),
+    ...SPECIES.map(s => 'fish-' + s),
+    ...FLOATS.map(n => 'fl-' + n),
+  ])
     scene.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
   for (const k of FX_KEYS) {
     if (scene.anims.exists('fx-' + k)) continue;
