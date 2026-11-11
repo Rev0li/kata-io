@@ -1,7 +1,7 @@
 // Lancement des parties locales : étage de la Tour, défi du jour, tutoriel et exercices, entraînement contre le bot.
 import { RANKS, abilFor, towerFloor, dailyFloor, Floor } from '../sim/progression';
 import { session, MeSpec } from '../net/session';
-import { MINI_TUTO, DRILLS, TutoStep } from '../game/tutorial';
+import { MINI_TUTO, TUTO_COMPLET, DRILLS, TutoStep } from '../game/tutorial';
 import { setLocks } from './actionbar';
 import { track } from '../analytics';
 import { toast, wake } from './dom';
@@ -10,13 +10,12 @@ import { profile, myRank, myAbil, rollDaily } from './profile';
 import { myName, mySpec } from './home';
 import { viewState } from './viewstate';
 import { MINI } from './edition';
+import { nouvelleMontee } from './montee';
 
-// Montée de la Tour (version minimale) : de l'étage 1 jusqu'à la première défaite ; le temps de combat s'additionne.
-export const montee = { etages: 0, secondes: 0 };
+// Montée de la Tour (version minimale) : de l'étage 1 jusqu'à la dernière vie (montee.ts).
 // quick : relance sans compte à rebours (Recommencer, étage suivant)
 export function startRun(quick = false) {
-  montee.etages = 0;
-  montee.secondes = 0;
+  nouvelleMontee();
   startTower(1, quick);
 }
 
@@ -32,7 +31,7 @@ export function startTower(n: number, quick = false) {
     return;
   }
   nav.lastMode = { kind: 'tower', floor: n };
-  // version minimale : une seule manche par étage, gagnée tu montes, perdue la montée s'arrête
+  // version minimale : une seule manche par étage, gagnée tu montes, perdue tu laisses une vie
   const f = MINI ? { ...towerFloor(n), firstTo: 1 } : towerFloor(n);
   setLocks(myAbil());
   session.startTower(local(mySpec()), f, { ...towerExtra(f, MINI ? 0 : profile.tries[n] || 0), quick });
@@ -81,9 +80,11 @@ export function startTuto(drill: string | null) {
   myName();
   track('tutorial_started', { drill });
   nav.lastMode = { kind: 'tuto', drill };
-  const steps: TutoStep[] = drill ? DRILLS[drill] : MINI_TUTO;
-  setLocks(drill ? myAbil() : abilFor(0));
-  session.startTuto(local(mySpec(drill ? myAbil() : abilFor(0))), steps);
+  const steps: TutoStep[] = drill ? DRILLS[drill] : MINI ? TUTO_COMPLET : MINI_TUTO;
+  // version minimale : tout est débloqué, le tutoriel montre toutes les techniques
+  const abil = drill || MINI ? myAbil() : abilFor(0);
+  setLocks(abil);
+  session.startTuto(local(mySpec(abil)), steps);
 }
 // Entraînement contre le bot, dans le monde choisi à l'accueil.
 export function practice(world = viewState.world) {

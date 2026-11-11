@@ -22,6 +22,7 @@ import { profile, save, nextFloor } from './profile';
 import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining } from './home';
 import { startTower, startDaily, startTuto, practice, startRun } from './launch';
 import { MINI } from './edition';
+import { attendreJeu } from './boot';
 import { lireClassement, rendreClassement } from '../net/classement';
 import { renderFloors } from './floors';
 import { openShop, closeShop, selectTab, shopAction, LockerTab } from './shop';
@@ -36,6 +37,7 @@ export function setupUI() {
       cancelEnd();
       closeHost();
       show(null);
+      attendreJeu();
     },
     onEnd,
     onLeave: cancelEnd, // quitter juste après la fin du match : pas d'écran de résultat ni d'XP
@@ -122,6 +124,7 @@ export function setupUI() {
   $('#setClose').addEventListener('click', () => show('home'));
   $('#tutoBtn').addEventListener('click', () => startTuto(null));
   $('#tutoSkip').addEventListener('click', skipTuto);
+  $('#tutoNext').addEventListener('click', () => session.tutoSkipStep());
   $('#createBtn').addEventListener('click', createRoom);
   $('#joinForm').addEventListener('submit', e => {
     e.preventDefault();

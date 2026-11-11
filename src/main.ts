@@ -1,14 +1,12 @@
-import Phaser from 'phaser';
-import { GameScene } from './scenes/GameScene';
-import { HudScene } from './scenes/HudScene';
+// Démarrage : l'interface HTML d'abord (l'accueil s'affiche tout de suite), le jeu Phaser ensuite, chargé à part.
 import { setupControls } from './ui/controls';
 import { setupUI } from './ui/ui';
 import { setupActionBar } from './ui/actionbar';
 import { lancerBoot, voileLeve } from './ui/boot';
 import { ouvrirInstall } from './ui/install';
-import { setupResize } from './ui/resize';
 import { session } from './net/session';
-import { initAnalytics, stats } from './analytics';
+import { initAnalytics, stats, track } from './analytics';
+import { toast } from './ui/dom';
 import './style.css';
 
 initAnalytics();
@@ -16,19 +14,17 @@ setupControls();
 setupActionBar();
 setupUI();
 
-const game = new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'game',
-  backgroundColor: '#0d2a30',
-  scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
-  render: { antialias: true },
-  scene: [GameScene, HudScene],
-});
-
-setupResize(game);
 lancerBoot();
 voileLeve.then(ouvrirInstall);
 
-// Accès de débogage : en développement, ou avec ?debug dans l'adresse.
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug'))
-  (window as any).__kata = { game, session, stats };
+import('./jeu')
+  .then(({ lancerJeu }) => {
+    const game = lancerJeu();
+    // Accès de débogage : en développement, ou avec ?debug dans l'adresse.
+    if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug'))
+      (window as any).__kata = { game, session, stats };
+  })
+  .catch(e => {
+    track('error', { msg: 'jeu non chargé : ' + String(e && e.message).slice(0, 120) });
+    toast('Le jeu ne s’est pas chargé : recharge la page');
+  });

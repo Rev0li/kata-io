@@ -6,7 +6,7 @@ Version de développement : Phaser 4, TypeScript et Vite, avec une connexion pai
 
 ## Version minimale (en ligne)
 
-Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1, on enchaîne les gardiens, une manche chacun, jusqu'à la première défaite (ou « M'arrêter là »), puis on inscrit son pseudo au **classement**. Toutes les techniques, combattants et armes sont disponibles dès le départ ; le tutoriel est facultatif. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
+Pour l'instant, un seul défi : **monter la Tour le plus haut possible**. On part de l'étage 1 avec **trois vies**, on enchaîne les gardiens, une manche chacun : une défaite coûte une vie et on retente le même étage, la dernière vie perdue (ou « M'arrêter là ») termine la montée, puis on inscrit son pseudo au **classement** (étages gravis, puis temps total, défaites comprises). Toutes les techniques, combattants et armes sont disponibles dès le départ ; le **tutoriel**, facultatif, les montre toutes en dix étapes (déplacement, coups, enchaînement, souffle, parade, esquive du coup rouge, coup chargé, élan, paume du dragon, éjection), avec « Étape suivante » pour ne rester bloqué sur aucune. Le défi du jour, le duel entre amis et la boutique sont mis de côté (« Bientôt »). Réglage : `MINI` dans `src/ui/edition.ts` ; décision D14 dans [docs/DECISIONS.md](docs/DECISIONS.md). Les sections suivantes décrivent la progression complète, mise de côté.
 
 ## Progression
 
@@ -62,7 +62,7 @@ Le **Mode test**, replié dans les paramètres (roue en haut à droite), permet 
 - ajouter un nombre de pièces au choix ;
 - tout réinitialiser.
 
-`npx tsx scripts/towercheck.ts 0.45` simule un joueur moyen qui monte la Tour (pourcentage de victoires par étage).
+`npm run tour` simule un joueur moyen qui monte la Tour comme en version minimale : pourcentage de victoires par étage (une manche, toutes les techniques), puis étages gravis en moyenne avec trois vies. `npm run tour -- 0.6 sumo 100` change le niveau du joueur simulé, son personnage (donc son style) et le nombre de combats par étage. Repère du 2026-11-11 (ninja bleu) : 5,8 étages pour un joueur faible (0,3), 6,8 pour un moyen (0,45), 8,4 pour un fort (0,6) ; avec une seule vie : 3,3 / 4,1 / 5,4.
 
 ## Jouer
 
@@ -93,10 +93,16 @@ npm run dev        # serveur de dev Vite sur http://localhost:5173
 npm run build      # vérification TypeScript puis build de production dans dist/
 npm run preview    # sert le build de production
 npm run sim        # duels bot contre bot dans le terminal, pour vérifier l'équilibrage
-npm test           # tests Vitest (non-régression de la simulation)
+npm run tour       # montée de la Tour par un joueur simulé (taux de victoire par étage, étages gravis)
+npm test           # tests Vitest (simulation, vies de la montée, mannequin, classement)
+npm run format     # Prettier
 ```
 
 **Tests de non-régression** : `tests/sim.golden.test.ts` joue des matchs à graine fixe (`createSim(specs, { seed })`) et compare leur résumé à `tests/__snapshots__/`. Si un réglage de `RULES` change volontairement le combat, accepter les nouveaux résumés avec `npm test -- -u`. Sinon, un échec signale une régression.
+
+**Intégration continue** : `.github/workflows/ci.yml` lance format, types, tests, `npm run sim` et le build sur chaque pull request et sur `main`. Chaque push sur `main` part en production : on passe toujours par une branche et une PR verte.
+
+**Chargement en deux temps** : l'accueil est en HTML et s'affiche avec un premier fichier léger (environ 60 ko compressés). Le jeu Phaser (`src/jeu.ts`, environ 380 ko compressés) se charge à part, en parallèle. Si une partie est lancée avant la fin de ce chargement, le voile de démarrage revient jusqu'à la première image (`attendreJeu` dans `src/ui/boot.ts`). Règle à garder : rien de ce que `src/main.ts` importe directement ne doit importer Phaser, `src/scenes/` ou `src/game/render/` (sauf `render/iso.ts`, qui n'en a que les types).
 
 **Tester un duel seul sur sa machine** : ouvrir `http://localhost:5173/?net=local`, créer un duel, puis ouvrir le lien d'invitation dans un deuxième onglet du même navigateur. Les deux onglets communiquent par `BroadcastChannel`, sans passer par Internet.
 
@@ -106,6 +112,8 @@ npm test           # tests Vitest (non-régression de la simulation)
 
 ```
 src/
+  main.ts              démarrage : interface HTML d'abord, puis le jeu chargé à part
+  jeu.ts               création du jeu Phaser (scènes, rendu)
   sim/                 simulation du duel, sans Phaser ni DOM (passera telle quelle sur un serveur)
     sim.ts             point d'entrée : createSim, stepSim, API publique
     data.ts            réglages (RULES), gardes, coups, apparences (aucune dépendance)
@@ -132,13 +140,16 @@ src/
   game/audio.ts        sons et musique synthétisés en WebAudio (aucun fichier audio)
   game/tutorial.ts     étapes du tutoriel et exercices par technique
   game/hints.ts        indices affichés les premières fois
-  scenes/GameScene     boucle de jeu, caméra, souris
+  scenes/GameScene     boucle de jeu, caméra (zoom selon la taille de l'écran), souris
   scenes/HudScene      interface en jeu (pourcentages, souffle, qi, score)
   ui/                  écrans HTML (ui.ts : branchement des boutons et des événements de la partie)
     dom.ts, nav.ts     utilitaires, écran affiché
     profile.ts         profil et progression sauvegardés dans le navigateur (sans DOM)
     home.ts            accueil (écran de jeu), entraînement, panneau de test
     launch.ts          lancement des parties locales
+    montee.ts          montée de la Tour : étages, temps, vies (sans DOM)
+    edition.ts         version minimale (MINI)
+    boot.ts            voile de démarrage, attente du jeu chargé à part
     floors.ts          liste des étages
     shop.ts            vestiaire : combattant, arme, traînées, ploufs
     lobby.ts           duel privé et retour à l'accueil
@@ -147,9 +158,10 @@ src/
     actionbar.ts       barre d'actions animée (boutons sur mobile, indicateurs sur ordinateur)
     controls.ts        clavier et commandes tactiles
     viewstate.ts       état partagé entre l'interface et la scène
-tests/                 tests Vitest (non-régression de la simulation)
+tests/                 tests Vitest (simulation, vies, mannequin du tutoriel, classement)
 scripts/simcheck.ts    duels bot contre bot dans le terminal
-scripts/towercheck.ts  équilibrage de la Tour
+scripts/towercheck.ts  équilibrage de la montée de la Tour (npm run tour)
+.github/workflows/     intégration continue
 scripts/build-assets.py assemble les sprites du pack Ninja Adventure dans public/assets
 scripts/build-decor-svg.py génère le décor vectoriel (horizons, poissons, flottants) dans public/assets/decor
 archive/               assets retirés du jeu, gardés pour plus tard (non déployés)

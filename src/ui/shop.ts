@@ -15,6 +15,7 @@ import { show } from './nav';
 import { profile, save, myLook, owns, CATALOG, ShopKind, PK, AK, persoOpen, armeOpen } from './profile';
 import { mySpec, renderCoins, goHome, setFace, setWico } from './home';
 import { MINI } from './edition';
+import { attendreJeu } from './boot';
 import { styleOf, PERSO_STYLE } from '../sim/styles';
 
 export type LockerTab = 'perso' | 'arme' | ShopKind;
@@ -37,6 +38,7 @@ function iconStyle(icon: [string, number, number]) {
 }
 
 export function openShop() {
+  attendreJeu(); // la vitrine se joue dans la scène du jeu
   wake();
   viewState.shop = true;
   session.startShowcase(mySpec(FULL_ABIL));

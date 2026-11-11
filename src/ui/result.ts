@@ -22,7 +22,8 @@ import { $, confetti, restartAnim } from './dom';
 import { show } from './nav';
 import { profile, save, addXp, addCoins, myRank, rollDaily, PK, AK } from './profile';
 import { setFace, setWico, renderCoins, SCROLLS, rechargerTop } from './home';
-import { startTower, startDaily, startTuto, practice, startRun, montee } from './launch';
+import { startTower, startDaily, startTuto, practice, startRun } from './launch';
+import { montee, finEtage, coeurs } from './montee';
 import { MINI } from './edition';
 import { envoyerMontee, rendreClassement } from '../net/classement';
 
@@ -162,13 +163,13 @@ export function onEnd(winner: number, score: number[]) {
       }
       save();
     } else if (MINI && session.mode === 'tower' && session.floor) {
-      // montée de la Tour : on enchaîne les étages jusqu'à la première défaite, puis le pseudo pour le classement
-      const f = session.floor;
-      montee.secondes += session.seconds;
+      // montée de la Tour : on enchaîne les étages ; une défaite coûte une vie, la dernière arrête la montée
+      const f = session.floor,
+        suite = finEtage(win, f.n, session.seconds);
       $('#resKicker').textContent = `Étage ${f.n} · ${f.name}`;
-      $('#resScore').textContent = `${sMe} – ${sOp}` + (win ? ` en ${session.seconds} s` : '');
-      if (win) {
-        montee.etages = f.n;
+      $('#resScore').innerHTML =
+        (win ? `Gagné en ${session.seconds} s ` : '') + `<span class="vies">${coeurs()}</span>`;
+      if (suite === 'monte') {
         $('#resTitle').textContent = 'Étage réussi';
         $('#resStatus').textContent = `Prochain gardien : ${towerFloor(f.n + 1).name}`;
         setResultButtons(
@@ -177,6 +178,19 @@ export function onEnd(winner: number, score: number[]) {
           'M’arrêter là',
           () => finMontee(false),
         );
+      } else if (suite === 'rejoue') {
+        $('#resTitle').textContent = 'Une vie en moins';
+        $('#resStatus').textContent =
+          montee.vies > 1 ? `Il te reste ${montee.vies} vies. ${f.name} t’attend.` : 'Dernière vie : ne tombe plus.';
+        // s'arrêter n'a de sens qu'avec au moins un étage à inscrire
+        if (montee.etages)
+          setResultButtons(
+            'Réessayer',
+            () => startTower(f.n, true),
+            'M’arrêter là',
+            () => finMontee(false),
+          );
+        else setResultButtons('Réessayer', () => startTower(f.n, true), null, null);
       } else finMontee(true);
     } else if (session.mode === 'tower' && session.floor) {
       const f = session.floor,

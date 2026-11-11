@@ -1409,6 +1409,14 @@ body.touch .atk b {
   color: var(--jade);
 }
 
+/* vies de la montée, sur l'écran de fin d'étage */
+.vies {
+  display: block;
+  font-size: 26px;
+  letter-spacing: 0.18em;
+  color: #e5483a;
+}
+
 #tutoBar {
   position: fixed;
   left: 50%;
@@ -1465,9 +1473,13 @@ body.touch .atk b {
 #tutoBar .tdots i.on {
   background: var(--jade);
 }
-#tutoBar button {
+#tutoBar .tact {
   grid-column: 2;
   grid-row: 1 / 4;
+  display: grid;
+  gap: 6px;
+}
+#tutoBar button {
   padding: 6px 10px;
   font-size: 12px;
 }

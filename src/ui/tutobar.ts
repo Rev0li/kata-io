@@ -19,6 +19,7 @@ export function onTuto(step: TutoStep | null, i: number, n: number, count: numbe
     $('#tutoStep').textContent = 'Terminé';
     $('#tutoTxt').textContent = drill ? 'Technique maîtrisée !' : 'Bravo ! Direction la Tour du temple.';
     $('#tutoDots').innerHTML = '';
+    $('#tutoNext').hidden = true;
     return;
   }
   $('#tutoStep').textContent = drill ? 'Nouvelle technique' : `Tutoriel · étape ${i + 1} sur ${n}`;
@@ -27,6 +28,7 @@ export function onTuto(step: TutoStep | null, i: number, n: number, count: numbe
     step.goal > 1
       ? Array.from({ length: step.goal }, (_, k) => `<i class="${k < count ? 'on' : ''}"></i>`).join('')
       : '';
+  $('#tutoNext').hidden = n < 2; // un exercice n'a qu'une étape : « Passer » suffit
   if (count === 0) restartAnim(bar);
 }
 export function onTutoDone() {

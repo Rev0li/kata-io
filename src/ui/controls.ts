@@ -2,7 +2,7 @@
 // Tout aboutit dans session.input, envoyé tel quel à la simulation ou à l'hôte.
 import { session } from '../net/session';
 import { initAudio, startMusic } from '../game/audio';
-import { screenDirToWorld } from '../game/render';
+import { screenDirToWorld } from '../game/render/iso'; // pas '../game/render' : l'accueil se charge sans Phaser
 
 let fsTried = false;
 const keys = new Set<string>();

@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "sim": "tsx scripts/simcheck.ts",
+    "tour": "tsx scripts/towercheck.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",

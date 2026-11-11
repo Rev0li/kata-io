@@ -7,6 +7,8 @@ import { viewState } from '../ui/viewstate';
 import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
 import { bumpHint } from '../game/hints';
+import { MINI } from '../ui/edition';
+import { coeurs } from '../ui/montee';
 
 const DISP = '"Big Shoulders Display", Impact, sans-serif';
 const BODY = 'Barlow, system-ui, sans-serif';
@@ -107,6 +109,7 @@ export class HudScene extends Phaser.Scene {
     if (a >= this.flash.a * (1 - this.flash.t / this.flash.life)) this.flash = { col, a, t: 0, life };
   }
   layoutTouch: boolean | null = null;
+  u = 1; // échelle des textes sur ordinateur
   safe = { l: 0, r: 0, t: 0, b: 0 };
   // marges de sécurité de l'écran (encoche, coins arrondis, barre d'accueil) lues depuis le CSS
   measureSafe() {
@@ -133,6 +136,7 @@ export class HudScene extends Phaser.Scene {
     this.layoutTouch = touch;
     this.hint.setAlign('center').setWordWrapWidth(Math.min(W * 0.86, 640));
     this.big.setPosition(W / 2, H * 0.42).setFontSize(Math.round(Math.min(W, H) / 5.5) + 'px');
+    this.u = 1;
     if (touch) {
       // tactile : peu de texte. Score au centre, étage dessous, un pourcentage dans chaque coin, indice en bas au centre
       this.score.setPosition(W / 2, 18 + S.t).setFontSize('16px');
@@ -151,21 +155,29 @@ export class HudScene extends Phaser.Scene {
         .setPosition(W / 2, H - 8 - S.b)
         .setFontSize('12px');
     } else {
-      this.score.setPosition(W / 2, 20).setFontSize('20px');
-      this.sub.setPosition(W / 2, 46).setFontSize('11px');
+      // ordinateur : les textes grandissent avec l'écran (sur un grand écran, 12 px ne se lisent plus)
+      const u = Math.min(1.7, Math.max(1, Math.min(W / 1280, H / 720))),
+        px = (n: number) => Math.round(n * u) + 'px';
+      this.u = u;
+      this.score.setPosition(W / 2, 20).setFontSize(px(20));
+      this.sub.setPosition(W / 2, 20 + 26 * u).setFontSize(px(11));
       this.ping
         .setOrigin(1, 0)
         .setPosition(W - m, 14)
-        .setFontSize('12px');
-      this.myName.setPosition(m + 4, H - 128);
+        .setFontSize(px(13));
+      this.myName.setPosition(m + 4, H - 128).setFontSize(px(13));
       this.myPct.setPosition(m, H - 112).setFontSize('58px');
-      this.myMoves.setVisible(true).setPosition(m + 4, H - 22);
-      this.opName.setPosition(W - m - 4, 40);
-      this.opPct.setPosition(W - m, 56).setFontSize('40px');
+      this.myMoves
+        .setVisible(true)
+        .setPosition(m + 4, H - 10 - 14 * u)
+        .setFontSize(px(13));
+      this.opName.setPosition(W - m - 4, 14 + 24 * u).setFontSize(px(13));
+      this.opPct.setPosition(W - m, 30 + 26 * u).setFontSize('40px');
       this.hint
         .setOrigin(0.5, 0)
-        .setPosition(W / 2, 84)
-        .setFontSize('14px');
+        .setPosition(W / 2, 28 + 56 * u)
+        .setFontSize(px(15))
+        .setWordWrapWidth(Math.min(W * 0.86, 640 * u));
     }
   }
 
@@ -213,7 +225,8 @@ export class HudScene extends Phaser.Scene {
         ? 'Tutoriel'
         : session.mode === 'tower' && fl
           ? (fl.daily ? `Défi du jour · ${fl.name}` : `Étage ${fl.n} · ${fl.name}`) +
-            (session.attempt > 1 ? ` · essai ${session.attempt}` : '')
+            (session.attempt > 1 ? ` · essai ${session.attempt}` : '') +
+            (MINI && !fl.daily ? `  ${coeurs()}` : '') // vies de la montée
           : session.mode === 'practice'
             ? `Entraînement · ${LEVELS[session.level].name} · ${(MONDES.find(m => m[0] === viewState.world) || MONDES[0])[1]}`
             : session.ping >= 0
@@ -270,7 +283,7 @@ export class HudScene extends Phaser.Scene {
     {
       const touch2 = controls.isTouch,
         pw = Math.max(this.score.width, touch2 ? this.ping.width : this.sub.visible ? this.sub.width : 0) + 30,
-        ph = touch2 ? 50 : 56,
+        ph = touch2 ? 50 : 16 + 40 * this.u,
         py = touch2 ? 9 + this.safe.t : 10;
       if (this.score.visible && !tuto)
         this.g.fillStyle(0x0a1012, 0.34).fillRoundedRect(this.scale.width / 2 - pw / 2, py, pw, ph, 12);
