@@ -8,7 +8,7 @@ import { nextWhite, SUDDEN_T } from '../sim/sim';
 import { Ev } from '../sim/sim';
 import { bumpHint } from '../game/hints';
 import { MINI } from '../ui/edition';
-import { coeurs } from '../ui/montee';
+import { coeurs, montee } from '../ui/montee';
 
 const DISP = '"Big Shoulders Display", Impact, sans-serif';
 const BODY = 'Barlow, system-ui, sans-serif';
@@ -17,6 +17,7 @@ const BODY = 'Barlow, system-ui, sans-serif';
 export class HudScene extends Phaser.Scene {
   g!: Phaser.GameObjects.Graphics;
   score!: Phaser.GameObjects.Text;
+  vies!: Phaser.GameObjects.Text;
   sub!: Phaser.GameObjects.Text;
   ping!: Phaser.GameObjects.Text;
   myName!: Phaser.GameObjects.Text;
@@ -55,6 +56,7 @@ export class HudScene extends Phaser.Scene {
       });
     this.g = this.add.graphics();
     this.score = t(30).setOrigin(0.5, 0);
+    this.vies = t(30, DISP, '800', '#e5483a').setOrigin(0, 0);
     this.sub = t(13, BODY, '600', '#93a59f').setOrigin(0.5, 0);
     this.ping = t(12, BODY, '600', '#93a59f').setOrigin(1, 0);
     this.myName = t(13, BODY, '700', '#e0a243');
@@ -140,6 +142,7 @@ export class HudScene extends Phaser.Scene {
     if (touch) {
       // tactile : peu de texte. Score au centre, étage dessous, un pourcentage dans chaque coin, indice en bas au centre
       this.score.setPosition(W / 2, 18 + S.t).setFontSize('16px');
+      this.vies.setFontSize('15px');
       this.sub.setVisible(false);
       this.ping
         .setOrigin(0.5, 0)
@@ -160,6 +163,7 @@ export class HudScene extends Phaser.Scene {
         px = (n: number) => Math.round(n * u) + 'px';
       this.u = u;
       this.score.setPosition(W / 2, 20).setFontSize(px(20));
+      this.vies.setFontSize(px(18));
       this.sub.setPosition(W / 2, 20 + 26 * u).setFontSize(px(11));
       this.ping
         .setOrigin(1, 0)
@@ -185,7 +189,17 @@ export class HudScene extends Phaser.Scene {
     const st = session.mode === 'showcase' ? null : session.state,
       show = !!st; // pas de HUD dans la vitrine de la boutique
     if (this.layoutTouch !== controls.isTouch) this.layout(); // passage souris <-> tactile en cours de partie
-    for (const o of [this.score, this.ping, this.myName, this.myPct, this.myMoves, this.opName, this.opPct, this.hint])
+    for (const o of [
+      this.score,
+      this.vies,
+      this.ping,
+      this.myName,
+      this.myPct,
+      this.myMoves,
+      this.opName,
+      this.opPct,
+      this.hint,
+    ])
       o.setVisible(show && !(controls.isTouch && (o === this.myMoves || o === this.myName || o === this.opName)));
     this.g.clear();
     this.bigT += delta;
@@ -212,47 +226,72 @@ export class HudScene extends Phaser.Scene {
     const sMe = D.score[session.myIdx],
       sOp = D.score[1 - session.myIdx];
     const tuto = session.mode === 'tuto',
+      touch = controls.isTouch,
       ab = me.abil || { parry: true, charge: true, dragon: true };
-    this.score
-      .setVisible(!tuto)
-      .setText(session.mode === 'tower' ? `TOI  ${sMe} — ${sOp}` : `TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`);
-    this.sub
-      .setVisible(!controls.isTouch && !tuto)
-      .setText(D.firstTo === 1 ? 'Manche unique' : `Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`);
-    const fl = session.floor;
-    this.ping.setText(
-      tuto
-        ? 'Tutoriel'
-        : session.mode === 'tower' && fl
-          ? (fl.daily ? `Défi du jour · ${fl.name}` : `Étage ${fl.n} · ${fl.name}`) +
-            (session.attempt > 1 ? ` · essai ${session.attempt}` : '') +
-            (MINI && !fl.daily ? `  ${coeurs()}` : '') // vies de la montée
-          : session.mode === 'practice'
-            ? `Entraînement · ${LEVELS[session.level].name} · ${(MONDES.find(m => m[0] === viewState.world) || MONDES[0])[1]}`
-            : session.ping >= 0
-              ? `Ping ${session.ping} ms`
-              : 'Connexion…',
-    );
-    this.myName.setText(me.name === 'Toi' ? '' : me.name); // pas encore de pseudo : rien d'affiché
+    const fl = session.mode === 'tower' ? session.floor : null,
+      unique = D.firstTo === 1; // une seule manche : le score reste à 0 — 0 jusqu'à la fin, il n'apprend rien
+    // En haut au centre, ce qui sert pendant le combat. Tour : l'étage, les vies, le gardien et le temps de la montée
+    // (c'est lui qui départage au classement). Ailleurs : le score des manches.
+    const chrono = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
+      temps = (D.fightT || 0) / 1000;
+    const titre = fl
+      ? fl.daily
+        ? 'DÉFI DU JOUR'
+        : `ÉTAGE ${fl.n}`
+      : unique
+        ? op.name.toUpperCase()
+        : `TOI  ${sMe} — ${sOp}  ${op.name.toUpperCase()}`;
+    const ligne2 = fl
+      ? `${fl.name} · ${chrono(fl.daily || !MINI ? temps : montee.secondes + temps)}`
+      : unique
+        ? ''
+        : `Manche ${D.round} · premier à ${D.firstTo || FIRST_TO}`;
+    const cadre = tuto
+      ? 'Tutoriel'
+      : session.mode === 'practice'
+        ? `Entraînement · ${LEVELS[session.level].name} · ${(MONDES.find(m => m[0] === viewState.world) || MONDES[0])[1]}`
+        : session.mode === 'tower'
+          ? ''
+          : session.ping >= 0
+            ? `Ping ${session.ping} ms`
+            : 'Connexion…';
+    const avecVies = !!fl && MINI && !fl.daily;
+    this.score.setVisible(!tuto).setText(titre);
+    this.vies.setVisible(avecVies).setText(avecVies ? coeurs() : '');
+    // l'étage et les cœurs, centrés ensemble
+    {
+      const ecart = avecVies ? 10 * this.u : 0,
+        dx = avecVies ? (ecart + this.vies.width) / 2 : 0;
+      this.score.setX(this.scale.width / 2 - dx);
+      this.vies.setPosition(this.score.x + this.score.width / 2 + ecart, this.score.y + (touch ? 0 : 2 * this.u));
+    }
+    // tactile : une seule ligne sous le titre ; ordinateur : la ligne sous le titre, et le cadre en haut à droite
+    this.sub.setVisible(!touch && !tuto && !!ligne2).setText(ligne2);
+    this.ping.setText(touch ? ligne2 || cadre : cadre);
     // D3 : pourcentages cachés pour les deux (sauf ?debug) ; on lit son état aux signes sur le combattant
     const debug = new URLSearchParams(location.search).has('debug');
+    const showOp = RULES.showOpponentPct || debug;
+    this.myName.setText((RULES.showOwnPct || debug) && me.name !== 'Toi' ? me.name : '');
     this.myPct
       .setVisible(RULES.showOwnPct || debug)
       .setText(Math.round(me.pct) + '%')
       .setColor(heatCss(me.pct));
     this.bump = Math.max(0, this.bump - delta / 300);
     this.myPct.setScale(1 + this.bump * 0.35);
-    this.opName.setText(op.name);
-    const showOp = RULES.showOpponentPct || debug;
+    this.opName.setText(showOp ? op.name : ''); // sans pourcentage, son nom est déjà en haut au centre
     this.opPct
       .setVisible(showOp)
       .setText(Math.round(op.pct) + '%')
       .setColor(heatCss(op.pct));
-    const nw = me.deck ? nextWhite(me) : ATTACK_BY_ID[me.nextId];
-    const hv = me.deck ? ATTACK_BY_ID[me.deck.heavy[me.stance]] : ATTACK_BY_ID[me.heavyId];
-    this.myMoves.setText(
-      `Prochain coup : ${nw ? nw.name : '—'}` + (ab.charge ? `   ·   Chargé : ${hv ? hv.name : '—'}` : ''),
-    );
+    // Prochain coup et coup chargé : utiles seulement quand on compose son jeu de techniques (hors version minimale)
+    if (MINI) this.myMoves.setText('');
+    else {
+      const nw = me.deck ? nextWhite(me) : ATTACK_BY_ID[me.nextId];
+      const hv = me.deck ? ATTACK_BY_ID[me.deck.heavy[me.stance]] : ATTACK_BY_ID[me.heavyId];
+      this.myMoves.setText(
+        `Prochain coup : ${nw ? nw.name : '—'}` + (ab.charge ? `   ·   Chargé : ${hv ? hv.name : '—'}` : ''),
+      );
+    }
     const tip = !ab.parry
       ? controls.isTouch
         ? 'Frappe · Esquive ses coups · Envoie-le à l’eau'
@@ -281,10 +320,12 @@ export class HudScene extends Phaser.Scene {
     else this.hint.setText(!tuto && this.matchT < 9000 ? tip : '');
     // titre discret : petit, translucide, sur une pastille sombre à distance du bord de l'écran
     {
-      const touch2 = controls.isTouch,
-        pw = Math.max(this.score.width, touch2 ? this.ping.width : this.sub.visible ? this.sub.width : 0) + 30,
-        ph = touch2 ? 50 : 16 + 40 * this.u,
-        py = touch2 ? 9 + this.safe.t : 10;
+      const l1 = this.score.width + (this.vies.visible ? this.vies.width + 10 * this.u : 0),
+        l2 = touch ? this.ping.width : this.sub.visible ? this.sub.width : 0,
+        deux = l2 > 0,
+        pw = Math.max(l1, l2) + 30,
+        ph = touch ? (deux ? 50 : 34) : deux ? 16 + 40 * this.u : 12 + 26 * this.u,
+        py = touch ? 9 + this.safe.t : 10;
       if (this.score.visible && !tuto)
         this.g.fillStyle(0x0a1012, 0.34).fillRoundedRect(this.scale.width / 2 - pw / 2, py, pw, ph, 12);
       for (const o of [this.score, this.sub, this.ping]) o.setAlpha(0.82);
