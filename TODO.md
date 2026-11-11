@@ -73,7 +73,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] Masquer le **mode test** en production (visible avec `?debug`, `?test` ou en développement seulement).
 - [x] Mesures de jeu : taille des propriétés et nombre d'événements limités dans le serveur de jeu (`server/classement.ts`) ; l'ancien `/api/e` disparaît à la bascule.
 - [ ] Tests unitaires : progression et XP, `sanitizeLook`, chargement du profil, compactage des entrées et des instantanés réseau, règles de combat (épuisé, parade, anti-spam).
-- [ ] Typage : interfaces `Fighter` et `Sim` (aujourd'hui `any`), puis `strict` activé fichier par fichier.
+- [x] Typage : interfaces `Fighter` et `Sim` écrites (`src/sim/core.ts`), `strict` activé sur `src/sim` et `server/` (`tsconfig.strict.json`, vérifié par `npm run typecheck` et la CI). Reste : le miroir de l'invité (`snapshot.ts`), les événements (`Ev`), puis `src/net`, `src/ui`, `src/game`.
 - [x] CI GitHub Actions : format, types, tests, `npm run sim` et build sur chaque PR (`.github/workflows/ci.yml`).
 - [ ] Mettre à jour vite (8.3.4 → 8.3.5).
 
@@ -89,7 +89,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 - [x] Ancien classement supprimé du dépôt (`api/classement.js`, `api/e.js`, leur test).
 - [ ] Supprimer la base Upstash dans Vercel (onglet Storage).
 - [x] Serveur redéployé automatiquement à chaque fusion qui touche `src/sim` ou `server/` (`server/deploiement.sh`, cron du VPS, 2026-11-11).
-- [ ] Typage strict de `src/sim` (`Fighter`, `Sim`), dont le serveur dépend maintenant.
+- [x] Typage strict de `src/sim` et `server/` (2026-11-11).
 
 Étape 2 : comptes (phase 4b ci-dessous). Étape 3 : duels en salles autoritaires (remplace le serveur TURN et PeerJS de la phase 4).
 

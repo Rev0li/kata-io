@@ -45,7 +45,7 @@ function turnRate(e: Fighter) {
     case 'dodge':
       return 4;
     case 'attack': {
-      const a = e.atk;
+      const a = e.atk!;
       return a.t < a.su ? 9 : a.t < a.su + a.ac ? 1.5 : 4;
     }
     default:
@@ -53,7 +53,7 @@ function turnRate(e: Fighter) {
   }
 }
 function updAttack(S: Sim, e: Fighter, ms: number) {
-  const a = e.atk,
+  const a = e.atk!,
     d = a.def,
     prev = a.t;
   a.t += ms;
@@ -93,22 +93,23 @@ function updAttack(S: Sim, e: Fighter, ms: number) {
   if (a.t >= a.su + a.ac + a.rc) finishAttack(e);
 }
 function finishAttack(e: Fighter) {
-  const a = e.atk;
+  const a = e.atk!;
   if (a && !a.applied) e.stance = a.endStance;
   e.comboT = a && a.kind === 'white' ? 500 : 0;
   e.atk = null;
   toIdle(e);
 }
 function updDodge(S: Sim, e: Fighter) {
-  const p = clamp(e.stateT / DODGE_T, 0, 1),
+  const D = e.dodge!,
+    p = clamp(e.stateT / DODGE_T, 0, 1),
     want = DODGE_DIST * easeOut(p),
-    dd = want - e.dodge.done;
-  e.dodge.done = want;
-  moveSafe(S, e, e.dodge.dx * dd, e.dodge.dy * dd);
+    dd = want - D.done;
+  D.done = want;
+  moveSafe(S, e, D.dx * dd, D.dy * dd);
   if (e.stateT >= DODGE_T + 60) toIdle(e);
 }
 function updClimb(S: Sim, e: Fighter) {
-  const L = e.ledge,
+  const L = e.ledge!,
     p = clamp(e.stateT / 300, 0, 1);
   const H = S.H;
   const d = lerp(8, -30, easeOut(p));
@@ -213,8 +214,8 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
       }
       break;
     case 'ledge':
-      e.ledge.t += ms;
-      if (e.ledge.t > 1500) climb(e);
+      e.ledge!.t += ms;
+      if (e.ledge!.t > 1500) climb(e);
       break;
     case 'climb':
       updClimb(S, e);

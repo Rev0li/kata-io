@@ -4,7 +4,7 @@ import { RAD, R, CHARGE_START, CHARGE_FULL, TF, RULES } from './data';
 import { attaque } from './styles';
 import type { AttackDef } from './data';
 import { clamp, angDiff, alive, emit, fx } from './core';
-import type { Fighter, Input, Sim } from './core';
+import type { Fighter, Input, Sim, Vec } from './core';
 
 export function applyInput(S: Sim, e: Fighter, inp: Input) {
   const p = e.inPrev;
@@ -35,7 +35,12 @@ export function applyInput(S: Sim, e: Fighter, inp: Input) {
   e.inPrev = { atk: inp.atk, parryN: inp.parryN, dodgeN: inp.dodgeN, emoteN: inp.emoteN };
 }
 
-function startAttack(S: Sim, e: Fighter, d: AttackDef, o: any) {
+function startAttack(
+  S: Sim,
+  e: Fighter,
+  d: AttackDef,
+  o: { kind: 'white' | 'red'; idx?: number; finisher?: boolean; power?: number; dragon?: boolean },
+) {
   aimAssist(S, e, d, o.kind);
   e.state = 'attack';
   e.stateT = 0;
@@ -91,7 +96,7 @@ export function startWhite(S: Sim, e: Fighter) {
   if (e.comboT <= 0 || e.combo.idx >= Math.min(3, e.abil.chain) || !ch[e.combo.stance][e.combo.idx])
     e.combo = { stance: e.stance, idx: 0 };
   const idx = e.combo.idx,
-    d = attaque(e, ch[e.combo.stance][idx]);
+    d = attaque(e, ch[e.combo.stance][idx]!);
   e.combo.idx++;
   startAttack(S, e, d, { kind: 'white', idx, finisher: idx === 2 });
 }
@@ -99,8 +104,8 @@ export function startWhite(S: Sim, e: Fighter) {
 export function nextWhite(e: Fighter) {
   const ch = e.deck.chain;
   if (e.comboT > 0 && e.combo.idx < Math.min(3, e.abil.chain) && ch[e.combo.stance][e.combo.idx])
-    return attaque(e, ch[e.combo.stance][e.combo.idx]);
-  return attaque(e, ch[e.stance][0]);
+    return attaque(e, ch[e.combo.stance][e.combo.idx]!);
+  return attaque(e, ch[e.stance][0]!); // le premier coup d'une garde existe toujours
 }
 export function startCharge(S: Sim, e: Fighter) {
   e.spam = Math.max(0, e.spam - RULES.spamDefend);
@@ -144,12 +149,12 @@ function aimAssist(S: Sim, e: Fighter, d: AttackDef, kind: string) {
   if (best) e.facing = e.wantFacing = DM.atan2(best.y - e.y, best.x - e.x);
 }
 // Action mémorisée pendant un coup ou un étourdissement, jouée dès que possible.
-export function runBuffer(S: Sim, e: Fighter, b: any) {
+export function runBuffer(S: Sim, e: Fighter, b: NonNullable<Fighter['buffer']>) {
   if (b.type === 'atk') startWhite(S, e);
   else doAction(S, e, b.type, b.arg);
 }
 
-export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
+export function doAction(S: Sim, e: Fighter, type: string, arg?: Vec | string | null) {
   if (!e || !alive(e) || e.state === 'frozen') return;
   const st = e.state;
   switch (type) {
@@ -192,17 +197,19 @@ export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
         climb(e);
         return;
       }
-      const recov = st === 'attack' && e.atk.kind === 'white' && e.atk.t >= e.atk.su + e.atk.ac;
+      const a = e.atk,
+        recov = st === 'attack' && !!a && a.kind === 'white' && a.t >= a.su + a.ac,
+        dir = arg && typeof arg === 'object' ? arg : undefined; // direction du joystick, sinon vers l'arrière
       if (st === 'idle' || st === 'charge' || recov) {
         if (e.souffle < 1) {
           tired(S, e);
           return;
         }
-        startDodge(S, e, arg);
+        startDodge(S, e, dir);
         return;
       }
       if (st === 'attack' || st === 'stun') {
-        e.buffer = { type: 'dodge', arg };
+        e.buffer = { type: 'dodge', arg: dir };
         e.bufferT = 0;
       }
       return;
@@ -213,7 +220,7 @@ export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
       return;
   }
 }
-function startDodge(S: Sim, e: Fighter, dir: any) {
+function startDodge(S: Sim, e: Fighter, dir?: Vec | null) {
   let dx: number, dy: number;
   if (dir && DM.hypot(dir.x, dir.y) > 0.2) {
     const l = DM.hypot(dir.x, dir.y);

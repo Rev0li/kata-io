@@ -13,7 +13,7 @@ function addQi(e: Fighter, n: number) {
 
 // Le point (x, y) est-il dans la zone du coup en cours de e (portée et arc) ?
 function dansLeCoup(e: Fighter, x: number, y: number) {
-  const d = e.atk.def,
+  const d = e.atk!.def,
     dx = x - e.x,
     dy = y - e.y,
     dist = DM.hypot(dx, dy);
@@ -22,7 +22,7 @@ function dansLeCoup(e: Fighter, x: number, y: number) {
   return Math.abs(angDiff(e.facing, DM.atan2(dy, dx))) <= (d.arc * RAD) / 2 + DM.atan2(R, Math.max(dist, 1));
 }
 export function checkHits(S: Sim, e: Fighter) {
-  const a = e.atk,
+  const a = e.atk!,
     d = a.def;
   if (a.t < a.su || a.t >= a.su + a.ac) return;
   const hits = d.hits || 1,
@@ -37,14 +37,14 @@ export function checkHits(S: Sim, e: Fighter) {
     if (o === e || !alive(o) || a.hit.has(o.id)) continue;
     // Esquive : le coup compte aussi s'il aurait touché là d'où l'esquive est partie.
     // Sans cela, esquiver en reculant sort de la portée avant l'impact et ne rend jamais le souffle.
-    const esquive = o.state === 'dodge' && o.dodge && o.stateT >= DODGE_IF0 && o.stateT <= DODGE_IF1;
-    if (!dansLeCoup(e, o.x, o.y) && !(esquive && dansLeCoup(e, o.dodge.ox, o.dodge.oy))) continue;
+    const esquive = o.state === 'dodge' && o.stateT >= DODGE_IF0 && o.stateT <= DODGE_IF1 ? o.dodge : null;
+    if (!dansLeCoup(e, o.x, o.y) && !(esquive && dansLeCoup(e, esquive.ox, esquive.oy))) continue;
     resolveHit(S, e, o);
     if (e.state !== 'attack') return;
   }
 }
 function resolveHit(S: Sim, att: Fighter, tgt: Fighter) {
-  const a = att.atk;
+  const a = att.atk!;
   a.hit.add(tgt.id);
   if (tgt.spawnInv > 0 || tgt.state === 'climb') return;
   if (tgt.god) {
@@ -83,7 +83,7 @@ function resolveHit(S: Sim, att: Fighter, tgt: Fighter) {
   applyHit(S, att, tgt, guardBreak);
 }
 function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
-  const a = att.atk,
+  const a = att.atk!,
     d = a.def,
     red = a.kind === 'red';
   const dmg = red ? d.dmg * a.power : d.dmg;
@@ -169,8 +169,9 @@ function parried(S: Sim, def: Fighter, att: Fighter, perfect: boolean) {
   emit(S, { t: 'parry', by: def.idx, perfect });
 }
 function perfectDodge(S: Sim, tgt: Fighter, att: Fighter) {
-  if (tgt.lastAvoid === att.atk.uid) return;
-  tgt.lastAvoid = att.atk.uid;
+  const uid = att.atk!.uid;
+  if (tgt.lastAvoid === uid) return;
+  tgt.lastAvoid = uid;
   if (tgt.abil.elan) {
     tgt.souffle = Math.min(3, tgt.souffle + 1);
     tgt.elanT = 1500;
@@ -234,7 +235,7 @@ export function startFall(S: Sim, e: Fighter) {
   e.emote = null;
   koFighter(S, e, killer);
 }
-function koFighter(S: Sim, v: Fighter, killer: Fighter) {
+function koFighter(S: Sim, v: Fighter, killer: Fighter | null | undefined) {
   const pct = Math.round(v.pct);
   v.splashFx = killer ? killer.look.ejection || 'plouf' : 'plouf';
   v.koWord = v.star

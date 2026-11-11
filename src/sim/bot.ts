@@ -42,7 +42,7 @@ function edgeInward(S: Sim, e: Fighter) {
 }
 function botPress(S: Sim, e: Fighter, hold: number) {
   doAction(S, e, 'pressAtk');
-  e.bot.holdFor = hold;
+  e.bot!.holdFor = hold;
 }
 
 /* ================= bot d'entraînement ================= */
@@ -51,7 +51,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
     e.move = { x: 0, y: 0 };
     return;
   }
-  const b = e.bot,
+  const b = e.bot!,
     ms = dt * 1000;
   if (b.dummy) {
     dummyUpdate(S, e, dt);
@@ -101,7 +101,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       dy0 = e.y - T.y,
       d0 = DM.hypot(dx0, dy0);
     if (T.state === 'charge' && d0 < 170) b.respect = 250;
-    if (T.state === 'attack' && b.seen.get(T.id) !== T.atk.uid) {
+    if (T.state === 'attack' && T.atk && b.seen.get(T.id) !== T.atk.uid) {
       const a = T.atk;
       if (
         d0 <= a.def.rg + a.def.lunge + 40 &&
@@ -212,8 +212,8 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
     if (e.state !== 'charge') b.waited = false;
     if (
       e.state === 'attack' &&
-      e.atk.kind === 'white' &&
-      e.atk.t > e.atk.su &&
+      e.atk!.kind === 'white' &&
+      e.atk!.t > e.atk!.su &&
       !e.buffer &&
       b.chain > 0 &&
       dist < 95 &&
@@ -239,7 +239,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
 /* ================= mannequin d'entraînement ================= */
 // Modes pilotés par le tutoriel : 'idle' (reste à sa place), 'white' (attaque lentement en blanc).
 function dummyUpdate(S: Sim, e: Fighter, dt: number) {
-  const b = e.bot,
+  const b = e.bot!,
     ms = dt * 1000;
   b.cd -= ms;
   e.souffle = 3;
@@ -249,7 +249,7 @@ function dummyUpdate(S: Sim, e: Fighter, dt: number) {
   const dx = T.x - e.x,
     dy = T.y - e.y,
     dist = DM.hypot(dx, dy);
-  if (e.state !== 'attack' || e.atk.t < e.atk.su) e.wantFacing = DM.atan2(dy, dx);
+  if (e.state !== 'attack' || e.atk!.t < e.atk!.su) e.wantFacing = DM.atan2(dy, dx);
   if (b.mode === 'idle') {
     const hx = b.ax - e.x,
       hy = b.ay - e.y,
