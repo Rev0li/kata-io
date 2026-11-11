@@ -126,13 +126,14 @@ Sans `VITE_API_JEU`, le jeu utilise l'ancien classement et n'enregistre rien. Po
 4. `VITE_API_JEU=/api/jeu` est fixée par le fichier `.env.production` du dépôt : tout build Vercel (aperçu d'une PR comme production) parle au serveur de jeu. Pour essayer un changement risqué, jouer une montée sur l'aperçu de la PR avant de fusionner. Attention : un aperçu écrit dans le vrai classement.
 5. **Fait le 2026-11-11** : production branchée après une montée acceptée sur iPhone ; `api/classement.js`, `api/e.js` et leur test supprimés. Les anciens scores, non vérifiés et joués avec une seule vie, n'ont pas été repris. Reste à supprimer la base Upstash dans Vercel (onglet *Storage*).
 
-À chaque fusion qui touche `src/sim` ou `server/` :
+À chaque fusion qui touche `src/sim` ou `server/`, le serveur se redéploie **tout seul** : `server/deploiement.sh`, lancé chaque minute par le cron de l'utilisateur sur le VPS, récupère `main` et reconstruit le serveur si quelque chose le concerne. C'est le VPS qui vient chercher le code : aucune clé n'est confiée à GitHub.
 
 ```bash
-git pull && docker compose -f server/compose.yml up -d --build
+crontab -l                                    # * * * * * $HOME/app/kata/server/deploiement.sh >> $HOME/app/kata-deploiement.log 2>&1
+tail ~/app/kata-deploiement.log               # une ligne par déploiement, « ÉCHEC » si la construction rate (retentée chaque minute)
 ```
 
-Entre la mise en ligne du jeu par Vercel et cette commande, les montées ne sont pas classées. À automatiser plus tard (action GitHub qui déploie le serveur en même temps).
+Entre la mise en ligne du jeu par Vercel et la fin de la reconstruction (une à trois minutes), les montées commencées ne sont pas classées. À la main, si besoin : `git pull && docker compose -f server/compose.yml up -d --build`.
 
 ## Exploitation
 
