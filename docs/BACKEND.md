@@ -123,7 +123,7 @@ Sans `VITE_API_JEU`, le jeu utilise l'ancien classement et n'enregistre rien. Po
    ```json
    "rewrites": [{ "source": "/api/jeu/:chemin*", "destination": "https://kata.rev0li.duckdns.org/api/jeu/:chemin*" }]
    ```
-4. Dans Vercel, variable `VITE_API_JEU=/api/jeu`, d'abord sur **Preview** pour essayer (dont une montée sur iPhone), puis sur **Production**. Attention : un aperçu branché écrit dans le vrai classement.
+4. `VITE_API_JEU=/api/jeu` est fixée par le fichier `.env.production` du dépôt : tout build Vercel (aperçu d'une PR comme production) parle au serveur de jeu. Pour essayer un changement risqué, jouer une montée sur l'aperçu de la PR avant de fusionner. Attention : un aperçu écrit dans le vrai classement.
 5. Une fois la production branchée et vérifiée : supprimer `api/classement.js`, `api/e.js`, leur test, et la base Upstash. Les anciens scores, non vérifiés et joués avec une seule vie, ne sont pas repris.
 
 À chaque fusion qui touche `src/sim` ou `server/` :
