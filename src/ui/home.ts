@@ -33,7 +33,8 @@ import { bootAttendre, voileLeve } from './boot';
 const TECHS = RANKS.filter(r => r.unlock).length;
 const techsGot = () => RANKS.slice(1, myRank() + 1).filter(r => r.unlock).length;
 const floorsWon = () => Math.min(TOWER_LEN, profile.towerMax - 1);
-export const publicOpen = () => techsGot() >= TECHS && floorsWon() >= TOWER_LEN;
+// Version minimale : tout est là dès le départ, la partie publique n'a donc aucune condition.
+export const publicOpen = () => MINI || (techsGot() >= TECHS && floorsWon() >= TOWER_LEN);
 
 // Parchemin de chaque technique (pack Ninja Adventure, public/assets/items).
 export const SCROLLS: Record<string, string> = {

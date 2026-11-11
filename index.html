@@ -186,24 +186,15 @@
           <button id="towerBtn" class="btn-gold mbig" type="button">
             <span class="mtitle">Jouer</span><small id="towerSub">Étage 1</small><kbd class="pc-only mkey">Entrée</kbd>
           </button>
+          <button id="duelBtn" class="mside mwide" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
+            ><span><b>Duel</b><small>contre un ami, avec un code</small></span>
+          </button>
           <button id="persoBtn" class="mperso onlymini" type="button" aria-label="Choisir ton combattant">
             <i class="face" id="homeFace"></i><span><b id="homePerso"></b><small id="homeStyle"></small></span
             ><em>Changer</em>
           </button>
-          <div class="mduo">
-            <button id="tutoHomeBtn" class="mside onlymini" type="button">
-              <img class="px" src="/assets/items/scroll-empty.png" alt="" /><span
-                ><b>Tutoriel</b><small>3 min, toutes les techniques</small></span
-              >
-            </button>
-            <button id="trainBtn" class="mside" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="8" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="12" cy="12" r="0.8" /></svg
-              ><span><b>Entraînement</b><small>contre un bot</small></span>
-            </button>
-          </div>
         </nav>
 
         <!-- version minimale : le top 10 de la montée, qui se déroule en cascade -->
@@ -215,17 +206,24 @@
           <p class="status" id="homeTopStatus"></p>
         </section>
 
-        <!-- à venir : grisé, tout en bas -->
+        <!-- tout en bas : apprendre et s'exercer (et le défi du jour, hors version minimale) -->
         <div class="msoon">
-          <button id="dailyBtn" class="mside" type="button">
+          <button id="tutoHomeBtn" class="mside onlymini" type="button">
+            <img class="px" src="/assets/items/scroll-empty.png" alt="" /><span
+              ><b>Tutoriel</b><small>3 min, toutes les techniques</small></span
+            >
+          </button>
+          <button id="trainBtn" class="mside" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="12" cy="12" r="0.8" /></svg
+            ><span><b>Entraînement</b><small>contre un bot</small></span>
+          </button>
+          <button id="dailyBtn" class="mside nomini" type="button">
             <img class="px" src="/assets/items/scroll-thunder.png" alt="" /><span
               ><b>Défi du jour</b><small id="dailySub"></small
             ></span>
-          </button>
-          <button id="duelBtn" class="mside" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M14 4l6 6M4 20l7-7M14.5 9.5l-9 9M18 3l3 3-9 9-3-3z" /></svg
-            ><span><b>Duel</b><small>contre un ami, avec un code</small></span>
           </button>
         </div>
       </div>

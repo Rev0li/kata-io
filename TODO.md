@@ -97,6 +97,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 Étape 2 : comptes (phase 4b ci-dessous).
 
 - [x] Étape 3, duel entre amis arbitré par le serveur (2026-11-12) : salles en WebSocket sur le VPS (`server/duel.ts`), les deux joueurs envoient leurs entrées et reçoivent des instantanés ; bouton Duel rouvert. Voir [docs/BACKEND.md](docs/BACKEND.md).
+- [x] Accueil (2026-11-12) : Duel sous Jouer, tutoriel et entraînement en bas, défi du jour caché ; partie publique sans condition (reste à coder, bouton « Bientôt ») ; lanternes sur pied retirées des angles de la plateforme.
 - [ ] Duel : à jouer à deux sur deux machines (délai ressenti, téléphone), puis prédiction locale si besoin.
 
 ## Phase 4 : connexion

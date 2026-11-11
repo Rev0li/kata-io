@@ -62,10 +62,10 @@ export function setupUI() {
   setupButtonFx();
   setupDevPanel();
   document.body.classList.toggle('mini', MINI);
-  // version minimale : défi du jour grisé (« Bientôt »), et le duel aussi tant qu'il n'y a pas de serveur de jeu
-  // pour l'arbitrer ; la Tour se monte d'une traite depuis l'étage 1
+  // version minimale : pas de défi du jour (bouton caché), et le duel est grisé (« Bientôt ») tant qu'il n'y a pas
+  // de serveur de jeu pour l'arbitrer ; la Tour se monte d'une traite depuis l'étage 1
   if (MINI)
-    for (const id of duelOuvert ? ['#dailyBtn'] : ['#dailyBtn', '#duelBtn']) {
+    for (const id of duelOuvert ? [] : ['#duelBtn']) {
       const b = $(id) as HTMLButtonElement;
       b.disabled = true;
       b.classList.add('soon');
