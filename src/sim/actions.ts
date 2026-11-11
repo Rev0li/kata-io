@@ -1,4 +1,5 @@
 // Actions d'un combattant : entrées du joueur, coups blancs et chargés, parade, esquive, remontée au bord.
+import * as DM from './dmath';
 import { RAD, R, CHARGE_START, CHARGE_FULL, TF, RULES } from './data';
 import { attaque } from './styles';
 import type { AttackDef } from './data';
@@ -15,7 +16,7 @@ export function applyInput(S: Sim, e: Fighter, inp: Input) {
   }
   let mx = clamp(+inp.mx || 0, -1, 1),
     my = clamp(+inp.my || 0, -1, 1);
-  const l = Math.hypot(mx, my);
+  const l = DM.hypot(mx, my);
   if (l > 1) {
     mx /= l;
     my /= l;
@@ -132,15 +133,15 @@ function aimAssist(S: Sim, e: Fighter, d: AttackDef, kind: string) {
     if (o === e || !alive(o)) continue;
     const dx = o.x - e.x,
       dy = o.y - e.y,
-      dist = Math.hypot(dx, dy);
+      dist = DM.hypot(dx, dy);
     if (dist > reach) continue;
-    const a = Math.abs(angDiff(e.facing, Math.atan2(dy, dx)));
+    const a = Math.abs(angDiff(e.facing, DM.atan2(dy, dx)));
     if (a < ba) {
       ba = a;
       best = o;
     }
   }
-  if (best) e.facing = e.wantFacing = Math.atan2(best.y - e.y, best.x - e.x);
+  if (best) e.facing = e.wantFacing = DM.atan2(best.y - e.y, best.x - e.x);
 }
 // Action mémorisée pendant un coup ou un étourdissement, jouée dès que possible.
 export function runBuffer(S: Sim, e: Fighter, b: any) {
@@ -214,13 +215,13 @@ export function doAction(S: Sim, e: Fighter, type: string, arg?: any) {
 }
 function startDodge(S: Sim, e: Fighter, dir: any) {
   let dx: number, dy: number;
-  if (dir && Math.hypot(dir.x, dir.y) > 0.2) {
-    const l = Math.hypot(dir.x, dir.y);
+  if (dir && DM.hypot(dir.x, dir.y) > 0.2) {
+    const l = DM.hypot(dir.x, dir.y);
     dx = dir.x / l;
     dy = dir.y / l;
   } else {
-    dx = -Math.cos(e.facing);
-    dy = -Math.sin(e.facing);
+    dx = -DM.cos(e.facing);
+    dy = -DM.sin(e.facing);
   }
   e.spam = Math.max(0, e.spam - RULES.spamDefend);
   e.souffle -= 1;

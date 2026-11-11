@@ -13,8 +13,6 @@ import { towerFloor, abilFor, FULL_ABIL } from '../src/sim/progression';
 import { styleOf, lookStyle } from '../src/sim/styles';
 import { VIES } from '../src/ui/montee';
 
-declare const process: { argv: string[]; exit(code: number): never }; // pas de types Node dans ce projet
-
 const JOUEUR = +(process.argv[2] || 0.45),
   PERSO = process.argv[3] || 'ninja-bleu',
   N = +(process.argv[4] || 60),

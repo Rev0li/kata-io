@@ -1,4 +1,5 @@
 // Instantanés réseau : l'hôte compacte l'état de la partie, l'invité l'applique à sa copie locale (miroir).
+import * as DM from './dmath';
 import { DUEL_H, FIRST_TO, sanitizeLook } from './data';
 import { attaque, lookStyle } from './styles';
 import { FULL_ABIL } from './progression';
@@ -133,7 +134,7 @@ export function applySnapshot(m: any, s: any) {
       z,
       star,
     ] = p;
-    const jump = Math.hypot(x - e.x, y - e.y) > 160 || e.fresh || (state === 'frozen' && e.state !== 'frozen');
+    const jump = DM.hypot(x - e.x, y - e.y) > 160 || e.fresh || (state === 'frozen' && e.state !== 'frozen');
     e.tx = x;
     e.ty = y;
     if (jump) {
@@ -177,7 +178,7 @@ export function applySnapshot(m: any, s: any) {
 }
 export function advanceMirror(m: any, dt: number) {
   const ms = dt * 1000,
-    k = 1 - Math.exp(-22 * dt);
+    k = 1 - DM.exp(-22 * dt);
   for (const e of m.f) {
     e.x += (e.tx - e.x) * k;
     e.y += (e.ty - e.y) * k;

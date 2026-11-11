@@ -1,4 +1,5 @@
 // Avancée d'un combattant d'un pas : états (coup, charge, parade, esquive, bord…), souffle, déplacement, recul et collisions.
+import * as DM from './dmath';
 import {
   R,
   DODGE_T,
@@ -74,7 +75,7 @@ function updAttack(S: Sim, e: Fighter, ms: number) {
     l1 = a.su + a.ac;
   if (d.lunge && a.t > l0 && prev < l1) {
     const dd = (d.lunge * (Math.min(a.t, l1) - Math.max(prev, l0))) / (l1 - l0);
-    moveSafe(S, e, Math.cos(e.facing) * dd, Math.sin(e.facing) * dd);
+    moveSafe(S, e, DM.cos(e.facing) * dd, DM.sin(e.facing) * dd);
   }
   checkHits(S, e);
   if (e.state !== 'attack') return;
@@ -125,7 +126,7 @@ function updFall(S: Sim, e: Fighter, dt: number) {
   e.fallT += dt * 1000;
   e.x += e.vx * dt;
   e.y += e.vy * dt;
-  const k = Math.exp(-2.5 * dt);
+  const k = DM.exp(-2.5 * dt);
   e.vx *= k;
   e.vy *= k;
   if (e.star) e.z += e.vz * dt; // éjection « étoile » : il continue de monter jusqu'à disparaître
@@ -147,7 +148,7 @@ function regenMult(S: Sim, e: Fighter) {
   if (!o) return RULES.regenAdvance;
   const dx = o.x - e.x,
     dy = o.y - e.y,
-    d = Math.hypot(dx, dy) || 1;
+    d = DM.hypot(dx, dy) || 1;
   return (e.move.x * dx + e.move.y * dy) / d > 0.3 ? RULES.regenAdvance : RULES.regenIdle;
 }
 export function updEnt(S: Sim, e: Fighter, dt: number) {
@@ -205,7 +206,7 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
       updDodge(S, e);
       break;
     case 'tumble':
-      if (e.stateT > 200 && !(e.z > 0) && Math.hypot(e.vx, e.vy) < 130) {
+      if (e.stateT > 200 && !(e.z > 0) && DM.hypot(e.vx, e.vy) < 130) {
         e.state = 'stun';
         e.stateT = 0;
         e.stunDur = 120;
@@ -248,13 +249,13 @@ export function updEnt(S: Sim, e: Fighter, dt: number) {
       fx.sfx(S, 'thud', e.x, e.y, 0.5);
     }
   }
-  const k = Math.exp(-S.damp * (air ? LAUNCH.airDamp : 1) * dt);
+  const k = DM.exp(-S.damp * (air ? LAUNCH.airDamp : 1) * dt);
   e.vx *= k;
   e.vy *= k;
   const H = S.H;
   // au-dessus de l'eau en plein vol : rien ne se décide avant l'atterrissage
   if (!(e.z > 0) && (Math.abs(e.x) > H || Math.abs(e.y) > H)) {
-    const sp = Math.hypot(e.vx, e.vy);
+    const sp = DM.hypot(e.vx, e.vy);
     if ((sp > 30 || landed) && !e.god) {
       // rattrapage au bord : jamais après une projection, et une fois par manche
       if (e.state !== 'tumble' && !e.ledgeUsed && sp / S.damp < LEDGE_MAX) grabLedge(S, e);
@@ -275,7 +276,7 @@ export function collide(S: Sim) {
       if (!alive(b) || b.state === 'ledge' || b.state === 'climb') continue;
       const dx = b.x - a.x,
         dy = b.y - a.y,
-        d = Math.hypot(dx, dy);
+        d = DM.hypot(dx, dy);
       if (d < R * 2 && d > 0.01) {
         const o = (R * 2 - d) / 2,
           ux = dx / d,

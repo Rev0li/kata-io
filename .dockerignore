@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+public
+archive
+art
+docs
+tests
+scripts
+server/.env

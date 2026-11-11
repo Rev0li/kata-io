@@ -114,6 +114,8 @@ export function rankProgress(xp: number) {
 }
 
 /* ---------- Tour du temple ---------- */
+// Vies d'une montée en version minimale (D14) : une défaite en coûte une, la dernière arrête la montée.
+export const VIES = 3;
 export interface Floor {
   n: number;
   name: string;
