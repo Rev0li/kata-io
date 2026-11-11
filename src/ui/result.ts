@@ -25,7 +25,7 @@ import { setFace, setWico, renderCoins, SCROLLS, rechargerTop } from './home';
 import { startTower, startDaily, startTuto, practice, startRun } from './launch';
 import { montee, finEtage, coeurs } from './montee';
 import { MINI } from './edition';
-import { envoyerMontee, rendreClassement } from '../net/classement';
+import { envoyerMontee, rendreClassement, classementVerifie } from '../net/classement';
 
 const nth = (n: number) => (n === 1 ? '1er' : n + 'e');
 
@@ -165,7 +165,7 @@ export function onEnd(winner: number, score: number[]) {
     } else if (MINI && session.mode === 'tower' && session.floor) {
       // montée de la Tour : on enchaîne les étages ; une défaite coûte une vie, la dernière arrête la montée
       const f = session.floor,
-        suite = finEtage(win, f.n, session.seconds);
+        suite = finEtage(win, f.n, session.seconds, session.combat);
       $('#resKicker').textContent = `Étage ${f.n} · ${f.name}`;
       $('#resScore').innerHTML =
         (win ? `Gagné en ${session.seconds} s ` : '') + `<span class="vies">${coeurs()}</span>`;
@@ -320,9 +320,16 @@ function finMontee(defaite: boolean) {
     st = $('#runStatus'),
     ol = $('#runTop');
   ol.innerHTML = '';
-  form.hidden = n === 0;
+  // serveur de jeu : sans graine au départ (serveur injoignable, mode test), la montée ne peut pas être vérifiée
+  const nonClassee = classementVerifie && !montee.ticket,
+    verif = classementVerifie && montee.ticket ? { montee: montee.ticket.montee, combats: montee.combats } : undefined;
+  form.hidden = n === 0 || nonClassee;
   st.textContent =
-    n === 0 ? 'Gagne au moins un étage pour entrer au classement.' : 'Inscris ton pseudo au classement :';
+    n === 0
+      ? 'Gagne au moins un étage pour entrer au classement.'
+      : nonClassee
+        ? 'Montée non classée : le classement était injoignable au départ.'
+        : 'Inscris ton pseudo au classement :';
   input.value = profile.name;
   (form.querySelector('button') as HTMLButtonElement).disabled = false;
   form.onsubmit = async e => {
@@ -338,7 +345,7 @@ function finMontee(defaite: boolean) {
     btn.disabled = true;
     st.textContent = 'Envoi…';
     try {
-      const c = await envoyerMontee(profile.name, n, t);
+      const c = await envoyerMontee(profile.name, n, t, verif);
       form.hidden = true;
       st.textContent = c.moi ? `Tu es ${c.moi.rang}${c.moi.rang === 1 ? 'er' : 'e'} du classement.` : 'Envoyé.';
       rendreClassement(ol, c);

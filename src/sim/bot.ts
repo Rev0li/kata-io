@@ -1,4 +1,5 @@
 // Adversaires pilotés par la simulation : bot d'entraînement (et gardiens de la Tour), mannequin du tutoriel.
+import * as DM from './dmath';
 import { RAD, RULES, CHARGE_START, CHARGE_FULL } from './data';
 import { attaque } from './styles';
 import { lerp, angDiff, alive, rnd, rand, pick, fx } from './core';
@@ -98,13 +99,13 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
   if (T) {
     const dx0 = e.x - T.x,
       dy0 = e.y - T.y,
-      d0 = Math.hypot(dx0, dy0);
+      d0 = DM.hypot(dx0, dy0);
     if (T.state === 'charge' && d0 < 170) b.respect = 250;
     if (T.state === 'attack' && b.seen.get(T.id) !== T.atk.uid) {
       const a = T.atk;
       if (
         d0 <= a.def.rg + a.def.lunge + 40 &&
-        (a.def.arc >= 360 || Math.abs(angDiff(T.facing, Math.atan2(dy0, dx0))) <= (a.def.arc * RAD) / 2 + 0.6)
+        (a.def.arc >= 360 || Math.abs(angDiff(T.facing, DM.atan2(dy0, dx0))) <= (a.def.arc * RAD) / 2 + 0.6)
       ) {
         b.seen.set(T.id, a.uid);
         const left = a.su - a.t;
@@ -135,8 +136,8 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       if (p.act === 'parry') doAction(S, e, 'parry');
       else if (T) {
         const sg = rnd(S) < 0.5 ? 1 : -1;
-        const px = -Math.sin(T.facing) * sg,
-          py = Math.cos(T.facing) * sg;
+        const px = -DM.sin(T.facing) * sg,
+          py = DM.cos(T.facing) * sg;
         const inw = edgeInward(S, e);
         doAction(S, e, 'dodge', { x: px + inw.x * 1.5, y: py + inw.y * 1.5 });
       }
@@ -147,23 +148,23 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
   if (T) {
     const dx = T.x - e.x,
       dy = T.y - e.y,
-      dist = Math.max(1, Math.hypot(dx, dy)),
+      dist = Math.max(1, DM.hypot(dx, dy)),
       ux = dx / dist,
       uy = dy / dist;
-    e.wantFacing = Math.atan2(dy, dx);
-    const tc = Math.hypot(T.x, T.y) || 1,
+    e.wantFacing = DM.atan2(dy, dx);
+    const tc = DM.hypot(T.x, T.y) || 1,
       cx = -T.x / tc,
       cy = -T.y / tc;
     let px = lerp(-ux, cx, s * 0.75),
       py = lerp(-uy, cy, s * 0.75);
-    const pl = Math.hypot(px, py) || 1;
+    const pl = DM.hypot(px, py) || 1;
     px /= pl;
     py /= pl;
     const gx = T.x + px * b.pref,
       gy = T.y + py * b.pref,
       tx = gx - e.x,
       ty = gy - e.y,
-      tl = Math.hypot(tx, ty);
+      tl = DM.hypot(tx, ty);
     if (tl > 10) {
       const k = Math.min(1, tl / 40);
       mx = (tx / tl) * k;
@@ -227,7 +228,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
   const inw = edgeInward(S, e);
   mx += inw.x * (0.6 + s);
   my += inw.y * (0.6 + s);
-  const l = Math.hypot(mx, my);
+  const l = DM.hypot(mx, my);
   if (l > 1) {
     mx /= l;
     my /= l;
@@ -247,12 +248,12 @@ function dummyUpdate(S: Sim, e: Fighter, dt: number) {
   if (!T || e.state === 'frozen') return;
   const dx = T.x - e.x,
     dy = T.y - e.y,
-    dist = Math.hypot(dx, dy);
-  if (e.state !== 'attack' || e.atk.t < e.atk.su) e.wantFacing = Math.atan2(dy, dx);
+    dist = DM.hypot(dx, dy);
+  if (e.state !== 'attack' || e.atk.t < e.atk.su) e.wantFacing = DM.atan2(dy, dx);
   if (b.mode === 'idle') {
     const hx = b.ax - e.x,
       hy = b.ay - e.y,
-      hl = Math.hypot(hx, hy);
+      hl = DM.hypot(hx, hy);
     if (e.state === 'idle' && hl > 30) e.move = { x: (hx / hl) * 0.4, y: (hy / hl) * 0.4 };
     return;
   }

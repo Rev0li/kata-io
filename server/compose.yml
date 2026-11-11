@@ -1,0 +1,35 @@
+# Serveur de jeu et sa base PostgreSQL, sur le VPS. Mode d'emploi : docs/BACKEND.md.
+#   cp server/.env.example server/.env   puis choisir le mot de passe
+#   docker compose -f server/compose.yml up -d --build
+name: kata
+services:
+  jeu:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 8787
+      DATABASE_URL: postgres://kata:${POSTGRES_PASSWORD:?mot de passe manquant dans server/.env}@base:5432/kata
+      KATA_ORIGINES: ${KATA_ORIGINES:-}
+    ports:
+      - '127.0.0.1:8787:8787' # joignable par Caddy seulement, jamais directement depuis Internet
+    depends_on:
+      base:
+        condition: service_healthy
+  base:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kata
+      POSTGRES_DB: kata
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe manquant dans server/.env}
+    volumes:
+      - donnees:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kata -d kata']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  donnees:

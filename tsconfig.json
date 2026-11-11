@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": []
+    "types": ["node"]
   },
-  "include": ["src", "scripts", "tests"]
+  "include": ["src", "scripts", "tests", "server"]
 }

@@ -1,6 +1,13 @@
-// Classement de la montée de la Tour (version minimale) : lecture et envoi vers /api/classement.
+// Classement de la montée de la Tour (version minimale) : lecture et envoi.
 // Pas de compte : l'identifiant anonyme du navigateur (celui des mesures) garde la meilleure montée sous un pseudo.
+//
+// Deux serveurs possibles, selon la variable VITE_API_JEU du build :
+//   définie (ex. /api/jeu)  serveur de jeu (server/, D19) : le classement est vérifié. Avant une montée, le jeu
+//                           demande une graine (ticket) ; à la fin, il envoie ses combats enregistrés et le serveur
+//                           les rejoue. Sans ticket (serveur injoignable au départ), la montée n'est pas classée.
+//   absente                 ancienne fonction Vercel /api/classement : le score envoyé est cru sur parole.
 import { aid } from '../analytics';
+import type { Combat } from '../sim/rejeu';
 
 export interface Ligne {
   rang: number;
@@ -13,7 +20,47 @@ export interface Classement {
   top: Ligne[];
   moi: Ligne | null;
 }
-const URL_API = '/api/classement';
+const API = ((import.meta.env.VITE_API_JEU as string | undefined) || '').replace(/\/+$/, '');
+export const classementVerifie = !!API;
+const URL_API = API ? API + '/classement' : '/api/classement';
+
+/* ---------- ticket d'une montée classée ---------- */
+export interface Ticket {
+  montee: string;
+  graine: number;
+}
+const TICKET_MAX_MS = 20 * 3600 * 1000; // le serveur les garde 24 h
+let ticket: (Ticket & { le: number }) | null = null,
+  demande: Promise<void> | null = null;
+// Demande un ticket d'avance (à l'accueil, puis dès qu'une montée en consomme un) : Jouer n'attend jamais le réseau.
+export function preparerMontee() {
+  if (!API || demande || (ticket && Date.now() - ticket.le < TICKET_MAX_MS)) return;
+  demande = fetch(API + '/montee', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id: aid(), v: __VERSION_SIM__ }),
+  })
+    .then(async r => {
+      const j = await r.json().catch(() => null);
+      ticket =
+        r.ok && j && typeof j.montee === 'string' && Number.isInteger(j.graine)
+          ? { montee: j.montee, graine: j.graine, le: Date.now() }
+          : null;
+    })
+    .catch(() => {
+      ticket = null;
+    })
+    .finally(() => {
+      demande = null;
+    });
+}
+// Le ticket de la montée qui démarre (null : montée non classée), et un nouveau est demandé pour la suivante.
+export function prendreTicket(): Ticket | null {
+  const t = ticket && Date.now() - ticket.le < TICKET_MAX_MS ? { montee: ticket.montee, graine: ticket.graine } : null;
+  ticket = null;
+  preparerMontee();
+  return t;
+}
 
 async function appel(init?: RequestInit): Promise<Classement> {
   const r = await fetch(init ? URL_API : `${URL_API}?id=${encodeURIComponent(aid())}`, init);
@@ -22,11 +69,17 @@ async function appel(init?: RequestInit): Promise<Classement> {
   return j as Classement;
 }
 export const lireClassement = () => appel();
-export const envoyerMontee = (pseudo: string, etages: number, secondes: number) =>
+// verif : ticket et combats enregistrés (serveur de jeu) ; le serveur recompte lui-même étages et secondes.
+export const envoyerMontee = (
+  pseudo: string,
+  etages: number,
+  secondes: number,
+  verif?: { montee: string; combats: Combat[] },
+) =>
   appel({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id: aid(), pseudo, etages, secondes }),
+    body: JSON.stringify({ id: aid(), pseudo, etages, secondes, ...verif }),
   });
 
 // Liste <li> d'un classement, la ligne du joueur mise en avant (ajoutée en bas s'il est hors du top).

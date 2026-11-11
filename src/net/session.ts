@@ -26,6 +26,8 @@ import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo, cloneDeck } fr
 import { lookStyle, styleDeck } from '../sim/styles';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
+import { Enregistreur, combatEtage } from '../sim/rejeu';
+import type { Combat } from '../sim/rejeu';
 import { track } from '../analytics';
 
 export type Mode = 'idle' | 'practice' | 'tower' | 'tuto' | 'host' | 'guest' | 'showcase';
@@ -102,6 +104,12 @@ class Session {
   seconds = 0;
   theme: string | null = null; // dojo d'un duel entre amis (choisi par l'hôte)
   attempt = 1;
+  // Montée classée : le combat est enregistré pour que le serveur le rejoue (src/sim/rejeu.ts).
+  //   aEnregistrer  étage, personnage et graine du combat en cours ; rec : l'enregistreur, jusqu'au coup final ;
+  //   combat        l'enregistrement terminé, lu par l'écran de résultat.
+  private aEnregistrer: { c: Omit<Combat, 'e'>; graine: number } | null = null;
+  private rec: Enregistreur | null = null;
+  combat: Combat | null = null;
   teaser = '';
   bonus = { saves: 0, perfects: 0 };
   matches = 0; // parties jouées depuis le dernier retour à l'accueil (mesures)
@@ -182,7 +190,14 @@ class Session {
   startTower(
     me: MeSpec,
     floor: Floor,
-    extra: { abil?: Abil; attempt?: number; taunt?: string; teaser?: string; quick?: boolean } = {},
+    extra: {
+      abil?: Abil;
+      attempt?: number;
+      taunt?: string;
+      teaser?: string;
+      quick?: boolean;
+      combat?: { c: Omit<Combat, 'e'>; graine: number }; // montée classée : combat à graine, enregistré
+    } = {},
   ) {
     this.leave(true);
     this.mode = 'tower';
@@ -202,6 +217,13 @@ class Session {
       },
     ];
     this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp, quick: !!extra.quick };
+    if (extra.combat) {
+      // mêmes combattants et mêmes options que le serveur au rejeu
+      const k = combatEtage(extra.combat.c, extra.combat.graine, me);
+      this.specs = k.specs;
+      this.opts = k.opts;
+      this.aEnregistrer = extra.combat;
+    }
     this.begin();
     if (extra.taunt && this.sim) this.sim.f[1].emote = { id: extra.taunt, t: -700 };
   }
@@ -423,7 +445,13 @@ class Session {
       // part des valeurs actuelles, sinon il prend l'écart pour un appui et esquive dès son apparition.
       const me = this.sim.f[this.myIdx],
         i = this.input;
-      if (me && !me.bot) me.inPrev = { atk: false, parryN: i.parryN, dodgeN: i.dodgeN, emoteN: i.emoteN };
+      this.combat = null;
+      this.rec = this.aEnregistrer && this.mode === 'tower' ? new Enregistreur(i) : null;
+      // combat enregistré : parade et esquive repartent de zéro (l'enregistreur compte les appuis lui-même)
+      if (me && !me.bot)
+        me.inPrev = this.rec
+          ? { atk: false, parryN: 0, dodgeN: 0, emoteN: i.emoteN }
+          : { atk: false, parryN: i.parryN, dodgeN: i.dodgeN, emoteN: i.emoteN };
     }
     if (!silent) this.hooks.onStart?.();
   }
@@ -717,9 +745,17 @@ class Session {
     this.acc += Math.min(dt, 0.1);
     let n = 0;
     while (this.acc >= STEP && n < 6) {
-      const inputs = this.myIdx === 0 ? [this.input, this.remote] : [this.remote, this.input];
+      const mine = this.rec ? this.rec.pas(this.sim, this.input) : this.input;
+      const inputs = this.myIdx === 0 ? [mine, this.remote] : [this.remote, mine];
       stepSim(this.sim, STEP, inputs);
-      for (const e of drainEvents(this.sim)) this.handleEv(e, this.mode === 'host');
+      for (const e of drainEvents(this.sim)) {
+        // coup final : l'enregistrement s'arrête au même pas que le rejeu du serveur
+        if (e.t === 'end' && this.rec && this.aEnregistrer) {
+          this.combat = { ...this.aEnregistrer.c, e: this.rec.fin() };
+          this.rec = null;
+        }
+        this.handleEv(e, this.mode === 'host');
+      }
       if (this.tuto) this.tutoTick(STEP);
       this.acc -= STEP;
       n++;
@@ -807,6 +843,9 @@ class Session {
     this.ping = -1;
     this.notice = '';
     this.tuto = null;
+    this.aEnregistrer = null;
+    this.rec = null;
+    this.combat = null;
     this.theme = null;
     if (!silent) this.hooks.onStatus?.('');
   }

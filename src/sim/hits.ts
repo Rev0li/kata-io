@@ -1,4 +1,5 @@
 // Résolution des coups : touche, parade, esquive parfaite, recul, rattrapage au bord, chute et éjection.
+import * as DM from './dmath';
 import { RAD, R, WHITE_KB, RED_KB, TUMBLE_V, PARRY_PERFECT, DODGE_IF0, DODGE_IF1, RULES, LAUNCH } from './data';
 import { styleOf } from './styles';
 import { clamp, angDiff, alive, emit, fx } from './core';
@@ -27,10 +28,9 @@ export function checkHits(S: Sim, e: Fighter) {
     if (o === e || !alive(o) || a.hit.has(o.id)) continue;
     const dx = o.x - e.x,
       dy = o.y - e.y,
-      dist = Math.hypot(dx, dy);
+      dist = DM.hypot(dx, dy);
     if (dist > d.rg + R * 0.7) continue;
-    if (d.arc < 360 && Math.abs(angDiff(e.facing, Math.atan2(dy, dx))) > ar + Math.atan2(R, Math.max(dist, 1)))
-      continue;
+    if (d.arc < 360 && Math.abs(angDiff(e.facing, DM.atan2(dy, dx))) > ar + DM.atan2(R, Math.max(dist, 1))) continue;
     resolveHit(S, e, o);
     if (e.state !== 'attack') return;
   }
@@ -53,9 +53,9 @@ function resolveHit(S: Sim, att: Fighter, tgt: Fighter) {
     tgt.lastHitT = S.time;
     tgt.lastHitDragon = a.dragon;
     tgt.pct += a.def.dmg;
-    const an = Math.atan2(tgt.y - att.y, tgt.x - att.x);
-    tgt.vx = Math.cos(an) * 420;
-    tgt.vy = Math.sin(an) * 420;
+    const an = DM.atan2(tgt.y - att.y, tgt.x - att.x);
+    tgt.vx = DM.cos(an) * 420;
+    tgt.vy = DM.sin(an) * 420;
     fx.sparks(S, tgt.x, tgt.y, '#ecdfc6', 8);
     fx.sfx(S, 'hit', tgt.x, tgt.y);
     startFall(S, tgt);
@@ -102,11 +102,11 @@ function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
   mult *= styleOf(tgt.look?.perso).poids; // style lourd : recule moins (D16)
   const K = red ? RED_KB : WHITE_KB;
   const v = (K[0] + K[1] * tgt.pct) * mult;
-  const dist = Math.hypot(tgt.x - att.x, tgt.y - att.y);
-  let ang = dist > 1 ? Math.atan2(tgt.y - att.y, tgt.x - att.x) : att.facing;
+  const dist = DM.hypot(tgt.x - att.x, tgt.y - att.y);
+  let ang = dist > 1 ? DM.atan2(tgt.y - att.y, tgt.x - att.x) : att.facing;
   ang += angDiff(ang, att.facing) * 0.3;
-  tgt.vx = Math.cos(ang) * v;
-  tgt.vy = Math.sin(ang) * v;
+  tgt.vx = DM.cos(ang) * v;
+  tgt.vy = DM.sin(ang) * v;
   tgt.atk = null;
   tgt.buffer = null;
   tgt.comboT = 0;
@@ -127,7 +127,7 @@ function applyHit(S: Sim, att: Fighter, tgt: Fighter, guardBreak: boolean) {
   addQi(att, red ? 8 : 4);
   addQi(tgt, 2);
   const col = a.dragon ? '#f2c14e' : red ? '#e5483a' : '#ecdfc6';
-  fx.sparks(S, tgt.x - Math.cos(ang) * 10, tgt.y - Math.sin(ang) * 10, col, red ? 16 : 9);
+  fx.sparks(S, tgt.x - DM.cos(ang) * 10, tgt.y - DM.sin(ang) * 10, col, red ? 16 : 9);
   if (red || v > 700) fx.ring(S, tgt.x, tgt.y, 8, red ? 52 : 36, 240, col, red ? 5 : 3);
   fx.sfx(S, v > 650 ? 'bighit' : 'hit', tgt.x, tgt.y, clamp(0.6 + v / 1500, 0.6, 1.2));
   S.hitstop = Math.max(S.hitstop, Math.min(150, 40 + v / 22)); // pas de tremblement d'écran : il rendait le combat illisible
@@ -141,10 +141,10 @@ function parried(S: Sim, def: Fighter, att: Fighter, perfect: boolean) {
   att.buffer = null;
   att.comboT = 0;
   att.holding = false;
-  const an = Math.atan2(att.y - def.y, att.x - def.x);
+  const an = DM.atan2(att.y - def.y, att.x - def.x);
   if (perfect) {
-    att.vx = Math.cos(an) * 260;
-    att.vy = Math.sin(an) * 260;
+    att.vx = DM.cos(an) * 260;
+    att.vy = DM.sin(an) * 260;
   }
   toIdle(def);
   addQi(def, perfect ? 25 : 15);
@@ -203,13 +203,13 @@ export function grabLedge(S: Sim, e: Fighter) {
   e.atk = null;
   e.buffer = null;
   e.holding = false;
-  e.facing = e.wantFacing = Math.atan2(-ny, -nx);
+  e.facing = e.wantFacing = DM.atan2(-ny, -nx);
   fx.float(S, e.x, e.y - 46, 'RATTRAPÉ', '#ecdfc6', 15);
 }
 export function startFall(S: Sim, e: Fighter) {
   if (!alive(e)) return;
   const killer = S.time - e.lastHitT < 4000 ? S.f.find((o: Fighter) => o.id === e.lastHitBy && o !== e) : null;
-  const sp = Math.hypot(e.vx, e.vy);
+  const sp = DM.hypot(e.vx, e.vy);
   if (sp < 120) {
     const nx = Math.abs(e.x) >= Math.abs(e.y) ? Math.sign(e.x) : 0,
       ny = nx ? 0 : Math.sign(e.y);

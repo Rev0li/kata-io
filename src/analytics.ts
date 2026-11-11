@@ -1,6 +1,6 @@
 // Mesures de jeu anonymes : où les joueurs quittent, combien relancent une revanche, l'anti-spam se déclenche-t-il trop ?
 // Rien de personnel : un identifiant aléatoire stocké dans le navigateur et des compteurs de partie.
-// Envoi groupé vers /api/e (ou VITE_ANALYTICS_URL). Désactivé en local et si le navigateur demande « ne pas suivre ».
+// Envoi groupé vers le serveur de jeu (VITE_API_JEU), sinon /api/e (ou VITE_ANALYTICS_URL). Désactivé en local et si le navigateur demande « ne pas suivre ».
 type Props = Record<string, string | number | boolean | null>;
 interface Ev {
   n: string;
@@ -9,7 +9,9 @@ interface Ev {
 }
 
 const AID_KEY = 'kata.aid';
-const endpoint: string = (import.meta.env.VITE_ANALYTICS_URL as string) || '/api/e';
+// serveur de jeu (VITE_API_JEU) : les mesures y sont gardées en base ; sinon l'ancienne fonction Vercel /api/e
+const apiJeu = ((import.meta.env.VITE_API_JEU as string | undefined) || '').replace(/\/+$/, '');
+const endpoint: string = (import.meta.env.VITE_ANALYTICS_URL as string) || (apiJeu ? apiJeu + '/e' : '/api/e');
 const local = /^(localhost|127\.|\[::1\])/.test(location.hostname);
 const dnt = navigator.doNotTrack === '1';
 const enabled = !dnt && (!local || new URLSearchParams(location.search).has('analytics'));

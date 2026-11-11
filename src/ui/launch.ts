@@ -10,12 +10,15 @@ import { profile, myRank, myAbil, rollDaily } from './profile';
 import { myName, mySpec } from './home';
 import { viewState } from './viewstate';
 import { MINI } from './edition';
-import { nouvelleMontee } from './montee';
+import { nouvelleMontee, montee } from './montee';
+import { prendreTicket } from '../net/classement';
+import { graineCombat } from '../sim/rejeu';
 
 // Montée de la Tour (version minimale) : de l'étage 1 jusqu'à la dernière vie (montee.ts).
 // quick : relance sans compte à rebours (Recommencer, étage suivant)
 export function startRun(quick = false) {
-  nouvelleMontee();
+  // montée classée si le serveur de jeu a donné une graine ; jamais en mode test invincible
+  nouvelleMontee(profile.god ? null : prendreTicket());
   startTower(1, quick);
 }
 
@@ -34,7 +37,16 @@ export function startTower(n: number, quick = false) {
   // version minimale : une seule manche par étage, gagnée tu montes, perdue tu laisses une vie
   const f = MINI ? { ...towerFloor(n), firstTo: 1 } : towerFloor(n);
   setLocks(myAbil());
-  session.startTower(local(mySpec()), f, { ...towerExtra(f, MINI ? 0 : profile.tries[n] || 0), quick });
+  // montée classée : combat à graine, enregistré pour le rejeu du serveur
+  const me = local(mySpec()),
+    combat =
+      MINI && montee.ticket
+        ? {
+            c: { n, perso: me.look.perso, quick },
+            graine: graineCombat(montee.ticket.graine, montee.combats.length),
+          }
+        : undefined;
+  session.startTower(me, f, { ...towerExtra(f, MINI ? 0 : profile.tries[n] || 0), quick, combat });
   if (f.twist) setTimeout(() => toast(f.twist), 400);
 }
 // Gardien : ses techniques, plus la prochaine que tu vas débloquer (avant-goût) ; il nargue si tu reviens après une défaite.

@@ -25,7 +25,7 @@ import { profile, save, myRank, myAbil, myLook, nextFloor, rollDaily } from './p
 import { viewState } from './viewstate';
 import { MINI } from './edition';
 import { styleOf } from '../sim/styles';
-import { lireClassement, rendreClassement } from '../net/classement';
+import { lireClassement, rendreClassement, preparerMontee } from '../net/classement';
 import { bootAttendre, voileLeve } from './boot';
 
 // Parties publiques : ouvertes une fois toutes les techniques acquises (ceinture noire)
@@ -55,6 +55,7 @@ const WORLD_TILE: Record<string, [string, string, string]> = {
 /* ---------- retour à l'accueil ---------- */
 export function goHome() {
   session.leave(true);
+  preparerMontee(); // graine de la prochaine montée classée, demandée d'avance
   renderHome();
   show('home');
 }

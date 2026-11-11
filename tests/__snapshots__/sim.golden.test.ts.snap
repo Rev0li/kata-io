@@ -9,7 +9,7 @@ exports[`Tour du temple > étage 1 1`] = `
     ],
     "winner": 0,
   },
-  "eventHash": "63ca2ad1",
+  "eventHash": "e5042b4e",
   "events": {
     "big": 15,
     "cine": 1,
@@ -63,7 +63,7 @@ exports[`Tour du temple > étage 2 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "8317277d",
+  "eventHash": "2fd20c17",
   "events": {
     "big": 10,
     "cine": 1,
@@ -116,7 +116,7 @@ exports[`Tour du temple > étage 5 1`] = `
     ],
     "winner": 0,
   },
-  "eventHash": "e51591a6",
+  "eventHash": "926d5084",
   "events": {
     "big": 16,
     "cine": 3,
@@ -171,7 +171,7 @@ exports[`Tour du temple > étage 9 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "12d25499",
+  "eventHash": "06a26353",
   "events": {
     "big": 20,
     "cine": 1,
@@ -227,7 +227,7 @@ exports[`Tour du temple > étage 12 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "e1262a98",
+  "eventHash": "e4de58e0",
   "events": {
     "big": 20,
     "cine": 4,
@@ -284,7 +284,7 @@ exports[`bot contre bot > Adepte contre Adepte 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "b2b8d26e",
+  "eventHash": "43fd43fb",
   "events": {
     "big": 15,
     "cine": 2,
@@ -340,7 +340,7 @@ exports[`bot contre bot > Disciple contre Disciple 1`] = `
     ],
     "winner": 0,
   },
-  "eventHash": "bf712c0f",
+  "eventHash": "646cead9",
   "events": {
     "big": 25,
     "cine": 1,
@@ -397,7 +397,7 @@ exports[`bot contre bot > Disciple contre Maître 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "6ad43bf2",
+  "eventHash": "23e98983",
   "events": {
     "big": 25,
     "cine": 1,
@@ -454,7 +454,7 @@ exports[`bot contre bot > Maître contre Disciple 1`] = `
     ],
     "winner": 0,
   },
-  "eventHash": "f64a45f8",
+  "eventHash": "677eb85f",
   "events": {
     "big": 15,
     "cine": 1,
@@ -510,7 +510,7 @@ exports[`bot contre bot > Maître contre Maître 1`] = `
     ],
     "winner": 0,
   },
-  "eventHash": "17a69d02",
+  "eventHash": "b9800dde",
   "events": {
     "big": 20,
     "cine": 1,
@@ -566,7 +566,7 @@ exports[`entrées humaines > deux humains scriptés (duel entre amis) 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "9786e7c1",
+  "eventHash": "7bfbc009",
   "events": {
     "big": 25,
     "cine": 1,
@@ -594,7 +594,7 @@ exports[`entrées humaines > deux humains scriptés (duel entre amis) 1`] = `
       "souffle": 0.89,
       "state": "dead",
       "x": -356.09,
-      "y": -0,
+      "y": 0,
     },
     {
       "pct": 21,
@@ -625,7 +625,7 @@ exports[`entrées humaines > joueur sans techniques (ceinture blanche) contre bo
     ],
     "winner": 1,
   },
-  "eventHash": "f1dd387b",
+  "eventHash": "d730bcd2",
   "events": {
     "big": 20,
     "cine": 1,
@@ -680,7 +680,7 @@ exports[`entrées humaines > joueur scripté contre bot Adepte 1`] = `
     ],
     "winner": 1,
   },
-  "eventHash": "56dcb3bf",
+  "eventHash": "990b8ce6",
   "events": {
     "big": 15,
     "cine": 1,
@@ -729,7 +729,7 @@ exports[`entrées humaines > joueur scripté contre bot Adepte 1`] = `
 exports[`entrées humaines > martèlement contre bot : le souffle s’épuise et le bot s’adapte (D9) 1`] = `
 {
   "end": null,
-  "eventHash": "3545a4ed",
+  "eventHash": "3c56287b",
   "events": {
     "big": 15,
     "exhausted": 1,
@@ -773,7 +773,7 @@ exports[`entrées humaines > martèlement contre bot : le souffle s’épuise et
 exports[`mannequin (tutoriel) > mannequin qui attaque en blanc, mode libre 1`] = `
 {
   "end": null,
-  "eventHash": "850ad9e5",
+  "eventHash": "41db4747",
   "events": {
     "exhausted": 3,
     "float": 21,
@@ -812,6 +812,6 @@ exports[`mannequin (tutoriel) > mannequin qui attaque en blanc, mode libre 1`] =
 exports[`réseau : instantanés appliqués chez l’invité > le miroir suit la simulation de l’hôte 1`] = `
 {
   "maxSnapBytes": 307,
-  "mirror": "3d2e7bbf",
+  "mirror": "d96087aa",
 }
 `;
