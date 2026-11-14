@@ -376,6 +376,8 @@ let sansWs = false;
 export const forcerHttp = () => {
   sansWs = true;
 };
+// Voie prise par le duel (mesures) : le WebSocket, ou la voie de secours HTTP.
+export const voieDuel = () => (sansWs ? 'http' : 'ws');
 async function ouvrir(code: string | null) {
   if (!sansWs)
     try {

@@ -23,7 +23,8 @@ import {
   alive,
   clamp,
 } from '../sim/sim';
-import { Conn } from './transport';
+import { Conn, voieDuel } from './transport';
+import { Tampon } from './tampon';
 import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo, cloneDeck } from '../sim/data';
 import { lookStyle, styleDeck } from '../sim/styles';
 import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
@@ -87,6 +88,9 @@ class Session {
   mode: Mode = 'idle';
   sim: any = null;
   mirror: any = null;
+  // invité : instantanés reçus, joués avec un léger retard pour absorber les à-coups du réseau (tampon.ts)
+  tampon = new Tampon<{ s: any; e: Ev[] }>();
+  private dernierS: any = null;
   myIdx = 0;
   conn: Conn | null = null;
   input: Input = emptyInput();
@@ -449,7 +453,11 @@ class Session {
         rematch: this.matches > 1,
       });
     }
-    if (this.mode === 'guest') this.mirror = createMirror(this.specs);
+    if (this.mode === 'guest') {
+      this.mirror = createMirror(this.specs);
+      this.tampon.vider();
+      this.dernierS = null;
+    }
     else {
       this.sim = createSim(this.specs, this.opts);
       // Les compteurs d'actions (parade, esquive, emote) continuent d'une partie à l'autre : le nouveau combattant
@@ -681,10 +689,8 @@ class Session {
         this.begin();
         break;
       case 's':
-        if (this.mirror) {
-          applySnapshot(this.mirror, m.s);
-          if (Array.isArray(m.e)) for (const e of m.e) this.handleEv(e, false);
-        }
+        if (this.mirror && m.s && typeof m.s.tm === 'number')
+          this.tampon.recevoir(m.s.tm, { s: m.s, e: Array.isArray(m.e) ? m.e : [] }, performance.now());
         break;
       case 'restart':
         this.begin();
@@ -756,6 +762,16 @@ class Session {
           floor: this.floor ? (this.floor.daily ? 'daily' : this.floor.n) : null,
           attempt: this.attempt,
           ...this.tally,
+          // invité d'un duel : régularité du réseau, pour comprendre un gel après coup
+          ...(this.mode === 'guest'
+            ? {
+                net: voieDuel(),
+                ping: this.ping,
+                retard: Math.round(this.tampon.retard),
+                trous: this.tampon.trous,
+                trou_max: Math.round(this.tampon.trouMax),
+              }
+            : {}),
         });
       this.hooks.onEnd?.(e.winner, e.score);
     }
@@ -771,7 +787,7 @@ class Session {
       }
     }
     if (this.mode === 'guest') {
-      advanceMirror(this.mirror, dt);
+      this.jouerTampon(dt);
       this.sendT -= dt * 1000;
       const packed = JSON.stringify(packInput(this.input));
       if (packed !== this.lastSent || this.sendT <= 0) {
@@ -810,6 +826,27 @@ class Session {
         this.outEv = [];
       }
     }
+  }
+  // Invité : applique les instantanés dont l'heure est venue, puis place les combattants entre celui-ci et le suivant.
+  private jouerTampon(dt: number) {
+    for (const { s, e } of this.tampon.avancer(dt * 1000, performance.now())) {
+      if (!this.mirror) return;
+      applySnapshot(this.mirror, s);
+      this.dernierS = s;
+      for (const ev of e) this.handleEv(ev, false);
+    }
+    if (!this.mirror) return;
+    advanceMirror(this.mirror, dt);
+    const n = this.tampon.suivant(),
+      a = this.dernierS;
+    if (!n || !a) return; // rien d'avance : les combattants glissent vers la dernière position connue
+    this.mirror.f.forEach((f: any, i: number) => {
+      const p = a.f[i],
+        q = n.v.s.f[i];
+      if (!p || !q || Math.abs(q[0] - p[0]) + Math.abs(q[1] - p[1]) > 160) return;
+      f.x = f.tx = p[0] + (q[0] - p[0]) * n.k;
+      f.y = f.ty = p[1] + (q[1] - p[1]) * n.k;
+    });
   }
   // Envoie tout de suite l'état des entrées (utile quand l'onglet passe en arrière-plan).
   flushInput() {
