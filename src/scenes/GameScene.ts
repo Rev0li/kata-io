@@ -12,6 +12,12 @@ import { viewState } from '../ui/viewstate';
 import { bootProgres, bootScenePrete } from '../ui/boot';
 import { SuiviEjection } from '../game/ejection';
 
+// Cadrage de combat : pendant l'échange, la caméra cadre les deux combattants (plus une marge qui laisse voir le
+// bord le plus proche) au lieu de toute la plateforme, pour que les coups blancs et rouges se lisent bien. Entre les
+// manches, elle reprend la vue large. Gain plafonné : fort sur grand écran, léger sur téléphone (déjà serré).
+const CADRE_MARGE = 190, // pixels du monde autour des deux combattants
+  CADRE_GAIN_ECRAN = 1.5,
+  CADRE_GAIN_TACTILE = 1.12;
 const ZOOM_MIN = 0.8,
   ZOOM_MAX = 2.6,
   ZOOM_RECUL = 1.2; // zoom d'un téléphone couché : en dessous, rien ne change
@@ -23,6 +29,7 @@ export class GameScene extends Phaser.Scene {
   heartT = 0;
   mpOn = false;
   punch = 0;
+  cadrage = 1; // gain de zoom du cadrage de combat, lissé
   cineZ = 1.25;
   themeOverride: string | null = null;
   view = new Phaser.Geom.Rectangle();
@@ -128,7 +135,30 @@ export class GameScene extends Phaser.Scene {
       if (this.cine.t <= 0 || !st) this.cine = null;
     }
     const focus = st ? (this.cine ? st.f[this.cine.idx] : me) : null;
-    if (focus && focus.state !== 'dead') {
+    const enCombat = !!(
+      st &&
+      !this.cine &&
+      !session.show &&
+      st.duel &&
+      st.duel.phase === 'fight' &&
+      me &&
+      foe &&
+      me.state !== 'falling' &&
+      me.state !== 'dead' &&
+      foe.state !== 'falling' &&
+      foe.state !== 'dead'
+    );
+    let lx = 0,
+      ly = 0;
+    if (enCombat) {
+      const a = iso2(me.x, me.y),
+        b = iso2(foe.x, foe.y);
+      // milieu des deux combattants, un peu tiré vers le joueur
+      tx = a.x * 0.58 + b.x * 0.42;
+      ty = a.y * 0.58 + b.y * 0.42 - 22;
+      lx = Math.abs(a.x - b.x);
+      ly = Math.abs(a.y - b.y);
+    } else if (focus && focus.state !== 'dead') {
       const p = iso2(focus.x, focus.y);
       tx = p.x * 0.75;
       ty = p.y * 0.75 - 10;
@@ -162,6 +192,18 @@ export class GameScene extends Phaser.Scene {
     // vitrine du vestiaire : gros plan sur les deux combattants, dans la place laissée par le panneau
     if (viewState.shop && session.show?.kind === 'trainee')
       z = clamp(Math.min((W > H ? W - Math.min(420, W * 0.5) : W) / 300, H / 230), 1.2, 2.8);
+    {
+      // cadrage de combat : les deux combattants et leur marge doivent tenir à l'écran
+      let gain = 1;
+      if (enCombat) {
+        const zc = Math.min(W / (lx * 1.16 + CADRE_MARGE * 2), H / (ly * 1.16 + CADRE_MARGE * 1.7));
+        const max = matchMedia('(pointer: coarse)').matches ? CADRE_GAIN_TACTILE : CADRE_GAIN_ECRAN;
+        gain = clamp(zc / z, 1, max);
+      }
+      // lent, pour que l'image ne « respire » pas à chaque pas
+      this.cadrage += (gain - this.cadrage) * (1 - Math.exp(-(gain < this.cadrage ? 2.4 : 1.2) * dt));
+      z *= this.cadrage;
+    }
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
