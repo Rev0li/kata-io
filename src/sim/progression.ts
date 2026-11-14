@@ -294,7 +294,8 @@ export function towerFloor(n: number): Floor {
   const fl: Floor = {
     n,
     name: 'Ombre de l’étage ' + n,
-    skill: Math.min(0.95, 0.86 + (n - FLOORS.length) * 0.005),
+    // de plus en plus coriaces, sans plafond : au-delà de 1, le gardien gagne en maîtrise (bot.ts)
+    skill: 0.86 + (n - FLOORS.length) * 0.01,
     tier: 6,
     firstTo: 3,
     H: tw[1],

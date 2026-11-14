@@ -71,7 +71,15 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       if (b.adapt === 0) b.adaptShown = false;
     }
   }
-  const s = Math.min(1, b.skill + b.adapt);
+  const s = Math.min(1, b.skill + b.adapt),
+    // Maîtrise : au-delà du niveau 1 (les Ombres du haut de la Tour), le gardien ne devient pas plus rapide ni plus
+    // fort, il joue mieux : réflexes plus vifs, défense plus sûre, plus économe et plus patient. De 0 à 0,6.
+    x = Math.min(0.6, Math.max(0, b.skill + b.adapt - 1)),
+    vif = 1 - x; // réflexes : délais de réaction multipliés par ce facteur
+  // Réserve de souffle d'un bot habile : après un coup chargé ou une esquive, il lui reste de quoi esquiver encore
+  // (sinon il tombe épuisé, et un seul coup chargé l'envoie à l'eau). Un bot faible ne compte pas.
+  const reserve = s > 0.5 ? 1 + x : 0,
+    peutCharger = e.souffle >= 1 + reserve;
   b.atkCd -= ms;
   b.strafeT -= ms;
   b.respect -= ms;
@@ -110,20 +118,24 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
         b.seen.set(T.id, a.uid);
         const left = a.su - a.t;
         if (a.kind === 'red') {
-          if (rnd(S) < s * 0.95) {
-            const react = rand(S, 80, 230) * (1.3 - s);
+          if (rnd(S) < s * 0.95 + x) {
+            const react = rand(S, 80, 230) * (1.3 - s) * vif;
             if (react < left + a.ac * 0.6) b.plan = { act: 'dodge', at: Math.max(0, Math.min(react, left - 50)) };
           }
         } else {
           const r = rnd(S);
-          if (r < s * 0.78 && e.abil.parry) {
-            const react = rand(S, 70, 210) * (1.3 - s);
+          if (r < s * 0.78 + x * 0.4 && e.abil.parry) {
+            const react = rand(S, 70, 210) * (1.3 - s) * vif;
             const lead = s > 0.8 ? rand(S, 40, 120) : rand(S, 100, 200);
             let at = left - lead;
             if (at < react) at = rnd(S) < s ? react : 1e9;
             if (at < left + a.ac) b.plan = { act: 'parry', at };
-          } else if (r < s * 0.92 || (!e.abil.parry && r < s * 0.85))
-            b.plan = { act: 'dodge', at: Math.max(rand(S, 50, 150) * (1.3 - s), left - 120) };
+          } else if (r < s * 0.92 + x || (!e.abil.parry && r < s * 0.85 + x)) {
+            if (e.souffle >= 1 + reserve)
+              b.plan = { act: 'dodge', at: Math.max(rand(S, 50, 150) * (1.3 - s), left - 120) };
+            else if (e.abil.parry && reserve && e.souffle >= RULES.parryCost)
+              b.plan = { act: 'parry', at: Math.max(rand(S, 70, 210) * (1.3 - s), left - rand(S, 60, 140)) };
+          }
         }
       }
     }
@@ -176,9 +188,13 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       mx -= ux * 0.9;
       my -= uy * 0.9;
     }
-    if (e.souffle < 1 && s > 0.5 && dist < 120) {
-      mx -= ux * 0.5;
-      my -= uy * 0.5;
+    if (e.souffle < 1 && s > 0.3 && dist < 90 + s * 110) {
+      const k = 0.3 + s * 0.8;
+      mx -= ux * k;
+      my -= uy * k;
+      const c = DM.hypot(e.x, e.y) || 1;
+      mx -= (e.x / c) * s * 0.5;
+      my -= (e.y / c) * s * 0.5;
     }
     const tOk = T.spawnInv <= 0 && T.state !== 'climb';
     if (e.state === 'idle' && !b.plan && b.atkCd <= 0 && tOk) {
@@ -187,21 +203,37 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       if (T.state === 'ledge' && dist < wr + 20) botPress(S, e, 0);
       else if (T.state === 'charge' && dist < wr + 18 && rnd(S) < 0.35 + s * 0.55) botPress(S, e, 0);
       else if (
-        (T.state === 'parry' || T.state === 'recover' || T.state === 'stun') &&
+        T.souffle < 1 &&
+        s > 0.5 &&
         dist < hv.rg + hv.lunge &&
         e.souffle >= 1 &&
+        T.state !== 'dodge' &&
+        rnd(S) < (s - 0.4) * 1.2 + x
+      )
+        botPress(S, e, rand(S, 300, 520));
+      else if (
+        (T.state === 'parry' || T.state === 'recover' || T.state === 'stun') &&
+        dist < hv.rg + hv.lunge &&
+        peutCharger &&
         rnd(S) < 0.3 + s * 0.6
       )
         botPress(S, e, T.state === 'parry' ? rand(S, 160, 260) : rand(S, 200, 500));
-      else if (dist < wr && RULES.whiteCost > 0 && s > 0.4 && e.souffle < 1 + RULES.whiteCost && T.state !== 'stun') {
-        // bot habile : garde de quoi ne pas tomber épuisé (un bot faible frappe quand même et s'épuise)
+      else if (
+        dist < wr &&
+        RULES.whiteCost > 0 &&
+        s > 0.4 &&
+        e.souffle < 1 + RULES.whiteCost * (1 + x * 4) &&
+        T.state !== 'stun'
+      ) {
+        // bot habile : garde de quoi ne pas tomber épuisé (un bot faible frappe quand même et s'épuise) ;
+        // un maître garde davantage, et laisse l'adversaire venir à lui
       } else if (dist < wr) {
-        if (e.souffle >= 1 && rnd(S) < 0.22) botPress(S, e, rand(S, 260, 820));
+        if (peutCharger && rnd(S) < 0.22) botPress(S, e, rand(S, 260, 820));
         else {
           botPress(S, e, 0);
           b.chain = rnd(S) < 0.35 + s * 0.5 ? (rnd(S) < 0.5 ? 1 : 2) : 0;
         }
-      } else if (dist < hv.rg + hv.lunge && e.souffle >= 1 && rnd(S) < 0.015 + s * 0.012)
+      } else if (dist < hv.rg + hv.lunge && peutCharger && rnd(S) < 0.015 + s * 0.012)
         botPress(S, e, rand(S, 300, 760));
       b.atkCd = rand(S, 220, 700) * (1.45 - s);
     }
