@@ -10,6 +10,7 @@ import { isDojo } from '../sim/data';
 import { preloadAssets, setupAssets } from '../game/assets';
 import { viewState } from '../ui/viewstate';
 import { bootProgres, bootScenePrete } from '../ui/boot';
+import { SuiviEjection } from '../game/ejection';
 
 const ZOOM_MIN = 0.8,
   ZOOM_MAX = 2.6,
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   lastH = 0;
   lastShop = false;
   frames = 0;
+  ejection = new SuiviEjection(); // la caméra suit un combattant éjecté jusqu'au plouf (ejection.ts)
 
   constructor() {
     super('game');
@@ -99,6 +101,7 @@ export class GameScene extends Phaser.Scene {
     session.tick(Math.min(0.1, (this.game.loop.rawDelta || delta) / 1000));
     for (const ev of session.takeFx()) {
       this.r.handle(ev);
+      if (this.ejection.evenement(ev)) cam.shake(260, 0.007); // plouf au bout d'un long vol
       if (ev.t === 'shake') cam.shake(140, Math.min(0.012, ev.n * 0.0011));
       if (ev.t === 'cine') {
         this.cine = { idx: ev.id, t: ev.ms };
@@ -130,13 +133,19 @@ export class GameScene extends Phaser.Scene {
       tx = p.x * 0.75;
       ty = p.y * 0.75 - 10;
     }
+    const W = this.scale.width,
+      H = this.scale.height;
+    // éjection : on suit le vol jusqu'au point de chute, l'auteur du coup reste dans le cadre
+    const cadre = session.show ? null : this.ejection.cadre(st, delta, W, H);
+    if (cadre) {
+      tx = cadre.x;
+      ty = cadre.y;
+    }
     if (session.show) {
       const p = iso2(session.show.focus.x, session.show.focus.y);
       tx = p.x;
       ty = p.y;
     } // vitrine de la boutique
-    const W = this.scale.width,
-      H = this.scale.height;
     // première image et changement de taille (rotation, fenêtre) : la caméra se place d'un coup au lieu de glisser
     const snap = W !== this.lastW || H !== this.lastH || viewState.shop !== this.lastShop;
     this.lastW = W;
@@ -156,16 +165,18 @@ export class GameScene extends Phaser.Scene {
     if (this.cine) z *= this.cineZ;
     this.punch *= Math.exp(-7 * dt);
     z *= 1 + this.punch;
+    // tout le vol doit tenir à l'écran : on recule autant qu'il faut (au plus jusqu'à 0,45)
+    if (cadre) z = Math.max(Math.min(z, cadre.zoomMax), Math.min(z, 0.45));
     if (snap) cam.setZoom(z); // avant le décalage ci-dessous, qui dépend du zoom
     // boutique ouverte : le centre du dojo (où se jouent les aperçus) reste visible à côté du panneau
     if (viewState.shop) {
       if (W > H) tx += Math.min(420, W * 0.5) / 2 / cam.zoom;
       else ty += (H * 0.3) / cam.zoom;
     }
-    const k = snap ? 1 : 1 - Math.exp(-5 * dt);
+    const k = snap ? 1 : 1 - Math.exp(-(cadre ? 7 : 5) * dt); // pendant un vol, la caméra suit de plus près
     const cx = cam.midPoint.x + (tx - cam.midPoint.x) * k,
       cy = cam.midPoint.y + (ty - cam.midPoint.y) * k;
-    cam.setZoom(cam.zoom + (z - cam.zoom) * (1 - Math.exp(-3.5 * dt)));
+    cam.setZoom(cam.zoom + (z - cam.zoom) * (1 - Math.exp(-(cadre && z < cam.zoom ? 6 : 3.5) * dt)));
     cam.centerOn(cx, cy);
     {
       const lw = unIso(cx, cy);
