@@ -11,7 +11,7 @@ function jouer(delai: (n: number) => number, dureeMs = 8000) {
   const joues: { t: number; tm: number }[] = [];
   let i = 0;
   for (let ici = 1000; ici < 1000 + dureeMs + 1000; ici += 16.7) {
-    while (i < envois.length && envois[i].arrivee <= ici) t.recevoir(envois[i].tm, envois[i].tm, ici), i++;
+    while (i < envois.length && envois[i].arrivee <= ici) (t.recevoir(envois[i].tm, envois[i].tm, ici), i++);
     for (const tm of t.avancer(16.7, ici)) joues.push({ t: ici, tm });
   }
   return { t, joues };
@@ -47,7 +47,7 @@ describe('tampon de lecture des instantanés', () => {
 
   it('nouvelle manche : l’horloge du serveur repart de zéro, le tampon suit', () => {
     const t = new Tampon<string>();
-    for (let k = 0; k < 30; k++) t.recevoir(5000 + k * 33, 'a', k * 33), t.avancer(33, k * 33);
+    for (let k = 0; k < 30; k++) (t.recevoir(5000 + k * 33, 'a', k * 33), t.avancer(33, k * 33));
     expect(t.recevoir(0, 'b', 1000)).toBe(true);
     const sortis: string[] = [];
     for (let k = 0; k < 30; k++) sortis.push(...t.avancer(33, 1000 + k * 33));
