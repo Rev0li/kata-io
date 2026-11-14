@@ -100,8 +100,13 @@ export async function envoyerMontee(c: Contexte, b: any): Promise<Reponse> {
   await c.base.ecrireRecord(
     record ? { joueur: b.id, pseudo, etages: v.etages, secondes: v.secondes, le: t } : { ...ancien!, pseudo },
   );
+  // un seul score par pseudo : la meilleure ligne reste, les autres (autre navigateur, ancien score) disparaissent
+  const garde = await c.base.garderMeilleur(pseudo);
   const [, corps] = await lireClassement(c, b.id);
-  return [200, { ...corps, record, etages: v.etages, secondes: v.secondes }];
+  return [
+    200,
+    { ...corps, record: record && garde === b.id, dejaMieux: garde !== b.id, etages: v.etages, secondes: v.secondes },
+  ];
 }
 
 // Mesures de jeu : même format que l'ancien /api/e ({ m: contexte, e: événements }).

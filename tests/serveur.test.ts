@@ -77,6 +77,25 @@ describe('envoi d’une montée', () => {
     expect(r).toMatchObject({ record: true, etages: 1, moi: { rang: 1, pseudo: 'Rev', etages: 1, moi: true } });
     expect((r as any).secondes).toBeGreaterThan(0);
   });
+  it('un seul score par pseudo : le meilleur reste, l’autre disparaît (autre navigateur, majuscules)', async () => {
+    const le = new Date(heure);
+    // même pseudo sur un autre navigateur, moins bien (même étage, plus lent) : effacé
+    await base.ecrireRecord({ joueur: 'joueur2', pseudo: 'rev', etages: 1, secondes: 99999, le });
+    // autre pseudo : intouché
+    await base.ecrireRecord({ joueur: 'joueur3', pseudo: 'Kim', etages: 1, secondes: 99999, le });
+    const { m, combats } = await monteeGagnee();
+    plusTard(60);
+    const [, r] = await envoyerMontee(c, { id: 'joueur1', pseudo: 'Rev', montee: m.montee, combats });
+    expect(r).toMatchObject({ record: true, dejaMieux: false });
+    expect((await base.top(20)).map(x => x.joueur)).toEqual(['joueur1', 'joueur3']);
+    // même pseudo, bien meilleur ailleurs : c'est la nouvelle ligne qui disparaît
+    await base.ecrireRecord({ joueur: 'joueur4', pseudo: 'REV', etages: 9, secondes: 500, le });
+    const n = await monteeGagnee('joueur5');
+    plusTard(60);
+    const [, r2] = await envoyerMontee(c, { id: 'joueur5', pseudo: 'Rev', montee: n.m.montee, combats: n.combats });
+    expect(r2).toMatchObject({ record: false, dejaMieux: true });
+    expect((await base.top(20)).map(x => x.joueur)).toEqual(['joueur4', 'joueur3']);
+  });
   it('refuse une montée envoyée deux fois', async () => {
     const { m, combats } = await monteeGagnee();
     plusTard(60);

@@ -183,6 +183,17 @@
         </div>
 
         <nav class="mplay" aria-label="Jouer">
+          <!-- version minimale : le pseudo du classement, choisi avant de jouer ; le score s'y inscrit tout seul -->
+          <label class="mpseudo onlymini" for="homePseudo"
+            ><small>Ton pseudo</small
+            ><input
+              id="homePseudo"
+              maxlength="16"
+              autocomplete="nickname"
+              spellcheck="false"
+              enterkeyhint="go"
+              placeholder="Choisis ton pseudo"
+          /></label>
           <button id="towerBtn" class="btn-gold mbig" type="button">
             <span class="mtitle">Jouer</span><small id="towerSub">Étage 1</small><kbd class="pc-only mkey">Entrée</kbd>
           </button>

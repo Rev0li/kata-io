@@ -32,6 +32,9 @@ export interface Base {
   cloreMontee(id: string, r: { etages: number; secondes: number; fin: Date }): Promise<boolean>;
   lireRecord(joueur: string): Promise<Record_ | null>;
   ecrireRecord(r: Record_): Promise<void>;
+  // Un pseudo n'a qu'une ligne au classement : garde la meilleure (tous navigateurs confondus), efface les autres.
+  // Rend le joueur dont la ligne est gardée. Pseudos comparés sans tenir compte des majuscules.
+  garderMeilleur(pseudo: string): Promise<string | null>;
   top(n: number): Promise<Record_[]>; // les meilleurs : étages, puis temps le plus court, puis le plus ancien
   rang(joueur: string): Promise<number | null>; // à partir de 1
   ajouterEvenements(evs: Evenement[]): Promise<void>;
@@ -68,6 +71,11 @@ export function baseMemoire(): Base & { evenements: Evenement[] } {
     },
     async ecrireRecord(r) {
       records.set(r.joueur, { ...r });
+    },
+    async garderMeilleur(pseudo) {
+      const memes = tries().filter(r => r.pseudo.toLowerCase() === pseudo.toLowerCase());
+      for (const r of memes.slice(1)) records.delete(r.joueur);
+      return memes[0] ? memes[0].joueur : null;
     },
     async top(n) {
       return tries().slice(0, n);
@@ -158,6 +166,19 @@ export async function basePostgres(pool: Pool): Promise<Base> {
          on conflict (joueur) do update set pseudo = $2, etages = $3, secondes = $4, le = $5`,
         [r.joueur, r.pseudo, r.etages, r.secondes, r.le],
       );
+    },
+    async garderMeilleur(pseudo) {
+      const { rows } = await pool.query(
+        `with meilleur as (
+           select joueur from records where lower(pseudo) = lower($1)
+            order by etages desc, secondes asc, le asc limit 1
+         ), efface as (
+           delete from records where lower(pseudo) = lower($1) and joueur not in (select joueur from meilleur)
+         )
+         select joueur from meilleur`,
+        [pseudo],
+      );
+      return rows[0] ? rows[0].joueur : null;
     },
     async top(n) {
       const { rows } = await pool.query('select * from records order by etages desc, secondes asc, le asc limit $1', [

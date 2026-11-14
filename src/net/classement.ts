@@ -20,6 +20,8 @@ export interface Ligne {
 export interface Classement {
   top: Ligne[];
   moi: Ligne | null;
+  record?: boolean; // envoi : nouveau record de ce joueur
+  dejaMieux?: boolean; // envoi : ce pseudo a déjà un meilleur score (un seul score par pseudo)
 }
 const API = ((import.meta.env.VITE_API_JEU as string | undefined) || '').replace(/\/+$/, '');
 export const classementVerifie = !!API;

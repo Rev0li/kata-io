@@ -19,7 +19,7 @@ import { audioPrefs, setMusicLevel } from '../game/audio';
 import { $, toast, wake, setupButtonFx } from './dom';
 import { nav, show } from './nav';
 import { profile, save, nextFloor } from './profile';
-import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining } from './home';
+import { renderHome, goHome, myName, setupDevPanel, setupTraining, renderTraining, pseudoPret } from './home';
 import { startTower, startDaily, startTuto, practice, startRun } from './launch';
 import { MINI } from './edition';
 import { attendreJeu } from './boot';
@@ -106,7 +106,18 @@ export function setupUI() {
   audioPrefs.sfx = profile.sfx;
   audioPrefs.music = profile.music;
   // accueil
-  $('#towerBtn').addEventListener('click', () => (MINI ? startRun() : startTower(nextFloor())));
+  $('#towerBtn').addEventListener('click', () => (MINI ? pseudoPret() && startRun() : startTower(nextFloor())));
+  // pseudo de l'accueil : Entrée lance la montée, comme le bouton
+  $('#homePseudo').addEventListener('keydown', e => {
+    if ((e as KeyboardEvent).key !== 'Enter') return;
+    e.preventDefault();
+    ($('#homePseudo') as HTMLInputElement).blur();
+    $('#towerBtn').click();
+  });
+  $('#homePseudo').addEventListener('change', () => {
+    const v = ($('#homePseudo') as HTMLInputElement).value.trim().slice(0, 16);
+    if (v.length >= 2) pseudoPret();
+  });
   $('#floorsBtn').addEventListener('click', () => {
     renderFloors();
     show('floors');
@@ -196,7 +207,7 @@ export function setupUI() {
     // accueil : Entrée lance la montée
     if (current === 'home' && e.code === 'Enter' && !(e.target instanceof HTMLInputElement)) {
       e.preventDefault();
-      if (MINI) startRun();
+      if (MINI) pseudoPret() && startRun();
       else startTower(nextFloor());
       return;
     }
