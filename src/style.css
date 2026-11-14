@@ -3199,3 +3199,78 @@ body.mini .mplay {
   text-transform: none;
   box-shadow: none;
 }
+
+/* pseudo du classement, sur l'accueil (version minimale) */
+.mpseudo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 12px 9px;
+  border: 1px solid var(--slate);
+  border-radius: 9px;
+  background: rgba(17, 24, 32, 0.9);
+}
+.mpseudo small {
+  color: var(--gold-1);
+  font-size: 12px;
+}
+.mpseudo input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--slate);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--f-disp);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  padding: 2px 0;
+  outline: none;
+}
+.mpseudo input:focus {
+  border-bottom-color: var(--gold-2);
+}
+.mpseudo input::placeholder {
+  color: var(--cream);
+  opacity: 0.45;
+  font-weight: 600;
+}
+.mpseudo input.manque {
+  border-bottom-color: var(--red, #e5483a);
+  animation: pseudo-manque 0.4s;
+}
+@keyframes pseudo-manque {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+/* téléphone couché : champ compact (16 px au moins, sinon l'iPhone zoome sur la page au toucher) */
+@media (orientation: landscape) and (max-height: 540px) {
+  .mpseudo {
+    padding: 3px 10px 4px;
+    gap: 0;
+  }
+  .mpseudo small {
+    display: none;
+  }
+  .mpseudo input {
+    font-size: 16px;
+    border-bottom: 0;
+  }
+}
+/* très petits écrans (iPhone SE couché) : on gagne encore de la place, le pseudo passe sous la roue */
+@media (orientation: landscape) and (max-height: 340px) {
+  .mplay {
+    top: 54%;
+    gap: 4px;
+  }
+  .mbig .mtitle {
+    font-size: 28px;
+  }
+  .mbig small {
+    display: none;
+  }
+}

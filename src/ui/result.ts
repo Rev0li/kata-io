@@ -332,10 +332,10 @@ function finMontee(defaite: boolean) {
         : 'Inscris ton pseudo au classement :';
   input.value = profile.name;
   (form.querySelector('button') as HTMLButtonElement).disabled = false;
-  form.onsubmit = async e => {
-    e.preventDefault();
-    const pseudo = input.value.trim();
+  // Envoi au classement : tout seul avec le pseudo de l'accueil ; le formulaire ne revient que pour corriger.
+  const envoyer = async (pseudo: string) => {
     if (pseudo.length < 2) {
+      form.hidden = false;
       st.textContent = 'Choisis un pseudo d’au moins 2 caractères.';
       return;
     }
@@ -343,18 +343,31 @@ function finMontee(defaite: boolean) {
     save();
     const btn = form.querySelector('button') as HTMLButtonElement;
     btn.disabled = true;
-    st.textContent = 'Envoi…';
+    st.textContent = 'Inscription au classement…';
     try {
       const c = await envoyerMontee(profile.name, n, t, verif);
       form.hidden = true;
-      st.textContent = c.moi ? `Tu es ${c.moi.rang}${c.moi.rang === 1 ? 'er' : 'e'} du classement.` : 'Envoyé.';
+      st.textContent = c.dejaMieux
+        ? `Ton meilleur score sous « ${profile.name} » reste au classement.`
+        : c.moi
+          ? `${c.record ? 'Score enregistré : tu' : 'Tu'} es ${c.moi.rang}${c.moi.rang === 1 ? 'er' : 'e'} du classement.`
+          : 'Score enregistré.';
       rendreClassement(ol, c);
       rechargerTop(); // l'accueil affichera le classement à jour
     } catch (err) {
+      form.hidden = false;
       btn.disabled = false;
       st.textContent = (err as Error).message;
     }
   };
+  form.onsubmit = e => {
+    e.preventDefault();
+    envoyer(input.value.trim());
+  };
+  if (!form.hidden && profile.name.trim().length >= 2) {
+    form.hidden = true;
+    envoyer(profile.name.trim());
+  }
 }
 const duree = (s: number) => (s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')}`);
 

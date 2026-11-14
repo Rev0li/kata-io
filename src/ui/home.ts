@@ -105,7 +105,7 @@ export function renderTraining() {
 }
 
 /* ---------- nom et combattant du joueur ---------- */
-// Version minimale : pas de nom d'office, le pseudo se choisit à la fin de la montée (« Toi » en attendant).
+// Version minimale : pas de nom d'office, le pseudo se choisit sur l'accueil avant de jouer (pseudoPret).
 export function myName() {
   const v = ($('#nameIn') as HTMLInputElement).value.trim().slice(0, 16);
   profile.name = v || profile.name || (MINI ? '' : 'Disciple ' + ((Math.random() * 900 + 100) | 0));
@@ -162,8 +162,29 @@ function renderHomeMini() {
 export const rechargerTop = () => {
   topT = 0;
 };
+// Pseudo du classement (version minimale), choisi sur l'accueil avant de jouer. true s'il est valable ; sinon le
+// champ est signalé et prend le focus. Le pseudo vaut aussi pour le nom en combat (#nameIn).
+export function pseudoPret() {
+  if (!MINI) return true;
+  const el = $('#homePseudo') as HTMLInputElement,
+    v = el.value.trim().slice(0, 16);
+  if (v.length >= 2) {
+    profile.name = v;
+    ($('#nameIn') as HTMLInputElement).value = v;
+    save();
+    el.classList.remove('manque');
+    return true;
+  }
+  el.classList.remove('manque');
+  void el.offsetWidth; // relance l'animation
+  el.classList.add('manque');
+  el.focus();
+  toast('Choisis ton pseudo pour le classement (2 caractères au moins)');
+  return false;
+}
 export function renderHome() {
   if (MINI) renderHomeMini();
+  if (document.activeElement !== $('#homePseudo')) ($('#homePseudo') as HTMLInputElement).value = profile.name;
   ($('#nameIn') as HTMLInputElement).value = profile.name;
   $('#heroName').textContent = profile.name;
   $('#heroName').hidden = !profile.name;
