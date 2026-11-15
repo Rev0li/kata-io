@@ -5,7 +5,7 @@ import type { Fighter, Sim } from './core';
 // o : ce qui distingue ce combattant (place, nom, apparence, jeu de coups, techniques) ; le reste part de zéro.
 export function makeFighter(
   S: Sim,
-  o: Pick<Fighter, 'idx' | 'name' | 'look' | 'deck' | 'abil' | 'belt' | 'atkSlow' | 'god'>,
+  o: Pick<Fighter, 'idx' | 'name' | 'look' | 'deck' | 'abil' | 'belt' | 'atkSlow' | 'annonce' | 'god'>,
 ): Fighter {
   return {
     id: ++S.uid,
@@ -60,6 +60,7 @@ export function makeFighter(
     abil: o.abil,
     belt: o.belt,
     atkSlow: o.atkSlow,
+    annonce: o.annonce,
     god: o.god,
     exhHit: false,
   };

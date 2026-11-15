@@ -66,9 +66,10 @@ export function createSim(specs: Spec[], opts: SimOpts = {}): Sim {
       abil: { ...(sp.abil || FULL_ABIL) },
       belt: sp.belt || null,
       atkSlow: sp.atkSlow || 1,
+      annonce: sp.annonce || 0,
       god: !!sp.god,
     });
-    if (sp.bot != null) e.bot = newBrain(sp.bot);
+    if (sp.bot != null) e.bot = newBrain(sp.bot, false, sp.motif);
     if (sp.dummy) e.bot = newBrain(0, true);
     st.f.push(e);
   });

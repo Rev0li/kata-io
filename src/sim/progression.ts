@@ -1,7 +1,8 @@
 // Progression : ceintures, techniques débloquées, étages de la Tour du temple.
 // Aucune dépendance au DOM : ces règles serviront aussi côté serveur.
 import { Look, Deck, randDeck, PERSOS, ARMES, TRAINEES, EJECTIONS } from './data';
-import { styleDeck } from './styles';
+import { styleDeck, attaque } from './styles';
+import type { Spec } from './core';
 
 /* ---------- techniques ---------- */
 export interface Abil {
@@ -130,8 +131,12 @@ export interface Floor {
   deck: Deck;
   par: number;
   daily?: string;
+  // Gardiens lisibles (D20) : annonce = temps ajouté au démarrage de ses coups blancs, en ms (0 = aucun) ;
+  // motif = sa signature, la suite d'attaques qu'il répète (voir MOTIFS). Absents : gardien d'avant D20.
+  annonce?: number;
+  motif?: string[];
 }
-const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
+const FLOORS: Omit<Floor, 'n' | 'deck' | 'par' | 'annonce'>[] = [
   {
     name: 'Le gardien de la porte',
     skill: 0.12,
@@ -141,6 +146,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: '',
     boss: false,
+    motif: ['b1'],
     look: { perso: 'bandit', arme: 'massue', trainee: 'aucune', ejection: 'plouf' },
   },
   {
@@ -152,6 +158,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: '',
     boss: false,
+    motif: ['b1'],
     look: { perso: 'moine', arme: 'mains', trainee: 'aucune', ejection: 'cochon' },
   },
   {
@@ -163,6 +170,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: '',
     boss: false,
+    motif: ['b2', 'b1'],
     look: { perso: 'samourai', arme: 'yari', trainee: 'aucune', ejection: 'plouf' },
   },
   {
@@ -174,6 +182,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: 'Petit radeau : le bord est tout près',
     boss: false,
+    motif: ['b1', 'b2'],
     look: { perso: 'ronin', arme: 'katana', trainee: 'vague', ejection: 'plouf' },
   },
   {
@@ -185,6 +194,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: 'Gardien de la ceinture orange : il pare',
     boss: true,
+    motif: ['b2', 'b2', 'b1'],
     look: { perso: 'oni', arme: 'nodachi', trainee: 'braise', ejection: 'feu' },
   },
   {
@@ -196,6 +206,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 2.6,
     twist: 'Tatami mouillé : on glisse plus loin',
     boss: false,
+    motif: ['b1', 'b1', 'b2'],
     look: { perso: 'squelette', arme: 'sai', trainee: 'ombre', ejection: 'fantome' },
   },
   {
@@ -207,6 +218,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: 'Il charge ses coups : esquive le rouge',
     boss: false,
+    motif: ['b2', 'r'],
     look: { perso: 'sumo', arme: 'massue', trainee: 'braise', ejection: 'feu' },
   },
   {
@@ -218,6 +230,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: '',
     boss: false,
+    motif: ['b1', 'r', 'b2'],
     look: { perso: 'ombre', arme: 'katana', trainee: 'ombre', ejection: 'encre-e' },
   },
   {
@@ -229,6 +242,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: '',
     boss: false,
+    motif: ['b3', 'r'],
     look: { perso: 'loup', arme: 'trident', trainee: 'sakura', ejection: 'petales' },
   },
   {
@@ -240,6 +254,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 2.8,
     twist: 'Gardien de la ceinture marron',
     boss: true,
+    motif: ['b2', 'b2', 'r'],
     look: { perso: 'ermite', arme: 'yari', trainee: 'etoiles', ejection: 'petales' },
   },
   {
@@ -251,6 +266,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: 'Son qi se remplit vite',
     boss: false,
+    motif: ['b3', 'b1', 'r'],
     look: { perso: 'ninja-vert', arme: 'sai', trainee: 'vague', ejection: 'phenix' },
   },
   {
@@ -262,6 +278,7 @@ const FLOORS: Omit<Floor, 'n' | 'deck' | 'par'>[] = [
     damp: 3.2,
     twist: 'Le dernier gardien',
     boss: true,
+    motif: ['b1', 'b3', 'r', 'b2'],
     look: { perso: 'shogun', arme: 'nodachi', trainee: 'or', ejection: 'tresor' },
   },
 ];
@@ -271,6 +288,45 @@ const TWISTS = [
   ['Petit radeau : le bord est tout près', 208, 3.2],
   ['Tatami mouillé : on glisse plus loin', 260, 2.6],
 ] as const;
+// Signatures des Ombres de la tour infinie : une par étage, tirée de son numéro.
+//   b1, b2, b3 : un, deux ou trois coups blancs enchaînés ; r : un coup chargé (rouge).
+const MOTIFS: string[][] = [
+  ['b2', 'r'],
+  ['b3', 'b1', 'r'],
+  ['b1', 'r', 'b2'],
+  ['b2', 'b2', 'r'],
+  ['b1', 'b3', 'r', 'b2'],
+  ['b3', 'r', 'b1', 'b1'],
+];
+// Annonce (D20) : le coup blanc le plus vif du gardien met au moins ce temps à partir (en ms), pour qu'un humain
+// puisse le parer en le voyant venir (réaction : 200 à 280 ms). Large en bas de la Tour, elle se resserre en montant
+// et ne descend jamais sous ANNONCE_MIN : en haut, le gardien est dur par son jeu, pas parce qu'il est illisible.
+export const ANNONCE_MIN = 265;
+export function annonceMs(n: number) {
+  if (n <= 4) return 340;
+  if (n <= 8) return 310;
+  if (n <= 12) return 280;
+  return Math.max(ANNONCE_MIN, 280 - (n - 12));
+}
+function annonce(n: number, look: Look, deck: Deck) {
+  let vif = Infinity;
+  for (const garde of deck.chain) for (const id of garde) if (id) vif = Math.min(vif, attaque({ look }, id).su);
+  // un temps ajouté, le même pour tous ses coups : les écarts entre coups vifs et coups lents restent
+  return Math.max(0, Math.round(annonceMs(n) - vif));
+}
+// Le gardien d'un étage tel qu'il entre dans la simulation : le même chez le joueur et au rejeu du serveur.
+export function specGardien(f: Floor, abil: Abil = abilFor(f.tier)): Spec {
+  return {
+    name: f.name,
+    look: f.look,
+    deck: f.deck,
+    bot: f.skill,
+    abil,
+    belt: RANKS[f.tier].belt,
+    annonce: f.annonce || 0,
+    motif: f.motif,
+  };
+}
 function seeded(n: number) {
   let h = (n * 2654435761) >>> 0;
   return () => {
@@ -284,7 +340,8 @@ export function towerFloor(n: number): Floor {
   if (n <= FLOORS.length) {
     const f = FLOORS[n - 1];
     // Les huit premiers gardiens ont les mêmes enchaînements que le joueur : la difficulté vient du niveau, pas de la portée.
-    return { ...f, n, deck: styleDeck(f.look.perso), par: f.firstTo === 3 ? 75 : 50 }; // chaque gardien a le style de son personnage (D16)
+    const deck = styleDeck(f.look.perso); // chaque gardien a le style de son personnage (D16)
+    return { ...f, n, deck, par: f.firstTo === 3 ? 75 : 50, annonce: annonce(n, f.look, deck) };
   }
   // Tour infinie : au-delà du dernier gardien, des adversaires générés, de plus en plus coriaces.
   const rnd = seeded(n),
@@ -311,7 +368,9 @@ export function towerFloor(n: number): Floor {
     deck: randDeck(rnd), // remplacé juste après par le jeu du style
     par: 75,
   };
-  return { ...fl, deck: styleDeck(fl.look.perso) };
+  const deck = styleDeck(fl.look.perso);
+  // tiré après le reste : l'apparence et le dojo des Ombres ne changent pas
+  return { ...fl, deck, annonce: annonce(n, fl.look, deck), motif: MOTIFS[(rnd() * MOTIFS.length) | 0] };
 }
 // Étoiles : 1 pour la victoire, 2 sans perdre de manche, 3 sans perdre de manche et sous le temps de référence.
 export function starsFor(won: boolean, roundsLost: number, seconds: number, par: number) {

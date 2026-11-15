@@ -121,6 +121,7 @@ Règle : chaque élément visible est décrit dans un fichier de données ; **si
 
 ## Phase 5 : gameplay et refonte V1
 
+- [ ] **Audit du 2026-11-15** ([docs/AUDIT-2026-11-15.md](docs/AUDIT-2026-11-15.md)) : gardiens lisibles fait (D20) ; restent les réflexes de bot plafonnés à l'humain, le martelage à punir dès l'étage 2 ou 3, des manches plus longues, puis la courbe.
 - [ ] Équilibrage de la Tour (`npm run tour`, mesure du 2026-11-11 en manche unique, joueur simulé 0,45) : étages 1 à 4 autour de 90 %, l'étage 7 (35 %) est plus dur que les étages 8 à 10 (50 à 58 %), les étages 13 et 14 tombent à 10 % puis les suivants remontent à 30 %.
 - [ ] Trancher les questions ouvertes de DECISIONS : bonus d'équilibre (D2), affichage de son propre état (D3), indicateur de spam (D9), option « effets réduits » (D4), stockage des mesures (D12).
 - [ ] **Mondes** (remplacent les six dojos, voir [docs/DIRECTION-ARTISTIQUE.md](docs/DIRECTION-ARTISTIQUE.md) section 5) : décor plein écran en isométrique trois quarts, premier plan en parallaxe, plateforme en pièces détachables. **Jouables en entraînement et en duel depuis le 2026-10-24** (cerisiers, bambous, temple enneigé, forge), avec des éléments provisoires découpés dans les planches (`public/assets/mondes/`). Restent : images définitives, plateforme en pièces, plouf adapté à la glace et à la lave. Définir le format des images (WebP, dimensions) et mettre à jour D11 (qui fixe aujourd'hui le décor en SVG).

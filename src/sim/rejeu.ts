@@ -18,7 +18,7 @@ import * as DM from './dmath';
 import { createSim, stepSim, drainEvents, emptyInput } from './sim';
 import type { Input, Sim, Spec, SimOpts } from './core';
 import { DEFAULT_LOOK, PERSOS } from './data';
-import { towerFloor, abilFor, FULL_ABIL, VIES, RANKS } from './progression';
+import { towerFloor, specGardien, FULL_ABIL, VIES } from './progression';
 
 export const PAS = 1 / 60;
 export const QUANT = 127; // le déplacement vaut un entier de -127 à 127, divisé par 127
@@ -47,7 +47,7 @@ export function combatEtage(c: { n: number; perso: string; quick: boolean }, gra
       abil: { ...FULL_ABIL },
       god: false,
     },
-    { name: f.name, look: f.look, deck: f.deck, bot: f.skill, abil: abilFor(f.tier), belt: RANKS[f.tier].belt },
+    specGardien(f),
   ];
   const opts: SimOpts = { firstTo: 1, H: f.H, damp: f.damp, quick: c.quick, seed: graine };
   return { specs, opts, floor: f };

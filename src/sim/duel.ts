@@ -26,6 +26,7 @@ export function duelRound(S: Sim) {
       e.bot.plan = null;
       e.bot.seen.clear();
       e.bot.holdFor = 0;
+      e.bot.motifI = 0; // la signature reprend au début de chaque manche
     }
   }
   // balle de match : un point de plus et c'est fini (pas en manche unique : tout se joue d'emblée)

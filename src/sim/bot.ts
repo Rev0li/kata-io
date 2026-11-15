@@ -6,7 +6,7 @@ import { lerp, angDiff, alive, rnd, rand, pick, fx } from './core';
 import type { Fighter, Sim } from './core';
 import { doAction, climb, startWhite, startCharge, nextWhite } from './actions';
 
-export function newBrain(skill: number, dummy = false) {
+export function newBrain(skill: number, dummy = false, motif?: string[]) {
   return {
     adapt: 0,
     adaptShown: false,
@@ -27,6 +27,8 @@ export function newBrain(skill: number, dummy = false) {
     climbAt: null,
     respect: 0,
     waited: false,
+    motif: motif && motif.length ? motif : null,
+    motifI: 0,
   };
 }
 function edgeInward(S: Sim, e: Fighter) {
@@ -227,6 +229,21 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       ) {
         // bot habile : garde de quoi ne pas tomber épuisé (un bot faible frappe quand même et s'épuise) ;
         // un maître garde davantage, et laisse l'adversaire venir à lui
+      } else if (dist < wr && b.motif) {
+        // Signature (D20) : le gardien répète sa suite d'attaques, dans l'ordre. Le joueur peut l'apprendre.
+        const pas = b.motif[b.motifI % b.motif.length];
+        if (pas === 'r') {
+          // coup chargé : s'il n'a pas le souffle (ou pas la technique), il attend plutôt que de changer de suite
+          if (!e.abil.charge) b.motifI++;
+          else if (peutCharger) {
+            botPress(S, e, 560);
+            b.motifI++;
+          }
+        } else {
+          botPress(S, e, 0);
+          b.chain = Math.max(0, (+pas.slice(1) || 1) - 1);
+          b.motifI++;
+        }
       } else if (dist < wr) {
         if (peutCharger && rnd(S) < 0.22) botPress(S, e, rand(S, 260, 820));
         else {
