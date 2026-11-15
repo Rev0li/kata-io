@@ -33,6 +33,8 @@ export interface Spec {
   belt?: string;
   dummy?: boolean;
   atkSlow?: number;
+  annonce?: number; // ms ajoutées au démarrage de ses coups blancs (gardiens lisibles, D20)
+  motif?: string[]; // bot : signature, la suite d'attaques qu'il répète (D20, progression.ts)
   god?: boolean; // mode test : intouchable, aucun coup ne porte et il ne tombe pas à l'eau (parties locales seulement)
 }
 export interface SimOpts {
@@ -107,6 +109,8 @@ export interface Cerveau {
   climbAt: number | null;
   respect: number;
   waited: boolean;
+  motif: string[] | null; // signature du gardien (D20) : null, il choisit ses attaques au hasard
+  motifI: number;
 }
 export interface Fighter {
   id: number;
@@ -118,6 +122,7 @@ export interface Fighter {
   abil: Abil;
   belt: string | null;
   atkSlow: number;
+  annonce: number; // ms ajoutées au démarrage des coups blancs (D20)
   god: boolean;
   x: number;
   y: number;

@@ -27,7 +27,7 @@ import { Conn, voieDuel } from './transport';
 import { Tampon } from './tampon';
 import { LEVELS, randLook, BOT_NAMES, sanitizeLook, Look, isDojo, cloneDeck } from '../sim/data';
 import { lookStyle, styleDeck } from '../sim/styles';
-import { Abil, FULL_ABIL, Floor, abilFor, RANKS } from '../sim/progression';
+import { Abil, FULL_ABIL, Floor, abilFor, RANKS, specGardien } from '../sim/progression';
 import { TutoStep } from '../game/tutorial';
 import { Enregistreur, combatEtage } from '../sim/rejeu';
 import type { Combat } from '../sim/rejeu';
@@ -220,14 +220,7 @@ class Session {
     this.teaser = extra.teaser || '';
     this.specs = [
       me,
-      {
-        name: floor.name,
-        look: floor.look,
-        deck: floor.deck,
-        bot: floor.skill,
-        abil: extra.abil || abilFor(floor.tier),
-        belt: RANKS[floor.tier].belt,
-      },
+      specGardien(floor, extra.abil), // annonce et signature comprises (D20)
     ];
     this.opts = { firstTo: floor.firstTo, H: floor.H, damp: floor.damp, quick: !!extra.quick };
     if (extra.combat) {

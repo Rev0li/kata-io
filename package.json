@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.strict.json",
     "sim": "tsx scripts/simcheck.ts",
     "tour": "tsx scripts/towercheck.ts",
+    "audit": "tsx scripts/audit-strats.ts",
     "serveur": "tsx server/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",

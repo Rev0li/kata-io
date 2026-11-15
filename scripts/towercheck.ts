@@ -9,7 +9,7 @@
 // À 60 combats, l'incertitude est d'environ 12 points par étage.
 import { createSim, stepSim, drainEvents, emptyInput } from '../src/sim/sim';
 import { DEFAULT_LOOK, PERSOS } from '../src/sim/data';
-import { towerFloor, abilFor, FULL_ABIL } from '../src/sim/progression';
+import { towerFloor, specGardien, FULL_ABIL } from '../src/sim/progression';
 import { styleOf, lookStyle } from '../src/sim/styles';
 import { VIES } from '../src/ui/montee';
 
@@ -30,13 +30,12 @@ for (let n = 1; n <= ETAGES; n++) {
   let wins = 0,
     secs = 0;
   for (let k = 0; k < N; k++) {
-    const st = createSim(
-      [
-        { name: 'Joueur', look, bot: JOUEUR, abil: { ...FULL_ABIL } },
-        { name: f.name, look: f.look, deck: f.deck, bot: f.skill, abil: abilFor(f.tier) },
-      ],
-      { firstTo: 1, H: f.H, damp: f.damp, seed: n * 1000 + k },
-    );
+    const st = createSim([{ name: 'Joueur', look, bot: JOUEUR, abil: { ...FULL_ABIL } }, specGardien(f)], {
+      firstTo: 1,
+      H: f.H,
+      damp: f.damp,
+      seed: n * 1000 + k,
+    });
     let end: any = null,
       steps = 0;
     while (!end && steps < 60 * 400) {

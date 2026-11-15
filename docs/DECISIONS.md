@@ -124,6 +124,11 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Limite assumée :** le rejeu prouve qu'une montée est possible avec ces entrées, pas qu'un humain les a jouées.
 - **À valider :** une montée jouée sur iPhone (Safari) acceptée par le serveur.
 
+## D20. Gardiens lisibles (2026-11-15)
+- **Problème :** les coups blancs des gardiens partaient en 120 à 224 ms, sous le temps de réaction d'un humain : parer était un pari. Leurs attaques étaient tirées au hasard : rien à apprendre.
+- **Décision :** le coup blanc le plus vif d'un gardien met au moins 340 ms à partir en bas de la Tour, 265 ms tout en haut (`annonceMs`, `ANNONCE_MIN` dans `src/sim/progression.ts`), et chaque gardien répète une **signature** (`motif` : suite de coups blancs et de coups chargés). Les coups du joueur ne changent pas. **Statut : codé, à valider en jouant.**
+- **Mesure :** parade à 250 ms de réaction, 9 à 31 % avant, 97 à 100 % aux étages 1 à 6 après. Contrepartie : le bas de la Tour est plus facile et le martelage y marche mieux. Détail et suite : [AUDIT-2026-11-15.md](AUDIT-2026-11-15.md).
+
 ## D15. Éjection en l'air (prototype du 2026-11-06)
 - **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
 - **Prototype :** un coup au-delà de `TUMBLE_V` **soulève** le combattant (hauteur `z`, gravité, ombre au sol) ; il freine **moins en l'air** (`airDamp` 0,6), et rien ne se décide tant qu'il vole : s'il atterrit dans l'eau, c'est plouf, loin du bord. Au-delà de `starV` il part dans le ciel (**« ÉTOILE ! »**). **Rattrapage au bord** : jamais après une projection, et une fois par manche. Réglages : `LAUNCH` dans `src/sim/data.ts`.

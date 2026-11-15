@@ -64,7 +64,7 @@ function startAttack(
     dragon: !!o.dragon,
   };
   if (o.kind === 'red') fx.sfx(S, 'heavy', e.x, e.y, 0.8);
-  if (o.kind === 'white' && e.atkSlow > 1) e.atk.su = d.su * e.atkSlow;
+  if (o.kind === 'white' && (e.atkSlow > 1 || e.annonce > 0)) e.atk.su = d.su * e.atkSlow + e.annonce;
 }
 // Pas assez de souffle pour l'action : elle ne part pas, et le joueur le voit.
 function tired(S: Sim, e: Fighter) {
