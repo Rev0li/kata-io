@@ -95,6 +95,13 @@ const propre =
     m.vu.push({ st: foe.state, uid: foe.atk?.uid ?? 0, kind: foe.atk?.kind ?? '', d });
     const v = m.vu.length > reac ? m.vu[m.vu.length - 1 - reac] : null;
     if (m.vu.length > 120) m.vu.shift();
+    // il charge (annonce rouge au sol) : on attend le temps de la charge, puis on esquive de côté
+    if (v && v.st === 'charge' && !m.charge && v.d < 190) {
+      m.charge = true;
+      m.esq = Math.max(1, Math.round(500 / 16.67) - reac);
+    }
+    if (foe.state !== 'charge' && v && v.st !== 'charge') m.charge = false;
+    if (m.esq > 0 && --m.esq === 0 && me.souffle >= 1) return { ...c, esquiver: true, mx: -uy, my: ux };
     if (v && v.st === 'attack' && v.uid !== m.reagi && v.d < 150) {
       m.reagi = v.uid;
       if (v.kind === 'red') {

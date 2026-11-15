@@ -29,6 +29,7 @@ export function newBrain(skill: number, dummy = false, motif?: string[]) {
     waited: false,
     motif: motif && motif.length ? motif : null,
     motifI: 0,
+    punir: false,
   };
 }
 function edgeInward(S: Sim, e: Fighter) {
@@ -42,6 +43,8 @@ function edgeInward(S: Sim, e: Fighter) {
   if (e.y < -H + m) y = (-H + m - e.y) / m;
   return { x, y };
 }
+// Durée de charge d'un coup rouge de signature : toujours la même, pour que l'esquive s'apprenne au rythme.
+export const CHARGE_SIGNATURE = 520;
 function botPress(S: Sim, e: Fighter, hold: number) {
   doAction(S, e, 'pressAtk');
   e.bot!.holdFor = hold;
@@ -126,7 +129,19 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
           }
         } else {
           const r = rnd(S);
-          if (r < s * 0.78 + x * 0.4 && e.abil.parry) {
+          // martelage : le gardien a lu le rythme, il pare à coup sûr ou presque, quel que soit son niveau
+          if (
+            T.spam >= RULES.spamThreshold &&
+            e.abil.parry &&
+            e.souffle >= RULES.parryCost + (reserve ? 1 : 0) && // un gardien habile ne se met pas à sec pour parer
+            rnd(S) < RULES.martelageParade
+          ) {
+            b.plan = { act: 'parry', at: Math.max(0, left - 70) };
+            if (!b.adaptShown && !T.bot) {
+              b.adaptShown = true;
+              fx.float(S, e.x, e.y - 66, 'IL T’A LU', '#e5483a', 18);
+            }
+          } else if (r < s * 0.78 + x * 0.4 && e.abil.parry) {
             const react = rand(S, 70, 210) * (1.3 - s) * vif;
             const lead = s > 0.8 ? rand(S, 40, 120) : rand(S, 100, 200);
             let at = left - lead;
@@ -199,6 +214,11 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       my -= (e.y / c) * s * 0.5;
     }
     const tOk = T.spawnInv <= 0 && T.state !== 'climb';
+    // il vient de parer : l'attaquant est étourdi (650 ms au moins), le gardien frappe sans attendre
+    if (T.state === 'stun' && T.stunDur >= 650 && T.stateT < 120) {
+      b.atkCd = Math.min(b.atkCd, 100);
+      b.punir = true;
+    }
     if (e.state === 'idle' && !b.plan && b.atkCd <= 0 && tOk) {
       const wr = nextWhite(e).rg + 12,
         hv = attaque(e, e.deck.heavy[e.stance]);
@@ -229,6 +249,10 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       ) {
         // bot habile : garde de quoi ne pas tomber épuisé (un bot faible frappe quand même et s'épuise) ;
         // un maître garde davantage, et laisse l'adversaire venir à lui
+      } else if (dist < wr && b.punir && T.state === 'stun' && (s <= 0.4 || e.souffle >= 1 + RULES.whiteCost)) {
+        // punition d'une parade : l'enchaînement le plus long qu'il connaît (hors signature)
+        botPress(S, e, 0);
+        b.chain = 2;
       } else if (dist < wr && b.motif) {
         // Signature (D20) : le gardien répète sa suite d'attaques, dans l'ordre. Le joueur peut l'apprendre.
         const pas = b.motif[b.motifI % b.motif.length];
@@ -236,7 +260,11 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
           // coup chargé : s'il n'a pas le souffle (ou pas la technique), il attend plutôt que de changer de suite
           if (!e.abil.charge) b.motifI++;
           else if (peutCharger) {
-            botPress(S, e, 560);
+            // il charge d'emblée, sans le début de coup blanc d'un appui maintenu : dès la première image,
+            // le joueur sait que c'est un rouge (annonce au sol) et qu'il faut esquiver, pas parer
+            startCharge(S, e);
+            e.holding = true;
+            b.holdFor = CHARGE_SIGNATURE;
             b.motifI++;
           }
         } else {
@@ -253,6 +281,7 @@ export function botUpdate(S: Sim, e: Fighter, dt: number) {
       } else if (dist < hv.rg + hv.lunge && peutCharger && rnd(S) < 0.015 + s * 0.012)
         botPress(S, e, rand(S, 300, 760));
       b.atkCd = rand(S, 220, 700) * (1.45 - s);
+      b.punir = false;
     }
     if (e.state === 'charge' && T.state === 'dodge' && s > 0.65 && !b.waited) {
       b.holdFor += 260;

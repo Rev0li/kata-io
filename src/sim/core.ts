@@ -111,6 +111,7 @@ export interface Cerveau {
   waited: boolean;
   motif: string[] | null; // signature du gardien (D20) : null, il choisit ses attaques au hasard
   motifI: number;
+  punir: boolean; // il vient de parer : son prochain coup est une punition
 }
 export interface Fighter {
   id: number;
