@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { createSim, stepSim, drainEvents, emptyInput } from '../src/sim/sim';
 import { DEFAULT_LOOK } from '../src/sim/data';
-import { towerFloor, abilFor, FULL_ABIL } from '../src/sim/progression';
+import { towerFloor, specGardien, FULL_ABIL } from '../src/sim/progression';
 import { lookStyle } from '../src/sim/styles';
 
 const look = lookStyle({ ...DEFAULT_LOOK, perso: 'ninja-bleu' });
@@ -13,13 +13,12 @@ function tempsEpuise(n: number, combats = 12) {
   let exh = 0,
     tot = 0;
   for (let k = 0; k < combats; k++) {
-    const st: any = createSim(
-      [
-        { name: 'J', look, bot: 0.45, abil: { ...FULL_ABIL } },
-        { name: f.name, look: f.look, deck: f.deck, bot: f.skill, abil: abilFor(f.tier) },
-      ],
-      { firstTo: 1, H: f.H, damp: f.damp, seed: n * 1000 + k },
-    );
+    const st: any = createSim([{ name: 'J', look, bot: 0.45, abil: { ...FULL_ABIL } }, specGardien(f)], {
+      firstTo: 1,
+      H: f.H,
+      damp: f.damp,
+      seed: n * 1000 + k,
+    });
     let fin = false,
       pas = 0;
     while (!fin && pas++ < 60 * 120) {

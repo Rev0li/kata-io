@@ -78,6 +78,9 @@ export const RULES = {
   // Face à un humain : au-delà du seuil, chaque coup blanc coûte du souffle, et sans souffle le coup est bloqué.
   spamAttackCost: 0.6,
   // Face à un bot : plus tu spams, plus il monte de niveau (gain par seconde de spam, plafond, retombée par seconde).
+  // Martelage puni (audit du 2026-11-15) : au-delà du seuil de spam, tout gardien, même le premier, lit le coup blanc
+  // suivant et le pare avec cette probabilité, puis frappe l'attaquant étourdi. 0 = désactivé.
+  martelageParade: 0.9,
   botAdaptRate: 0.06,
   botAdaptMax: 0.35,
   botAdaptDecay: 0.02,

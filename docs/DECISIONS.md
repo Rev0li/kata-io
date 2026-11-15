@@ -124,10 +124,11 @@ Légende statut : DÉCIDÉ / HYPOTHÈSE (à tester) / OUVERT. **Intégré** = pr
 - **Limite assumée :** le rejeu prouve qu'une montée est possible avec ces entrées, pas qu'un humain les a jouées.
 - **À valider :** une montée jouée sur iPhone (Safari) acceptée par le serveur.
 
-## D20. Gardiens lisibles (2026-11-15)
-- **Problème :** les coups blancs des gardiens partaient en 120 à 224 ms, sous le temps de réaction d'un humain : parer était un pari. Leurs attaques étaient tirées au hasard : rien à apprendre.
-- **Décision :** le coup blanc le plus vif d'un gardien met au moins 340 ms à partir en bas de la Tour, 265 ms tout en haut (`annonceMs`, `ANNONCE_MIN` dans `src/sim/progression.ts`), et chaque gardien répète une **signature** (`motif` : suite de coups blancs et de coups chargés). Les coups du joueur ne changent pas. **Statut : codé, à valider en jouant.**
-- **Mesure :** parade à 250 ms de réaction, 9 à 31 % avant, 97 à 100 % aux étages 1 à 6 après. Contrepartie : le bas de la Tour est plus facile et le martelage y marche mieux. Détail et suite : [AUDIT-2026-11-15.md](AUDIT-2026-11-15.md).
+## D20. Gardiens lisibles, martelage puni (2026-11-15)
+- **But fixé par l'auteur :** une Tour à la difficulté de Dark Souls, dure voire très dure, frustrante. Retenu : des coups qu'on peut lire et apprendre, des erreurs qui coûtent cher, et marteler ne paie jamais.
+- **Problème :** les coups blancs des gardiens partaient en 120 à 224 ms, sous le temps de réaction d'un humain : parer était un pari. Leurs attaques étaient tirées au hasard : rien à apprendre. Et marteler l'attaque gagnait les premiers étages.
+- **Décision :** (1) le coup blanc le plus vif d'un gardien met au moins 340 ms à partir en bas de la Tour, 265 ms tout en haut (`annonceMs`, `ANNONCE_MIN` dans `src/sim/progression.ts`) ; (2) chaque gardien répète une **signature** (`motif` : suite de coups blancs et de coups chargés, ces derniers à durée fixe) ; (3) tous les gardiens parent et chargent dès l'étage 1 ; (4) un joueur qui martèle est paré à coup sûr ou presque, puis frappé (`RULES.martelageParade`) ; (5) premiers gardiens relevés (niveaux 0,30 à 0,50). Les coups du joueur ne changent pas. **Statut : codé, à valider en jouant.**
+- **Mesure :** parade à 250 ms de réaction, 9 à 31 % avant, 97 à 100 % après ; martelage à l'étage 1, 98 % avant, 10 % après ; montée moyenne du bot joueur, 7,0 étages avant, 5,7 après. Détail et suite : [AUDIT-2026-11-15.md](AUDIT-2026-11-15.md).
 
 ## D15. Éjection en l'air (prototype du 2026-11-06)
 - **Problème :** l'éjection paraissait incomplète : on glissait à plat, on freinait vite, on se rattrapait souvent au bord et on tombait juste à côté de la plateforme.
